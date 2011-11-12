@@ -27,11 +27,12 @@ public class Kreator {
 		BufferedReader in;
 		BufferedWriter out;
 		
-		for (String f : FILES) {
-			try {
-				in = new BufferedReader(new FileReader(f));
-				out = new BufferedWriter(new FileWriter("target/parsetest.txt"));
+		
+		try {
+			out = new BufferedWriter(new FileWriter("target/parsetest.txt"));
 				
+			for (String f : FILES) {
+				in = new BufferedReader(new FileReader(f));
 				String line;
 				while ((line = in.readLine()) != null && !line.startsWith("//")) {
 					templates = temp.buildTemplates(line);
@@ -39,20 +40,20 @@ public class Kreator {
 					// PARSE TEST 
 					if (!templates.isEmpty()) {
 						System.out.println("["+templates.size()+"] " + line);
-						out.write("["+templates.size()+"] " + line);
+						out.write("\n["+templates.size()+"] " + line);
 					}
 					else {
 						System.out.println("[-] " + line);
-						out.write("[-] " + line);
+						out.write("\n[-] " + line);
 					}
 					//
 				}
 				in.close();
-				out.close();
 			}
-			catch (Exception e) {
-				e.printStackTrace();
-			}
+			out.close();
+		}
+		catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
