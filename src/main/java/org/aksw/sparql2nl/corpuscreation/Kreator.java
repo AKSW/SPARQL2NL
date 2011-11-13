@@ -12,7 +12,7 @@ import org.dllearner.algorithm.tbsl.templator.Templator;
 
 public class Kreator {
 
-	public static String[] FILES = {"resources/TREC_questions_2006.txt","resources/TREC_questions_2007.txt"};
+	public static String[] FILES = {"resources/TREC_questions_2006.txt","resources/TREC_questions_2007.txt","resources/TREC_questions_2008.txt","resources/TREC_questions_2009.txt"};
 	public static String[] LEXICON = {"resources/english.lex"};
 	public static String TARGET = "target/corpus";
 	
