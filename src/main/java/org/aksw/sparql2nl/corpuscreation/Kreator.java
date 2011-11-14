@@ -27,6 +27,8 @@ public class Kreator {
 		BufferedReader in;
 		BufferedWriter out;
 		
+		int total = 0;
+		int parsed = 0;
 		
 		try {
 			out = new BufferedWriter(new FileWriter("target/parsetest.txt"));
@@ -35,21 +37,34 @@ public class Kreator {
 				in = new BufferedReader(new FileReader(f));
 				String line;
 				while ((line = in.readLine()) != null && !line.startsWith("//")) {
-					templates = temp.buildTemplates(line);
 					
-					// PARSE TEST 
-					if (!templates.isEmpty()) {
-						System.out.println("["+templates.size()+"] " + line);
-						out.write("\n["+templates.size()+"] " + line);
+					try {
+						templates = temp.buildTemplates(line);						
+						total++;
+						
+						// PARSE TEST 
+						if (!templates.isEmpty()) {
+							System.out.println("["+templates.size()+"] " + line);
+							out.write("\n["+templates.size()+"] " + line);
+							parsed++;
+						}
+						else {
+							System.out.println("[-] " + line);
+							out.write("\n[-] " + line);
+						}
+						//
 					}
-					else {
-						System.out.println("[-] " + line);
-						out.write("\n[-] " + line);
+					catch (OutOfMemoryError e) {
+						continue;
 					}
-					//
+					catch (NullPointerException e) {
+						continue;
+					}
 				}
 				in.close();
 			}
+			System.out.println("\n\nTotal: " + total + "\nParsed: " + parsed);
+			out.write("\n\nTotal: " + total + "\nParsed: " + parsed);
 			out.close();
 		}
 		catch (Exception e) {
