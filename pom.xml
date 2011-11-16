@@ -27,6 +27,12 @@
 			<groupId>org.dllearner</groupId>
 			<artifactId>components-ext</artifactId>
 			<version>1.0-SNAPSHOT</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>nif</artifactId>
+					<groupId>org.nlp2rdf</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 	</dependencies>
 
