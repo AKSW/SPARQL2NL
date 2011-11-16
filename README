@@ -1,1 +1,7 @@
 SPARQL2NL - the SPARQL to natural language converter
+
+# INSTALL
+
+- Maven Plugin in Eclipse installieren
+- git clone git@github.com:AKSW/SPARQL2NL.git
+- Import -> Existing maven project 
