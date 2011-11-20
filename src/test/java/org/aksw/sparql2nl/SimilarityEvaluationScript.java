@@ -1,21 +1,29 @@
 package org.aksw.sparql2nl;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.aksw.sparql2nl.queryprocessing.Query;
 import org.aksw.sparql2nl.queryprocessing.Similarity;
 import org.aksw.sparql2nl.queryprocessing.Similarity.SimilarityMeasure;
 import org.dllearner.algorithm.tbsl.sparql.Template;
+import org.dllearner.algorithm.tbsl.util.LatexWriter;
 
 import com.hp.hpl.jena.query.QueryFactory;
 
@@ -33,15 +41,50 @@ public class SimilarityEvaluationScript {
 		Hashtable<Template, String> templates = readTemplates();
 		
 		
-		for (Query query1 : queries) {
-			for(Template t : templates.keySet()){
-				if(t.getQuery().toString().contains("ERROR"))continue;//TODO here is a bug in the tmeplate generation, where some Queries only contain the String 'ERROR'
-				Query query2 = new Query(t.getQuery().toString());
-				
-				double sim = Similarity.getSimilarity(query1, query2, SimilarityMeasure.LEVENHSTEIN);
-				System.out.println(sim);
+		for(SimilarityMeasure measure : SimilarityMeasure.values()){
+			LatexWriter latex = new LatexWriter();
+			latex.beginDocument();
+			int i = 1;
+			for (Query query1 : queries) {if(i==31)break;
+				latex.beginSection("", i++);
+				latex.beginSubsection("Query");
+				latex.addListing(query1.getOriginalQuery());
+				Map<Query, Double> simMap = new HashMap<Query, Double>();
+				int j = 0;
+				for(Template t : templates.keySet()){//if(j++ == 10)break;
+					//TODO here is a bug in the template generation, where some Queries only contain the String 'ERROR'
+					if(t.getQuery().toString().contains("ERROR"))continue;
+
+					Query query2 = new Query(t.getQuery().toString());
+					
+					double sim = Similarity.getSimilarity(query1, query2, measure);
+					simMap.put(query2, sim);
+				}
+				latex.beginSubsection("Top 5");
+				for(Entry<Query, Double> entry : sortByValues(simMap).subList(0, 5)){
+					latex.addListing(entry.getKey().getOriginalQuery() + "\nSimilarity: " + entry.getValue());
+				}
 			}
+			latex.endDocument();
+			String doc = latex.loadPraeambel();
+			doc += "\\subtitle{" + measure.toString() + "}\n";
+			doc += latex.toString();
+			try {
+				File file = new File("log/" + measure.toString().toLowerCase() + ".tex");
+				file.createNewFile();
+				Writer output = new BufferedWriter(new FileWriter(file));
+				    try {
+				      output.write(doc);
+				    }
+				    finally {
+				      output.close();
+				    }
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+//			break;
 		}
+		
 		
 	}
 	
@@ -58,12 +101,16 @@ public class SimilarityEvaluationScript {
 			int i = 0;
 			// read each line of text file
 			while ((line = bufRdr.readLine()) != null) {
-				if(i++ == 10)break;
-				System.out.println(line);
+//				if(i++ == 10)break;
+//				System.out.println(line);
 				// we use JENA to expand all prefixes
-				com.hp.hpl.jena.query.Query q = QueryFactory.create(line);
-				expandPrefixes(q);
-				queries.add(new Query(q.toString()));
+				try {
+					com.hp.hpl.jena.query.Query q = QueryFactory.create(line);
+					expandPrefixes(q);
+					queries.add(new Query(q.toString()));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
 			
 		} catch (FileNotFoundException e) {
@@ -102,6 +149,18 @@ public class SimilarityEvaluationScript {
 			e.printStackTrace();
 		}
 		return null;
+	}
+	
+	private <K, V extends Comparable<V>> List<Entry<K, V>> sortByValues(Map<K, V> map){
+		List<Entry<K, V>> entries = new ArrayList<Entry<K, V>>(map.entrySet());
+        Collections.sort(entries, new Comparator<Entry<K, V>>() {
+
+			@Override
+			public int compare(Entry<K, V> o1, Entry<K, V> o2) {
+				return o2.getValue().compareTo(o1.getValue());
+			}
+		});
+        return entries;
 	}
 
 	/**
