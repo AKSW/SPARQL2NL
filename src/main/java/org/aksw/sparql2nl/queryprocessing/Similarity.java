@@ -12,11 +12,11 @@ import uk.ac.shef.wit.simmetrics.similaritymetrics.*;
  * @author ngonga
  */
 public class Similarity {
-	
+
 	public enum SimilarityMeasure{
-		LEVENHSTEIN, QGRAMS, JACCARD, GRAPH_ISOMORPHY
+		LEVENSHTEIN, QGRAMS, JACCARD, GRAPH_ISOMORPHY
 	}
-	
+
     public static double getSimilarity(Query q1, Query q2, SimilarityMeasure measure)
     {
         //check whether queries use the same features
@@ -24,14 +24,14 @@ public class Similarity {
         if(q1.getUsesCount() != q2.getUsesCount() ||
                 q1.getUsesGroupBy() != q2.getUsesGroupBy() ||
                 q1.getUsesLimit() != q2.getUsesLimit()) return 0;
-        
+
         //if they do then compute similarity
-        if(measure == SimilarityMeasure.LEVENHSTEIN) 
+        if(measure == SimilarityMeasure.LEVENHSTEIN)
             return (new Levenshtein()).getSimilarity(q1.getQueryWithOnlyVars(), q2.getQueryWithOnlyVars());
         else if(measure == SimilarityMeasure.QGRAMS)
             return (new QGramsDistance()).getSimilarity(q1.getQueryWithOnlyVars(), q2.getQueryWithOnlyVars());
         else if(measure == SimilarityMeasure.JACCARD)
-            return (new JaccardSimilarity()).getSimilarity(q1.getQueryWithOnlyVars(), q2.getQueryWithOnlyVars());        
+            return (new JaccardSimilarity()).getSimilarity(q1.getQueryWithOnlyVars(), q2.getQueryWithOnlyVars());
         //add graph based-metric here
         else if(measure == SimilarityMeasure.GRAPH_ISOMORPHY)
             return (new NormedGraphIsomorphism().getSimilarity(q1, q2));
