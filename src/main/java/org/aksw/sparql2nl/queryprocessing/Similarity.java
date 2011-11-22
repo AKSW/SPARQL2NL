@@ -23,7 +23,8 @@ public class Similarity {
         //if they don't return 0
         if(q1.getUsesCount() != q2.getUsesCount() ||
                 q1.getUsesGroupBy() != q2.getUsesGroupBy() ||
-                q1.getUsesLimit() != q2.getUsesLimit()) return 0;
+                q1.getUsesLimit() != q2.getUsesLimit() ||
+                q1.getUsesSelect() != q2.getUsesSelect()) return 0;
         
         //if they do then compute similarity
         if(measure == SimilarityMeasure.LEVENHSTEIN) 

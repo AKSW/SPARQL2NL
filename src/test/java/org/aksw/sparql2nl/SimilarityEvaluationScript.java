@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -26,6 +27,7 @@ import org.dllearner.algorithm.tbsl.sparql.Template;
 import org.dllearner.algorithm.tbsl.util.LatexWriter;
 
 import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.Syntax;
 
 public class SimilarityEvaluationScript {
 	
@@ -38,6 +40,12 @@ public class SimilarityEvaluationScript {
 	
 	public void run(){
 		List<Query> queries = readQueries();
+		run(queries);
+		
+		
+	}
+	
+	public void run(List<Query> queries){
 		Hashtable<Template, String> templates = readTemplates();
 		
 		
@@ -49,25 +57,38 @@ public class SimilarityEvaluationScript {
 				latex.beginSection("", i++);
 				latex.beginSubsection("Query");
 				latex.addListing(query1.getOriginalQuery());
+				latex.addListing(query1.getQueryWithOnlyVars());
 				Map<Query, Double> simMap = new HashMap<Query, Double>();
+				Map<Query, String> queriesMap = new HashMap<Query, String>();
 				int j = 0;
 				for(Template t : templates.keySet()){//if(j++ == 10)break;
 					//TODO here is a bug in the template generation, where some Queries only contain the String 'ERROR'
 					if(t.getQuery().toString().contains("ERROR"))continue;
 
-					Query query2 = new Query(t.getQuery().toString());
+					com.hp.hpl.jena.query.Query q = null;
+					try {
+						q = QueryFactory.create(t.getQuery().toString(), Syntax.syntaxARQ);
+					} catch (Exception e) {
+						e.printStackTrace();
+						continue;
+					}
+					expandPrefixes(q);
+					Query query2 = new Query(q.toString());
 					
 					double sim = Similarity.getSimilarity(query1, query2, measure);
 					simMap.put(query2, sim);
+					queriesMap.put(query2, templates.get(t));
 				}
 				latex.beginSubsection("Top 5");
 				for(Entry<Query, Double> entry : sortByValues(simMap).subList(0, 5)){
 					latex.addListing(entry.getKey().getOriginalQuery() + "\nSimilarity: " + entry.getValue());
+					latex.addListing(entry.getKey().getQueryWithOnlyVars());
+					latex.addText(queriesMap.get(entry.getKey()));
 				}
 			}
 			latex.endDocument();
 			String doc = latex.loadPraeambel();
-			doc += "\\subtitle{" + measure.toString() + "}\n";
+			doc += "\\subtitle{" + measure.toString().replace("_", "\\_") + "}\n";
 			doc += latex.toString();
 			try {
 				File file = new File("log/" + measure.toString().toLowerCase() + ".tex");
@@ -84,9 +105,9 @@ public class SimilarityEvaluationScript {
 			}
 //			break;
 		}
-		
-		
 	}
+	
+	
 	
 	private List<Query> readQueries() {
 		List<Query> queries = new ArrayList<Query>();
@@ -140,6 +161,7 @@ public class SimilarityEvaluationScript {
 		try {
 			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(TEMPLATES_FILE)));
 			Hashtable<Template, String> templates = (Hashtable<Template, String>)ois.readObject();
+			System.out.println(templates.keySet().size());
 			return templates;
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -167,7 +189,10 @@ public class SimilarityEvaluationScript {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		new SimilarityEvaluationScript().run();
+//		new SimilarityEvaluationScript().run();
+		
+		String q = "SELECT ?s WHERE {?s rdf:type <http://test.org/City>. ?s rdf:type <http://test.org/Cities>. ?a ?b ?s}";
+		new SimilarityEvaluationScript().run(Collections.singletonList(new Query(q)));
 
 	}
 
