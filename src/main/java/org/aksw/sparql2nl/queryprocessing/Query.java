@@ -119,7 +119,7 @@ public class Query {
             split[i] = split[i].trim();
             //ignore prefixes
             while (split[i].equalsIgnoreCase("PREFIX")) {                
-                System.out.println(split[i]);
+//                System.out.println(split[i]);
                 i = i + 3;                
                 //System.out.println(split[i]);
             } 

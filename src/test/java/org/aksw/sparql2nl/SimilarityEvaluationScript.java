@@ -184,6 +184,7 @@ public class SimilarityEvaluationScript {
 		});
         return entries;
 	}
+	
 
 	/**
 	 * @param args
@@ -191,7 +192,7 @@ public class SimilarityEvaluationScript {
 	public static void main(String[] args) {
 //		new SimilarityEvaluationScript().run();
 		
-		String q = "SELECT ?s WHERE {?s rdf:type <http://test.org/City>. ?s rdf:type <http://test.org/Cities>. ?a ?b ?s}";
+		String q = "SELECT ?s WHERE {?s rdf:type <http://test.org/City>. ?s rdf:type <http://test.org/Cities>.}";
 		new SimilarityEvaluationScript().run(Collections.singletonList(new Query(q)));
 
 	}
