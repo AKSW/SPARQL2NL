@@ -5,10 +5,9 @@
 package org.aksw.sparql2nl.queryprocessing;
 
 import java.util.HashMap;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
-
 import org.aksw.sparql2nl.queryprocessing.Similarity.SimilarityMeasure;
-
 import simpack.accessor.graph.SimpleGraphAccessor;
 import simpack.api.IGraphNode;
 import simpack.util.graph.GraphNode;
@@ -29,6 +28,7 @@ public class Query {
     private HashMap<String, String> var2NonVar;
     //exception that are not to be replaced
     private HashMap<String, String> exceptions;
+    private TreeSet<String> selectedVars;
     private SimpleGraphAccessor graphRepresentation;
     private boolean usesGroupBy;
     private boolean usesLimit;
@@ -38,12 +38,14 @@ public class Query {
     public boolean getUsesSelect() {
         return usesSelect;
     }
-    private boolean selectQuery;
-    // Constructor
 
     public boolean getUsesCount() {
         return usesCount;
-    }    
+    }
+
+    public TreeSet<String> getSelectedVars() {
+        return selectedVars;
+    }
 
     public boolean getUsesGroupBy() {
         return usesGroupBy;
@@ -64,8 +66,6 @@ public class Query {
 //        exceptions.put("\\?\\?1", "rdfs:label");
         exceptions.put("rdf:type", "\\!\\!2");
         exceptions.put("\\!\\!2", "rdf:type");
-        replaceNonVariables();
-        getGraphRepresentation();
         if (sparqlQuery.toLowerCase().contains("group ")) {
             usesGroupBy = true;
         } else {
@@ -89,12 +89,14 @@ public class Query {
         } else {
             usesSelect = false;
         }
-        
+        replaceNonVariables();
+        getGraphRepresentation();        
     }
 
     // Replaces non-variables that are not members of the exception with variables
     private void replaceNonVariables() {
         String copy = originalQuery;
+                
         copy = copy.replaceAll("\n", " ");
         if(!copy.contains("{ ")) copy = copy.replaceAll(Pattern.quote("{"), "{ ");
         if(!copy.contains(" }")) copy = copy.replaceAll(Pattern.quote("}"), " }");
@@ -119,7 +121,7 @@ public class Query {
             split[i] = split[i].trim();
             //ignore prefixes
             while (split[i].equalsIgnoreCase("PREFIX")) {                
-//                System.out.println(split[i]);
+                System.out.println(split[i]);
                 i = i + 3;                
                 //System.out.println(split[i]);
             } 
@@ -129,9 +131,22 @@ public class Query {
                     var2NonVar.put("?aaa" + counter, split[i]);
                     //if(split[i].endsWith("\\."))
                     //copy = copy.replaceAll(Pattern.quote(split[i]), "?aaa" + counter +".");
-                    copy = copy.replaceAll(Pattern.quote(split[i]), "?aaa" + counter);
+                    copy = copy.replaceAll(Pattern.quote(split[i])+" ", "?aaa" + counter+" ");
                     counter++;
                 }
+            }
+        }
+        //3. get selectedVars
+        if(usesSelect)
+        {
+            selectedVars = new TreeSet<String>();
+            String vars = copy.substring(copy.toLowerCase().indexOf("select ")+7, 
+                    copy.toLowerCase().indexOf(" where"));
+            split = vars.trim().split(" ");
+            for(int i=0; i<split.length; i++)
+            {
+                if(split[i].length()>1)
+                    selectedVars.add(split[i].trim());
             }
         }
         queryWithOnlyVars = copy;
@@ -216,8 +231,9 @@ public class Query {
 //"ASK WHERE {\n"+
 //"?y rdf:type ?p13736.\n"+
 //"}\n";
-        String query = "SELECT WHERE {?a <http://dbpedia.org/ontology/maxElevation> ?b}";// . ?a rdf:type ?b. ?a ?x ?c} LIMIT 10";
-        String query2 = "SELECT * WHERE {?a <http://dbpedia.org/ontology/maxElevation> ?b.}";
+        String query = "SELECT ?x WHERE {?x ?a ?b. ?x ?c ?d}"; 
+
+        String query2 = "SELECT ?a WHERE {?x ?a ?b. ?x ?c ?d}"; 
         Query q1 = new Query(query);
         Query q2 = new Query(query2);
         //Query q2 = new Query(query2);
