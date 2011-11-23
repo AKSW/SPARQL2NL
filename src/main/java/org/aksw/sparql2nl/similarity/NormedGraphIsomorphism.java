@@ -4,8 +4,12 @@
  */
 package org.aksw.sparql2nl.similarity;
 
+import java.util.HashMap;
+import java.util.TreeSet;
+import java.util.regex.Pattern;
 import org.aksw.sparql2nl.queryprocessing.Query;
 import simpack.accessor.graph.SimpleGraphAccessor;
+import simpack.api.IGraphNode;
 import simpack.measure.graph.GraphIsomorphism;
 import simpack.measure.graph.SubgraphIsomorphism;
 

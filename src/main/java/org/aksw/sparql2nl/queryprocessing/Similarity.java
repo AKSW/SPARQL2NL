@@ -26,7 +26,7 @@ public class Similarity {
                 q1.getUsesLimit() != q2.getUsesLimit() ||
                 q1.getUsesSelect() != q2.getUsesSelect()) return 0;
         //if they do then compute similarity
-        if(measure == SimilarityMeasure.LEVENHSTEIN)
+        if(measure == SimilarityMeasure.LEVENSHTEIN)
             return (new Levenshtein()).getSimilarity(q1.getQueryWithOnlyVars(), q2.getQueryWithOnlyVars());
         else if(measure == SimilarityMeasure.QGRAMS)
             return (new QGramsDistance()).getSimilarity(q1.getQueryWithOnlyVars(), q2.getQueryWithOnlyVars());
