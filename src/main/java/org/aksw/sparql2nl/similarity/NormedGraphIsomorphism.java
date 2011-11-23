@@ -30,7 +30,7 @@ public class NormedGraphIsomorphism implements QuerySimilarity {
      * @param q2 Second query
      * @return Similarity
      */
-    @Override
+//    @Override
     public double getSimilarity(Query q1, Query q2) {
         SimpleGraphAccessor g1 = q1.getGraphRepresentation();
         SimpleGraphAccessor g2 = q2.getGraphRepresentation();
