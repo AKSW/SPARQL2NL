@@ -33,6 +33,12 @@ public class Query {
     private boolean usesGroupBy;
     private boolean usesLimit;
     private boolean usesCount;
+    private boolean usesSelect;
+
+    public boolean getUsesSelect() {
+        return usesSelect;
+    }
+    private boolean selectQuery;
     // Constructor
 
     public boolean getUsesCount() {
@@ -77,11 +83,19 @@ public class Query {
         } else {
             usesCount = false;
         }
+        
+        if (sparqlQuery.toLowerCase().contains("select ")) {
+            usesSelect = true;
+        } else {
+            usesSelect = false;
+        }
+        
     }
 
     // Replaces non-variables that are not members of the exception with variables
     private void replaceNonVariables() {
         String copy = originalQuery;
+        copy = copy.replaceAll("\n", " ");
         if(!copy.contains("{ ")) copy = copy.replaceAll(Pattern.quote("{"), "{ ");
         if(!copy.contains(" }")) copy = copy.replaceAll(Pattern.quote("}"), " }");
         copy = copy.replaceAll(Pattern.quote(". "), " . ");
@@ -99,13 +113,17 @@ public class Query {
         //2. Replace everything that contains : with a var. 
         //Will assume that aaa is never used a var label
         String split[] = copy.split(" ");
+        copy = copy.trim();
         int counter = 0;
         for (int i = 0; i < split.length; i++) {
             split[i] = split[i].trim();
             //ignore prefixes
-            if (split[i].equalsIgnoreCase("PREFIX")) {
-                i = i + 2;
-            } else if (split[i].contains(":") || (split[i].contains("?") && !split[i].contains("?aaa"))) {                
+            while (split[i].equalsIgnoreCase("PREFIX")) {                
+//                System.out.println(split[i]);
+                i = i + 3;                
+                //System.out.println(split[i]);
+            } 
+            if (split[i].contains(":") || (split[i].contains("?") && !split[i].contains("?aaa"))) {                
                 if (!nonVar2Var.containsKey(split[i])) {
                     nonVar2Var.put(split[i], "?aaa" + counter);
                     var2NonVar.put("?aaa" + counter, split[i]);
@@ -135,6 +153,7 @@ public class Query {
         String selectSection = queryWithOnlyVars.substring(queryWithOnlyVars.indexOf("{") + 1,
                 queryWithOnlyVars.indexOf("}"));
         //split select section into single statements
+        selectSection = selectSection.trim();
         String[] statements = selectSection.split(Pattern.quote("."));
         //generate a graph. For each spo generate 3 nodes (s, p and o) and
         //two edges (s, p) and (p, o)
@@ -163,13 +182,15 @@ public class Query {
      * @return String representation
      */
     public static String getStringRepresentation(SimpleGraphAccessor g) {
+        
         String result = "";
+        result = result +"Nodeset = "+g.getNodeSet() + "\n<";
         for (IGraphNode node : g.getNodeSet()) {
             for (IGraphNode node2 : node.getSuccessorSet()) {
                 result = result + node.getLabel() + " -> " + node2.getLabel() + "\n";
             }
         }
-        return result;
+        return result+">";
     }
 
     public HashMap<String, String> getNonVar2Var() {
@@ -190,20 +211,24 @@ public class Query {
 
     //just for tests
     public static void main(String args[]) {
-        //String query = "PREFIX owl: <http://www.w3.org/2002/07/owl#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX foaf: <http://xmlns.com/foaf/0.1/> PREFIX dc: <http://purl.org/dc/elements/1.1/> PREFIX : <http://dbpedia.org/resource/> PREFIX dbpedia2: <http://dbpedia.org/property/> PREFIX dbpedia: <http://dbpedia.org/> PREFIX skos: <http://www.w3.org/2004/02/skos/core#> PREFIX umbelBus: <http://umbel.org/umbel/sc/Business> PREFIX umbelCountry: <http://umbel.org/umbel/sc/IndependentCountry> SELECT distinct ?var0 WHERE { ?var0 skos:broader <http://dbpedia.org/resource/Category:Singaporean_cuisine> }";
-        String query = "SELECT * WHERE {?a <http://dbpedia.org/ontology/maxElevation> ?b. ?a rdf:type ?b. ?a ?x ?c} LIMIT 10";
-        String query2 = "SELECT * WHERE {?a <http://dbpedia.org/ontology/maxElevation> ?b. ?a rdf:type ?b. ?a ?x ?c}";
+//        String query = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"+
+//"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"+
+//"ASK WHERE {\n"+
+//"?y rdf:type ?p13736.\n"+
+//"}\n";
+        String query = "SELECT WHERE {?a <http://dbpedia.org/ontology/maxElevation> ?b}";// . ?a rdf:type ?b. ?a ?x ?c} LIMIT 10";
+        String query2 = "SELECT * WHERE {?a <http://dbpedia.org/ontology/maxElevation> ?b.}";
         Query q1 = new Query(query);
         Query q2 = new Query(query2);
         //Query q2 = new Query(query2);
-        System.out.println(q1.originalQuery);
-        System.out.println(q1.queryWithOnlyVars);
-        System.out.println(q1.nonVar2Var);
-        System.out.println(q1.var2NonVar);
-        System.out.println(q1.exceptions);
-        //q1.getGraphRepresentation();
-        System.out.println(getStringRepresentation(q1.getGraphRepresentation()));
-//        System.out.println("\n---\n" + getStringRepresentation(q1.getGraphRepresentation()));
+//        System.out.println(q1.originalQuery);
+//        System.out.println(q1.queryWithOnlyVars);
+//        System.out.println(q1.nonVar2Var);
+//        System.out.println(q1.var2NonVar);
+//        System.out.println(q1.exceptions);
+//        //q1.getGraphRepresentation();
+        System.out.println("\n---\n" + getStringRepresentation(q1.getGraphRepresentation()));
+        System.out.println("\n---\n" + getStringRepresentation(q2.getGraphRepresentation()));
         System.out.println(Similarity.getSimilarity(q1, q2, SimilarityMeasure.GRAPH_ISOMORPHY));
     }
 }

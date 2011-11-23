@@ -26,6 +26,7 @@ public class NormedGraphIsomorphism implements QuerySimilarity {
         SimpleGraphAccessor g1 = q1.getGraphRepresentation();
         SimpleGraphAccessor g2 = q2.getGraphRepresentation();
         GraphIsomorphism gi = new GraphIsomorphism(g1, g2);
+        if(gi.getGraphIsomorphism() == 1) return 1.0;
         SubgraphIsomorphism si = new SubgraphIsomorphism(g1, g2);
         Double sim = si.getSimilarity();
         if (sim != null) {
