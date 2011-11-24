@@ -79,8 +79,8 @@ public class SimilarityEvaluationScript {
 					simMap.put(query2, sim);
 					queriesMap.put(query2, templates.get(t));
 				}
-				latex.beginSubsection("Top 5");
-				for(Entry<Query, Double> entry : sortByValues(simMap).subList(0, 5)){
+				latex.beginSubsection("Top 20");
+				for(Entry<Query, Double> entry : sortByValues(simMap).subList(0, 20)){
 					latex.addListing(entry.getKey().getOriginalQuery() + "\nSimilarity: " + entry.getValue());
 					latex.addListing(entry.getKey().getQueryWithOnlyVars());
 					latex.addText(queriesMap.get(entry.getKey()));
@@ -192,7 +192,7 @@ public class SimilarityEvaluationScript {
 	public static void main(String[] args) {
 //		new SimilarityEvaluationScript().run();
 		
-		String q = "SELECT ?s WHERE {?s rdf:type <http://test.org/City>. ?s rdf:type <http://test.org/Cities>.}";
+		String q = "SELECT ?s WHERE {?s rdf:type <http://test.org/City>. ?s rdf:type <http://test.org/Cities>. ?x ?p ?s.}";
 		new SimilarityEvaluationScript().run(Collections.singletonList(new Query(q)));
 
 	}

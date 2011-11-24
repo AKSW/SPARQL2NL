@@ -1,0 +1,40 @@
+Who was the wife of President Lincoln?
+
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX dbr: &lt;http://dbpedia.org/resource/&gt;
+SELECT ?uri
+WHERE 
+{
+	dbr:Abraham_Lincoln onto:spouse ?uri.
+}
+
+Who produced the most films?
+
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+SELECT ?uri
+WHERE 
+{
+	?film rdf:type onto:Film .
+    ?film onto:producer ?uri .
+        
+} ORDER BY DESC(COUNT(?film)) LIMIT 1
+
+
+Which software has been developed by organizations founded in California?
+
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+SELECT ?uri
+WHERE
+{ 
+	?company rdf:type onto:Organisation  .
+        ?company onto:foundationPlace res:California .
+        ?uri onto:developer ?company .
+        ?uri rdf:type onto:Software .
+}
