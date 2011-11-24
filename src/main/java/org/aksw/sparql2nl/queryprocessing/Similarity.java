@@ -5,6 +5,7 @@
 package org.aksw.sparql2nl.queryprocessing;
 
 import org.aksw.sparql2nl.similarity.NormedGraphIsomorphism;
+import org.aksw.sparql2nl.similarity.TypeAwareGraphIsomorphism;
 import uk.ac.shef.wit.simmetrics.similaritymetrics.*;
 
 /**
@@ -14,7 +15,7 @@ import uk.ac.shef.wit.simmetrics.similaritymetrics.*;
 public class Similarity {
 
 	public enum SimilarityMeasure{
-		LEVENSHTEIN, QGRAMS, JACCARD, GRAPH_ISOMORPHY
+		LEVENSHTEIN, QGRAMS, JACCARD, GRAPH_ISOMORPHY, TYPE_AWARE_ISOMORPHY
 	}
 
     public static double getSimilarity(Query q1, Query q2, SimilarityMeasure measure)
@@ -35,6 +36,8 @@ public class Similarity {
         //add graph based-metric here
         else if(measure == SimilarityMeasure.GRAPH_ISOMORPHY)
             return (new NormedGraphIsomorphism().getSimilarity(q1, q2));
+        else if(measure == SimilarityMeasure.TYPE_AWARE_ISOMORPHY)
+            return (new TypeAwareGraphIsomorphism().getSimilarity(q1, q2));
         //default
         return (new Levenshtein()).getSimilarity(q1.getQueryWithOnlyVars(), q2.getQueryWithOnlyVars());
     }
