@@ -44,17 +44,25 @@ public class NaturalLanguageGenerator {
 		this.createVariableMappings();
 		this.populateLabels();
 		
-		System.out.println(queryToTemplateVariables);
-		System.out.println(templateToQueryVariables);
-		System.out.println(labels);
+		System.out.println("QueryToVariables: " + queryToTemplateVariables);
+		System.out.println("Labels: " + labels);
+		System.out.println("Question: " + question);
+		System.out.println("Template: " + template);
 		
 		for ( Slot slot : this.template.getSlots() ) {
 			
 			String uri = templateToQueryVariables.get("?" + slot.getAnchor());
-			String words = StringUtils.join(slot.getWords(), " ");
-			String replacement = this.labels.get(uri);
-			
-			this.question = this.question.replace(words, !replacement.equals("N/A") ? replacement : words + "_" + replacement);
+			if ( !uri.startsWith("?") ) {
+				
+				String words = StringUtils.join(slot.getWords(), " ");
+				String replacement = this.labels.get(uri);
+				
+				System.out.println("URI: " + uri);
+				System.out.println("Slot-Words: " + words);
+				System.out.println("Replacement: " + replacement);
+				
+				this.question = this.question.replace(words, !replacement.equals("N/A") ? replacement : words + "_" + replacement);
+			}
 		}
 		return this.question;
 	}
@@ -70,8 +78,6 @@ public class NaturalLanguageGenerator {
 		
 		// two queries are isomorph
 		if ( Similarity.getSimilarity(query1, query2, SimilarityMeasure.GRAPH_ISOMORPHY) > 0 ) {
-			
-			System.out.println(si.getCliqueList());
 			
 			for (String pairs : new ArrayList<String>(si.getCliqueList()).get(0).split(",")) {
 				
@@ -113,10 +119,8 @@ public class NaturalLanguageGenerator {
 	 */
 	private String queryDBpediaForLabel(String variable) {
 
-		System.out.println(variable);
-		
-		String query = "SELECT ?label { " + variable + " rdfs:label ?label . Filter(lang(?label) = 'en') } ";
-		QueryEngineHTTP qexec = new QueryEngineHTTP("http://dbpedia.org/sparql/", query);
+		String query = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT ?label { " + variable + " rdfs:label ?label . Filter(lang(?label) = 'en') } ";
+		QueryEngineHTTP qexec = new QueryEngineHTTP("http://live.dbpedia.org/sparql/", query);
 		qexec.addDefaultGraph("http://dbpedia.org");
 		ResultSet results = qexec.execSelect();
 		
@@ -139,9 +143,9 @@ public class NaturalLanguageGenerator {
 		temp.setGrammarFiles(Kreator.LEXICON);
 		Template template = new ArrayList<Template>(temp.buildTemplates(queryString)).get(0);
 
-		Query query = new Query("PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> SELECT ?x WHERE { ?x <http://dbpedia.org/ontology/founded> <http://dbpedia.org/resource/Apple_Inc.> . }");
+		Query query = new Query("PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> SELECT ?x WHERE { ?x <http://dbpedia.org/ontology/foundedBy> <http://dbpedia.org/resource/Apple_Inc.> . }");
 		
-		System.out.println("Template-Query: " + template);
+//		System.out.println("Template-Query: " + template);
 //		System.out.println("Translate-Query: " + query.getOriginalQuery());
 		
 		NaturalLanguageGenerator nlg = new NaturalLanguageGenerator(query, template, queryString);

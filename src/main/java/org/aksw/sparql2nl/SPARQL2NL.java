@@ -88,7 +88,7 @@ public class SPARQL2NL {
 		NaturalLanguageGenerator nlGen;
 		for(Entry<Template, Double> entry : sortByValues(template2simMap).subList(0, 5)){
 			nlGen = new NaturalLanguageGenerator(q1, entry.getKey(), corpus.get(entry.getKey()));
-			System.out.println(q1.getOriginalQuery());
+//			System.out.println(q1.getOriginalQuery());
 			System.out.println(entry.getKey().getQuery());
 			System.out.println(corpus.get(entry.getKey()));
 			nl.add(nlGen.generateNaturalLanguageFromSparqlQuery());
@@ -102,7 +102,7 @@ public class SPARQL2NL {
 	 */
 	public static void main(String[] args) {
 		System.out.println(new SPARQL2NL().getNaturalLanguageRepresentations(
-				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> SELECT ?x WHERE { ?x <http://dbpedia.org/ontology/founded> <http://dbpedia.org/resource/Apple_Inc.> . }")
+				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> SELECT ?x WHERE { ?x <http://dbpedia.org/ontology/foundedBy> <http://dbpedia.org/resource/Apple_Inc.> . }")
 		);
 	}
 
