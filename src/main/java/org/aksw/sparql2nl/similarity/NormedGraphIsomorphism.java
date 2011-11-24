@@ -38,9 +38,7 @@ public class NormedGraphIsomorphism implements QuerySimilarity {
         gi.calculate();
         if (gi.getGraphIsomorphism() == 1) {
             return 0.5 + 0.5 * directionalSimilarity(q1, q2, gi.getCliqueList());
-        } else {
-            System.out.println("Graphs are not isomorph");
-        }
+        } 
 //        return gi.getSimilarity();
 
         SubgraphIsomorphism si = new SubgraphIsomorphism(g1, g2);
