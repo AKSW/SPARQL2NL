@@ -62,7 +62,13 @@ public class NormedGraphIsomorphism implements QuerySimilarity {
             for (int i = 0; i < split1.length; i++) {
                 String entry = split1[i];
                 String[] split = entry.split(Pattern.quote(":"));
-                nodeMapping.put(split[0], split[1]);
+                if (split[0].equals("rdf")) {
+                    nodeMapping.put(split[0] + ":" + split[1], split[2]);
+                } else if (split[1].equals("rdf")) {
+                    nodeMapping.put(split[0], split[1] + ":" + split[2]);
+                } else {
+                    nodeMapping.put(split[0], split[1]);
+                }
             }
         }
         //check whether the same vars are used
@@ -105,14 +111,20 @@ public class NormedGraphIsomorphism implements QuerySimilarity {
 
         //now compare common edges
         double count = 0;
-        for (String node1 : nodeMapping.keySet()) {
-            String node2 = nodeMapping.get(node1);
-            TreeSet<String> succ2 = successors2.get(node2);
-            for (String succ1 : successors1.get(node1)) {
-                if (succ2.contains(nodeMapping.get(succ1))) {
-                    count++;
+        try {
+            for (String node1 : nodeMapping.keySet()) {
+                String node2 = nodeMapping.get(node1);
+                TreeSet<String> succ2 = successors2.get(node2);
+                for (String succ1 : successors1.get(node1)) {
+                    if (succ2.contains(nodeMapping.get(succ1))) {
+                        count++;
+                    }
                 }
             }
+        } catch (Exception e) {
+            System.err.println("Error parsing");
+            e.printStackTrace();
+            return 0;
         }
 
         return 2 * count / (edgeCount1 + edgeCount2);
