@@ -14,15 +14,10 @@ import simpack.measure.graph.GraphIsomorphism;
 import simpack.measure.graph.SubgraphIsomorphism;
 
 /**
- * Computes the similarity between SPARQL queries. If the queries are not isomorphic,
- * the similarity is 0.5*subgraphIsomorphy. If they are isomorphic but do not share 
- * the same set of selected variables, then their similarity is exactly 0.5. If the
- * set of vars is shared, then the similarity function also checks whether the direction
- * of the edges are the same. The similarity s between the sets S1 and S2 of edges is 
- * 2*|intersection (S1, S2)|/(|S1|+|S2|). The final similarity is then 0.5 + s.
+ *
  * @author ngonga
  */
-public class NormedGraphIsomorphism implements QuerySimilarity {
+public class TypeAwareGraphIsomorphism implements QuerySimilarity {
 
     /** Computes size of small graph isomorphism and norms it with
      * size of graphs
@@ -37,8 +32,8 @@ public class NormedGraphIsomorphism implements QuerySimilarity {
         GraphIsomorphism gi = new GraphIsomorphism(g1, g2);
         gi.calculate();
         if (gi.getGraphIsomorphism() == 1) {
-            return 0.5 + 0.5 * directionalSimilarity(q1, q2, gi.getCliqueList());
-        } 
+            return 0.5 + 0.5 * typeAwareDirectionalSimilarity(q1, q2, gi.getCliqueList());
+        }
 //        return gi.getSimilarity();
 
         SubgraphIsomorphism si = new SubgraphIsomorphism(g1, g2);
@@ -50,7 +45,7 @@ public class NormedGraphIsomorphism implements QuerySimilarity {
         }
     }
 
-    private double directionalSimilarity(Query q1, Query q2, TreeSet<String> cliqueList) {
+    private double typeAwareDirectionalSimilarity(Query q1, Query q2, TreeSet<String> cliqueList) {
         SimpleGraphAccessor g1 = q1.getGraphRepresentation();
         SimpleGraphAccessor g2 = q2.getGraphRepresentation();
 
@@ -115,7 +110,11 @@ public class NormedGraphIsomorphism implements QuerySimilarity {
                 TreeSet<String> succ2 = successors2.get(node2);
                 for (String succ1 : successors1.get(node1)) {
                     if (succ2.contains(nodeMapping.get(succ1))) {
-                        count++;
+                        //System.out.println(node1+" -> "+node2);
+                        if ((node1.equals("rdf:type") && node2.equals("rdf:type"))
+                                || (!node2.equals("rdf:type") && !node1.equals("rdf:type"))) {
+                            count++;
+                        }
                     }
                 }
             }

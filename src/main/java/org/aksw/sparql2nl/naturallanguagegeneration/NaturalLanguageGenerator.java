@@ -12,6 +12,7 @@ import org.dllearner.algorithm.tbsl.sparql.Slot;
 import org.dllearner.algorithm.tbsl.sparql.Template;
 import org.dllearner.algorithm.tbsl.templator.Templator;
 
+import simpack.measure.graph.GraphIsomorphism;
 import simpack.measure.graph.SubgraphIsomorphism;
 
 import com.hp.hpl.jena.query.ResultSet;
@@ -64,11 +65,13 @@ public class NaturalLanguageGenerator {
 		Query query1 = this.query;
 		Query query2 = new Query(this.template.getQuery().toString());
 		
-		SubgraphIsomorphism si = new SubgraphIsomorphism(query1.getGraphRepresentation(), query2.getGraphRepresentation());
+		GraphIsomorphism si = new GraphIsomorphism(query1.getGraphRepresentation(), query2.getGraphRepresentation());
 		si.calculate();
 		
 		// two queries are isomorph
 		if ( Similarity.getSimilarity(query1, query2, SimilarityMeasure.GRAPH_ISOMORPHY) > 0 ) {
+			
+			System.out.println(si.getCliqueList());
 			
 			for (String pairs : new ArrayList<String>(si.getCliqueList()).get(0).split(",")) {
 				
@@ -97,7 +100,7 @@ public class NaturalLanguageGenerator {
 			// we only want to query for resources not variables like ?x
 			if (!variable.startsWith("?") && !variable.startsWith("$")) {
 				
-				this.labels.put(variable, this.createDBpediaForLabel(variable));
+				this.labels.put(variable, this.queryDBpediaForLabel(variable));
 			}
 		}
 	}
@@ -108,8 +111,10 @@ public class NaturalLanguageGenerator {
 	 * @param variable
 	 * @return
 	 */
-	private String createDBpediaForLabel(String variable) {
+	private String queryDBpediaForLabel(String variable) {
 
+		System.out.println(variable);
+		
 		String query = "SELECT ?label { " + variable + " rdfs:label ?label . Filter(lang(?label) = 'en') } ";
 		QueryEngineHTTP qexec = new QueryEngineHTTP("http://dbpedia.org/sparql/", query);
 		qexec.addDefaultGraph("http://dbpedia.org");
