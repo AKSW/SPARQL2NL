@@ -233,7 +233,7 @@ public class Query {
 //"}\n";
         String query = "SELECT ?x WHERE {?x ?a ?b. ?x ?c ?d}"; 
 
-        String query2 = "SELECT ?a WHERE {?x ?a ?b. ?x ?c ?d}"; 
+        String query2 = "SELECT ?x WHERE {?x ?a ?b. ?x rdf:type ?d}"; 
         Query q1 = new Query(query);
         Query q2 = new Query(query2);
         //Query q2 = new Query(query2);
@@ -246,5 +246,6 @@ public class Query {
         System.out.println("\n---\n" + getStringRepresentation(q1.getGraphRepresentation()));
         System.out.println("\n---\n" + getStringRepresentation(q2.getGraphRepresentation()));
         System.out.println(Similarity.getSimilarity(q1, q2, SimilarityMeasure.GRAPH_ISOMORPHY));
+        System.out.println(Similarity.getSimilarity(q1, q2, SimilarityMeasure.TYPE_AWARE_ISOMORPHY));
     }
 }
