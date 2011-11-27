@@ -92,6 +92,10 @@ public class SPARQL2NL {
 	}
 	
 	public Set<String> getNaturalLanguageRepresentations(String sparqlQuery){
+		return getNaturalLanguageRepresentations(sparqlQuery, -1);
+	}
+	
+	public Set<String> getNaturalLanguageRepresentations(String sparqlQuery, int limit){
 		Set<String> nl = new HashSet<String>();
 		
 		Query q1 = new Query(sparqlQuery);
@@ -105,8 +109,12 @@ public class SPARQL2NL {
 			template2simMap.put(t, sim);
 		}
 		
+		List<Entry<Template, Double>> sortedEntries = sortByValuesThanKeys(template2simMap);
+		if(limit > 0){
+			sortedEntries = sortedEntries.subList(0, Math.min(sortedEntries.size(), limit));
+		}
 		NaturalLanguageGenerator nlGen;
-		for(Entry<Template, Double> entry : sortByValuesThanKeys(template2simMap).subList(0, 5)){
+		for(Entry<Template, Double> entry : sortedEntries){
 			nlGen = new NaturalLanguageGenerator(q1, entry.getKey(), corpus.get(entry.getKey()));
 //			System.out.println(q1.getOriginalQuery());
 			System.out.println(entry.getKey().getQuery());

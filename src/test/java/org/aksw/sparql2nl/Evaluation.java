@@ -7,6 +7,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,6 +17,8 @@ import java.util.Set;
 
 import org.aksw.sparql2nl.queryprocessing.Query;
 import org.aksw.sparql2nl.queryprocessing.Similarity.SimilarityMeasure;
+import org.apache.commons.codec.StringEncoder;
+import org.apache.commons.lang3.StringEscapeUtils;
 
 import com.hp.hpl.jena.query.QueryFactory;
 
@@ -23,6 +27,7 @@ import edu.stanford.nlp.io.EncodingPrintWriter.out;
 public class Evaluation {
 	
 	private static final String QUERIES_FILE = "resources/queries.txt";
+	private static final int NR_OF_REPRESENTATIONS = 10;
 	
 	private List<String> readQueries() {
 		List<String> queries = new ArrayList<String>();
@@ -104,9 +109,14 @@ public class Evaluation {
 				"<type>B</type>" +
 				"<title>q1</title>" +
 				"<question>" +
-				"<pre class=\"query\">");
-		sb.append(sparqlQuery);
-		sb.append("</pre>" +
+				"<![CDATA[<pre class=\"query\">");
+		sb.append(StringEscapeUtils.escapeHtml4(sparqlQuery));
+		/*try {
+			sb.append(URLEncoder.encode(sparqlQuery, "UTF-8"));
+		} catch (UnsupportedEncodingException e1) {
+			e1.printStackTrace();
+		}*/
+		sb.append("</pre>]]>" +
 				"</question>" +
 				"<preg></preg>" +
 				"<help></help>" +
@@ -118,6 +128,7 @@ public class Evaluation {
 				"<same_default>0</same_default>" +
 				"</row>" +
 				"</rows>" +
+				"</questions>" +
 				"<subquestions>" +
 				"<fields>" +
 				"<fieldname>qid</fieldname>" +
@@ -151,7 +162,7 @@ public class Evaluation {
 					"<help></help>" +
 					"<other>N</other>" +
 					"<mandatory></mandatory>" +
-					"<question_order>1</question_order>" +
+					"<question_order>" + qid + "</question_order>" +
 					"<language>en</language>" +
 					"<scale_id>0</scale_id>" +
 					"<same_default>0</same_default>" +
@@ -233,8 +244,8 @@ public class Evaluation {
 		nlGen.setMeasure(SimilarityMeasure.GRAPH_ISOMORPHY);
 		for(String query : queries){
 			System.out.println(query);
-			Set<String> nlRepresentations = nlGen.getNaturalLanguageRepresentations(query);
-			createLSQFile(query, Collections.singletonList(nlRepresentations.iterator().next()));
+			Set<String> nlRepresentations = nlGen.getNaturalLanguageRepresentations(query, NR_OF_REPRESENTATIONS);
+			createLSQFile(query, new ArrayList<String>(nlRepresentations));
 			
 			break;
 		}
