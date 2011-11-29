@@ -52,6 +52,7 @@ public class NaturalLanguageGenerator {
 		for ( Slot slot : this.template.getSlots() ) {
 			
 			String uri = templateToQueryVariables.get("?" + slot.getAnchor());
+			if(uri == null) continue;
 			if ( !uri.startsWith("?") ) {
 				
 				String words = StringUtils.join(slot.getWords(), " ");

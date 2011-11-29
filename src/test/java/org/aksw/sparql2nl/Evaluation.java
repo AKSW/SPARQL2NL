@@ -298,9 +298,9 @@ public class Evaluation {
 	public void run(){
 		List<String> queries = readSPARQLQueriesFromXML(new File(QUERIES_FILE));
 		SPARQL2NL nlGen = new SPARQL2NL();
-		nlGen.setMeasure(SimilarityMeasure.GRAPH_ISOMORPHY);
+		nlGen.setMeasure(SimilarityMeasure.TYPE_AWARE_ISOMORPHY);
 		for(String query : queries){
-			System.out.println(query);
+			logger.info("Evaluating query\n" + query);
 			Set<String> nlRepresentations = nlGen.getNaturalLanguageRepresentations(query, NR_OF_REPRESENTATIONS);
 			createLSQFile(query, new ArrayList<String>(nlRepresentations));
 			
