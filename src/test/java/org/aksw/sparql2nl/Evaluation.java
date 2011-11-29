@@ -134,7 +134,7 @@ public class Evaluation {
 		}
 	}
 	
-	private void createLSQFile(String sparqlQuery, List<String> nlRepresentations){
+	private void createLSQFile(int qId, String sparqlQuery, List<String> nlRepresentations){
 		StringBuilder sb = new StringBuilder();
 		sb.append("<document>" +
 				"<LimeSurveyDocType>Question</LimeSurveyDocType>" +
@@ -280,7 +280,7 @@ public class Evaluation {
 		
 		BufferedWriter out = null;
 		try {
-			out = new BufferedWriter(new FileWriter("query.lsq"));
+			out = new BufferedWriter(new FileWriter("query" + qId + ".lsq"));
 			out.write(sb.toString());
 			out.close();
 		} catch (IOException e) {
@@ -296,15 +296,16 @@ public class Evaluation {
 	}
 	
 	public void run(){
-		List<String> queries = readSPARQLQueriesFromXML(new File(QUERIES_FILE));
+		readSPARQLQueriesFromXML(new File(QUERIES_FILE));
 		SPARQL2NL nlGen = new SPARQL2NL();
 		nlGen.setMeasure(SimilarityMeasure.TYPE_AWARE_ISOMORPHY);
-		for(String query : queries){
+		for(Entry<Integer, String> entry : id2Query.entrySet()){
+			String query = entry.getValue();
 			logger.info("Evaluating query\n" + query);
 			Set<String> nlRepresentations = nlGen.getNaturalLanguageRepresentations(query, NR_OF_REPRESENTATIONS);
-			createLSQFile(query, new ArrayList<String>(nlRepresentations));
+			createLSQFile(entry.getKey(), query, new ArrayList<String>(nlRepresentations));
 			
-			break;
+//			if(entry.getKey() == 10)break;
 		}
 	}
 
