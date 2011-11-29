@@ -38,6 +38,10 @@ public class SPARQL2NL {
 		corpus = readCorpus();
 	}
 	
+	public void setMeasure(SimilarityMeasure measure) {
+		this.measure = measure;
+	}
+	
 	private Hashtable<Template, String> readCorpus(){
 		try {
 			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(TEMPLATES_FILE)));
@@ -71,7 +75,27 @@ public class SPARQL2NL {
         return entries;
 	}
 	
+	private <K extends Comparable<K>, V extends Comparable<V>> List<Entry<K, V>> sortByValuesThanKeys(Map<K, V> map){
+		List<Entry<K, V>> entries = new ArrayList<Entry<K, V>>(map.entrySet());
+        Collections.sort(entries, new Comparator<Entry<K, V>>() {
+
+			@Override
+			public int compare(Entry<K, V> o1, Entry<K, V> o2) {
+				int value = o2.getValue().compareTo(o1.getValue());
+				if(value == 0){
+					value = o2.getKey().compareTo(o1.getKey());
+				}
+				return value;
+			}
+		});
+        return entries;
+	}
+	
 	public Set<String> getNaturalLanguageRepresentations(String sparqlQuery){
+		return getNaturalLanguageRepresentations(sparqlQuery, -1);
+	}
+	
+	public Set<String> getNaturalLanguageRepresentations(String sparqlQuery, int limit){
 		Set<String> nl = new HashSet<String>();
 		
 		Query q1 = new Query(sparqlQuery);
@@ -85,10 +109,14 @@ public class SPARQL2NL {
 			template2simMap.put(t, sim);
 		}
 		
+		List<Entry<Template, Double>> sortedEntries = sortByValuesThanKeys(template2simMap);
+		if(limit > 0){
+			sortedEntries = sortedEntries.subList(0, Math.min(sortedEntries.size(), limit));
+		}
 		NaturalLanguageGenerator nlGen;
-		for(Entry<Template, Double> entry : sortByValues(template2simMap).subList(0, 5)){
+		for(Entry<Template, Double> entry : sortedEntries){
 			nlGen = new NaturalLanguageGenerator(q1, entry.getKey(), corpus.get(entry.getKey()));
-			System.out.println(q1.getOriginalQuery());
+//			System.out.println(q1.getOriginalQuery());
 			System.out.println(entry.getKey().getQuery());
 			System.out.println(corpus.get(entry.getKey()));
 			nl.add(nlGen.generateNaturalLanguageFromSparqlQuery());
@@ -102,7 +130,7 @@ public class SPARQL2NL {
 	 */
 	public static void main(String[] args) {
 		System.out.println(new SPARQL2NL().getNaturalLanguageRepresentations(
-				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> SELECT ?x WHERE { ?x <http://dbpedia.org/ontology/founded> <http://dbpedia.org/resource/Apple_Inc.> . }")
+				"SELECT ?var0 WHERE { ?var0 <http://www.w3.org/2004/02/skos/core#subject> <http://dbpedia.org/resource/Category:Army_Medal_of_Honor_recipients> . }")
 		);
 	}
 
