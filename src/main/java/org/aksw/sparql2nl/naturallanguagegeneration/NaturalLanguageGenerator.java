@@ -104,7 +104,7 @@ public class NaturalLanguageGenerator {
 		for (String variable : this.queryToTemplateVariables.keySet() ) {
 			
 			// we only want to query for resources not variables like ?x
-			if (!variable.startsWith("?") && !variable.startsWith("$")) {
+			if (variable != null && !variable.startsWith("?") && !variable.startsWith("$")) {
 				
 				this.labels.put(variable, this.queryDBpediaForLabel(variable));
 			}
