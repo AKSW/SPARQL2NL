@@ -118,11 +118,11 @@ public class SPARQL2NL {
 	 */
 	public static void main(String[] args) {
 		System.out.println(new SPARQL2NL().getNaturalLanguageRepresentations(
-<<<<<<< HEAD
+//<<<<<<< HEAD
 				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> SELECT ?x WHERE { ?x <http://dbpedia.org/ontology/foundedBy> <http://dbpedia.org/resource/Apple_Inc.> . }")
-=======
-				"SELECT ?var0 WHERE { ?var0 <http://www.w3.org/2004/02/skos/core#subject> <http://dbpedia.org/resource/Category:Army_Medal_of_Honor_recipients> . }")
->>>>>>> 51eb50c2a468191bdf5c788156a53ce754bfc754
+//=======
+//				"SELECT ?var0 WHERE { ?var0 <http://www.w3.org/2004/02/skos/core#subject> <http://dbpedia.org/resource/Category:Army_Medal_of_Honor_recipients> . }")
+//>>>>>>> 51eb50c2a468191bdf5c788156a53ce754bfc754
 		);
 	}
 
