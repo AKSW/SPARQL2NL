@@ -119,7 +119,7 @@ WHERE
 }
 </query>
 </question>
-<question id="31">
+<!-- question id="31">
 <string>
 Who produced the most films?
 </string>
@@ -137,7 +137,7 @@ GROUP BY ?uri
 ORDER BY DESC(?cnt) 
 LIMIT 1
 </query>
-</question>
+</question-->
 <question id="8">
 <string>
 Which people have as their given name Jimmy?
@@ -233,7 +233,7 @@ WHERE
 
 
 </question>
-<question id="44">
+<!-- question id="44">
 <string>
 Which software has been developed by organizations founded in California?
 </string>
@@ -253,7 +253,7 @@ WHERE
 </query>
 
 
-</question>
+</question-->
 <question id="7">
 <string>
 Which companies work in the aerospace industry as well as on nuclear reactor technology?
@@ -275,7 +275,7 @@ WHERE
 
 
 </question>
-<question id="32">
+<!-- question id="32">
 <string>
 Is Christian Bale starring in Batman Begins?
 </string>
@@ -292,7 +292,7 @@ WHERE
 </query>
 
 
-</question>
+</question-->
 <question id="50">
 <string>
 Give me the websites of companies with more than 500000 employees.
@@ -683,7 +683,7 @@ WHERE
 
 
 </question>
-<question id="45">
+<!-- question id="45">
 <string>
 Which country has the most official languages?
 </string>
@@ -703,7 +703,7 @@ LIMIT 1
 </query>
 
 
-</question>
+</question-->
 <question id="17">
 <string>
 In which programming language is GIMP written?
@@ -817,7 +817,7 @@ WHERE
 
 
 </question>
-<question id="30">
+<!-- question id="30">
 <string>
 How many films did Leonardo DiCaprio star in?
 </string>
@@ -830,10 +830,10 @@ SELECT COUNT(?film)
 WHERE 
 {
         ?film rdf:type onto:Film .
-        ?film onto:starring res:Leonardo_Di_Caprio .
+        ?film onto:starring res:Leonardo_DiCaprio .
 }
 </query>
-</question>
+</question-->
 <question id="16">
 <string>
 Give me all soccer clubs in the Premier League.
@@ -904,7 +904,7 @@ ORDER BY DESC(?elevation) LIMIT 1
 
 
 </question>
-<question id="47">
+<!-- question id="47">
 <string>
 Is Natalie Portman an actress?
 </string>
@@ -921,5 +921,5 @@ WHERE
 </query>
 
 
-</question>
+</question-->
 </dataset>

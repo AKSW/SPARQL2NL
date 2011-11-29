@@ -303,6 +303,7 @@ public class Evaluation {
 			String query = entry.getValue();
 			logger.info("Evaluating query\n" + query);
 			Set<String> nlRepresentations = nlGen.getNaturalLanguageRepresentations(query, NR_OF_REPRESENTATIONS);
+			logger.info(nlRepresentations);
 			createLSQFile(entry.getKey(), query, new ArrayList<String>(nlRepresentations));
 			
 //			if(entry.getKey() == 10)break;

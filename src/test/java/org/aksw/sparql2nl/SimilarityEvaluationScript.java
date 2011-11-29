@@ -177,7 +177,7 @@ public class SimilarityEvaluationScript {
 		List<Entry<K, V>> entries = new ArrayList<Entry<K, V>>(map.entrySet());
         Collections.sort(entries, new Comparator<Entry<K, V>>() {
 
-			@Override
+//			@Override
 			public int compare(Entry<K, V> o1, Entry<K, V> o2) {
 				return o2.getValue().compareTo(o1.getValue());
 			}

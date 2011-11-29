@@ -75,7 +75,7 @@ public class SPARQL2NL {
 		List<Entry<K, V>> entries = new ArrayList<Entry<K, V>>(map.entrySet());
         Collections.sort(entries, new Comparator<Entry<K, V>>() {
 
-			@Override
+//			@Override
 			public int compare(Entry<K, V> o1, Entry<K, V> o2) {
 				return o2.getValue().compareTo(o1.getValue());
 			}
@@ -87,7 +87,7 @@ public class SPARQL2NL {
 		List<Entry<K, V>> entries = new ArrayList<Entry<K, V>>(map.entrySet());
         Collections.sort(entries, new Comparator<Entry<K, V>>() {
 
-			@Override
+//			@Override
 			public int compare(Entry<K, V> o1, Entry<K, V> o2) {
 				int value = o2.getValue().compareTo(o1.getValue());
 				if(value == 0){
@@ -125,8 +125,8 @@ public class SPARQL2NL {
 		for(Entry<Template, Double> entry : sortedEntries){
 			nlGen = new NaturalLanguageGenerator(q1, entry.getKey(), corpus.get(entry.getKey()));
 //			System.out.println(q1.getOriginalQuery());
-			System.out.println(entry.getKey().getQuery());
-			System.out.println(corpus.get(entry.getKey()));
+//			System.out.println(entry.getKey().getQuery());
+//			System.out.println(corpus.get(entry.getKey()));
 			nl.add(nlGen.generateNaturalLanguageFromSparqlQuery());
 		}
 		

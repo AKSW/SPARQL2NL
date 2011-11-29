@@ -44,10 +44,10 @@ public class NaturalLanguageGenerator {
 		this.createVariableMappings();
 		this.populateLabels();
 		
-		System.out.println("QueryToVariables: " + queryToTemplateVariables);
-		System.out.println("Labels: " + labels);
-		System.out.println("Question: " + question);
-		System.out.println("Template: " + template);
+//		System.out.println("QueryToVariables: " + queryToTemplateVariables);
+//		System.out.println("Labels: " + labels);
+//		System.out.println("Question: " + question);
+//		System.out.println("Template: " + template);
 		
 		for ( Slot slot : this.template.getSlots() ) {
 			
@@ -58,9 +58,9 @@ public class NaturalLanguageGenerator {
 				String words = StringUtils.join(slot.getWords(), " ");
 				String replacement = this.labels.get(uri);
 				
-				System.out.println("URI: " + uri);
-				System.out.println("Slot-Words: " + words);
-				System.out.println("Replacement: " + replacement);
+//				System.out.println("URI: " + uri);
+//				System.out.println("Slot-Words: " + words);
+//				System.out.println("Replacement: " + replacement);
 				
 				this.question = this.question.replace(words, !replacement.equals("N/A") ? replacement : words + "_" + replacement);
 			}
@@ -80,15 +80,23 @@ public class NaturalLanguageGenerator {
 		// two queries are isomorph
 		if ( Similarity.getSimilarity(query1, query2, SimilarityMeasure.GRAPH_ISOMORPHY) > 0 ) {
 			
-			for (String pairs : new ArrayList<String>(si.getCliqueList()).get(0).split(",")) {
+			if ( !si.getCliqueList().isEmpty() ) {
 				
-				String[] part = pairs.split(":");
+//				System.out.println(Similarity.getSimilarity(query1, query2, SimilarityMeasure.GRAPH_ISOMORPHY));
+//				System.out.println(query1.getOriginalQuery());
+//				System.out.println(query2.getOriginalQuery());
+//				System.out.println("QL: " + si.getCliqueList());
 				
-				String query1Variable = part[0].trim();
-				String query2Variable = part[1].trim();
-				
-				templateToQueryVariables.put(query2.getVar2NonVar().get(query2Variable), query1.getVar2NonVar().get(query1Variable));
-				queryToTemplateVariables.put(query1.getVar2NonVar().get(query1Variable), query2.getVar2NonVar().get(query2Variable));
+				for (String pairs : new ArrayList<String>(si.getCliqueList()).get(0).split(",")) {
+					
+					String[] part = pairs.split(":");
+					
+					String query1Variable = part[0].trim();
+					String query2Variable = part[1].trim();
+					
+					templateToQueryVariables.put(query2.getVar2NonVar().get(query2Variable), query1.getVar2NonVar().get(query1Variable));
+					queryToTemplateVariables.put(query1.getVar2NonVar().get(query1Variable), query2.getVar2NonVar().get(query2Variable));
+				}
 			}
 		}
 		else {
@@ -104,10 +112,16 @@ public class NaturalLanguageGenerator {
 
 		for (String variable : this.queryToTemplateVariables.keySet() ) {
 			
-			// we only want to query for resources not variables like ?x
-			if (!variable.startsWith("?") && !variable.startsWith("$")) {
+			if ( variable != null ) {
 				
-				this.labels.put(variable, this.queryDBpediaForLabel(variable));
+				// we only want to query for resources not variables like ?x
+				if (!variable.startsWith("?") && !variable.startsWith("$")) {
+					
+					this.labels.put(variable, this.queryDBpediaForLabel(variable));
+				}
+			}
+			else { 
+				System.out.println("Variable null");
 			}
 		}
 	}
