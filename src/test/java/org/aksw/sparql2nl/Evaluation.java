@@ -7,27 +7,40 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.aksw.sparql2nl.queryprocessing.Query;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.aksw.sparql2nl.queryprocessing.Similarity.SimilarityMeasure;
-import org.apache.commons.codec.StringEncoder;
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.log4j.Logger;
+import org.w3c.dom.DOMException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 import com.hp.hpl.jena.query.QueryFactory;
-
-import edu.stanford.nlp.io.EncodingPrintWriter.out;
+import com.hp.hpl.jena.query.Syntax;
 
 public class Evaluation {
 	
-	private static final String QUERIES_FILE = "resources/queries.txt";
+	private static final Logger logger = Logger.getLogger(Evaluation.class);
+	
+//	private static final String QUERIES_FILE = "resources/queries.txt";
+	private static final String QUERIES_FILE = "resources/GoodQALD.xml";
 	private static final int NR_OF_REPRESENTATIONS = 10;
+	
+	
+	private SortedMap<Integer, String> id2Question = new TreeMap<Integer, String>();
+	private SortedMap<Integer, String> id2Query = new TreeMap<Integer, String>();
 	
 	private List<String> readQueries() {
 		List<String> queries = new ArrayList<String>();
@@ -68,6 +81,50 @@ public class Evaluation {
 			}
 		}
 
+		return queries;
+	}
+	
+	private List<String> readSPARQLQueriesFromXML(File file){
+		logger.info("Reading file containing queries and answers...");
+		try {
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			DocumentBuilder db = dbf.newDocumentBuilder();
+			Document doc = db.parse(file);
+			doc.getDocumentElement().normalize();
+			NodeList questionNodes = doc.getElementsByTagName("question");
+			int id;
+			String question;
+			String query;
+			Set<String> answers;
+			
+			for(int i = 0; i < questionNodes.getLength(); i++){
+				Element questionNode = (Element) questionNodes.item(i);
+				//read question ID
+				id = Integer.valueOf(questionNode.getAttribute("id"));
+				//Read question
+				question = ((Element)questionNode.getElementsByTagName("string").item(0)).getChildNodes().item(0).getNodeValue().trim();
+				//Read SPARQL query
+				query = ((Element)questionNode.getElementsByTagName("query").item(0)).getChildNodes().item(0).getNodeValue().trim();
+				
+				id2Question.put(id, question);
+				id2Query.put(id, query);
+				
+			}
+		} catch (DOMException e) {
+			e.printStackTrace();
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		} catch (SAXException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		List<String> queries = new ArrayList<String>();
+		for(Entry<Integer, String> entry : id2Query.entrySet()){
+			QueryFactory.create(entry.getValue(), Syntax.syntaxARQ);
+			queries.add(entry.getValue());
+		}
+		logger.info("Done.");
 		return queries;
 	}
 	
@@ -239,7 +296,7 @@ public class Evaluation {
 	}
 	
 	public void run(){
-		List<String> queries = readQueries();
+		List<String> queries = readSPARQLQueriesFromXML(new File(QUERIES_FILE));
 		SPARQL2NL nlGen = new SPARQL2NL();
 		nlGen.setMeasure(SimilarityMeasure.GRAPH_ISOMORPHY);
 		for(String query : queries){
