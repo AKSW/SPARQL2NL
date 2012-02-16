@@ -1,0 +1,925 @@
+﻿<?xml version="1.0" ?>
+<dataset id="dbpedia-train">
+<question id="23">
+<string>
+Give me all school types.
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX yago: &lt;http://dbpedia.org/class/yago/&gt;
+SELECT DISTINCT ?uri
+WHERE
+{ 
+        ?uri rdf:type yago:SchoolTypes .
+}
+</query>
+</question>
+<question id="11">
+<string>
+Which presidents were born in 1945?
+</string>
+<!-- SPARQL 1.1 has “year” instead of using the ugly regex, but probably not supported by triple stores yet: http://www.w3.org/TR/sparql11-query/#func-year -->
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX yago: &lt;http://dbpedia.org/class/yago/&gt;
+SELECT DISTINCT ?uri
+WHERE 
+{
+                ?uri rdf:type onto:President .
+                ?uri onto:birthDate ?date .
+                FILTER regex(?date,'^1945') .
+}
+</query>
+</question>
+<question id="1">
+<string>
+Who are the presidents of the United States?
+</string>
+<!-- there is no ontology replacement for prop:title -->
+<query>
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX yago: &lt;http://dbpedia.org/class/yago/&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX prop: &lt;http://dbpedia.org/property/&gt;
+SELECT DISTINCT ?uri
+WHERE 
+{
+          ?uri rdf:type onto:President.
+          ?uri prop:title res:President_of_the_United_States.
+}
+</query>
+</question>
+<question id="10">
+<string>
+Who was the wife of President Lincoln?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+SELECT ?uri
+WHERE 
+{
+        ?person rdf:type onto:President .
+        ?person foaf:surname 'Lincoln'@en .
+        ?person onto:spouse ?uri.
+}
+</query>
+</question>
+<question id="9">
+<string>
+Who developed the video game World of Warcraft?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+SELECT ?uri
+WHERE 
+{
+        res:World_of_Warcraft onto:developer ?uri . 
+}
+</query>
+</question>
+<question id="29">
+<string>
+What is the official website of Tom Hanks?
+</string>
+<query>
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+SELECT ?uri
+WHERE
+{ 
+        res:Tom_Hanks foaf:homepage ?uri
+}
+</query>
+</question>
+<question id="37">
+<string>
+List all episodes of the first season of the HBO television series The Sopranos!
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+SELECT ?uri 
+WHERE
+{
+        ?uri onto:series res:The_Sopranos  .
+        ?uri onto:seasonNumber 1 .
+}
+</query>
+</question>
+<!-- question id="31">
+<string>
+Who produced the most films?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+SELECT ?uri (COUNT(?film) AS ?cnt)
+WHERE 
+{
+	?film rdf:type onto:Film .
+        ?film onto:producer ?uri .
+} 
+GROUP BY ?uri
+ORDER BY DESC(?cnt) 
+LIMIT 1
+</query>
+</question-->
+<question id="8">
+<string>
+Which people have as their given name Jimmy?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+SELECT DISTINCT ?uri ?string
+WHERE 
+{
+        ?uri rdf:type foaf:Person.       
+        ?uri foaf:givenName 'Jimmy'@en   .
+}
+</query>
+</question>
+<question id="43">
+<string>
+Is there a video game called Battle Chess?
+</string>
+<query>
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+ASK
+WHERE 
+{
+        ?software rdf:type onto:Software .
+        ?software rdfs:label ?name .
+        FILTER (regex(?name, 'Battle Chess'))
+}
+</query>
+</question>
+<question id="40">
+<string>
+Which mountains are higher than the Nanga Parbat?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX prop: &lt;http://dbpedia.org/property/&gt;
+SELECT ?uri ?string
+WHERE 
+{
+        ?uri rdf:type onto:Mountain .
+        ?acon rdfs:label 'Nanga Parbat'@en .
+        ?acon prop:elevationM ?elevation .
+        ?uri prop:elevationM ?allelevation .
+        FILTER (?allelevation &gt; ?elevation) .
+        OPTIONAL {?uri rdfs:label ?string . FILTER (lang(?string) = 'en') }
+}
+</query>
+
+
+</question>
+<question id="27">
+<string>
+Who created English Wikipedia?
+</string>
+<query>
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+SELECT ?uri ?string
+WHERE 
+{
+        ?website rdf:type onto:Website .
+        ?website onto:author ?uri .
+        ?website rdfs:label 'English Wikipedia'@en .
+        OPTIONAL {?uri rdfs:label ?string . FILTER (lang(?string) = 'en') }
+}
+</query>
+
+
+</question>
+<question id="35">
+<string>
+Give me all actors starring in Batman Begins.
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+SELECT ?actor
+WHERE 
+{
+        res:Batman_Begins onto:starring ?actor .
+}
+</query>
+
+
+</question>
+<!-- question id="44">
+<string>
+Which software has been developed by organizations founded in California?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+SELECT ?uri
+WHERE
+{ 
+        ?company rdf:type onto:Organisation  .
+                ?company onto:foundationPlace res:California .
+                ?uri onto:developer ?company .
+                ?uri rdf:type onto:Software .
+}
+</query>
+
+
+</question-->
+<question id="7">
+<string>
+Which companies work in the aerospace industry as well as on nuclear reactor technology?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto:  &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res:  &lt;http://dbpedia.org/resource/&gt;
+PREFIX prop: &lt;http://dbpedia.org/property/&gt;
+SELECT ?uri
+WHERE
+{ 
+        ?uri  rdf:type onto:Company  .
+        ?uri prop:industry res:Aerospace .
+            ?uri prop:industry res:Nuclear_reactor_technology .
+}
+</query>
+
+
+</question>
+<!-- question id="32">
+<string>
+Is Christian Bale starring in Batman Begins?
+</string>
+<query>
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+ASK
+WHERE 
+{
+        res:Batman_Begins onto:starring res:Christian_Bale
+}
+</query>
+
+
+</question-->
+<question id="50">
+<string>
+Give me the websites of companies with more than 500000 employees.
+</string>
+<query>
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX prop: &lt;http://dbpedia.org/property/&gt;
+PREFIX xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+SELECT DISTINCT ?uri 
+WHERE 
+{
+        ?subject rdf:type onto:Company .
+        ?subject prop:numEmployees ?employees .
+        FILTER( xsd:integer(?employees) &gt;= 500000 ) .
+        ?subject foaf:homepage ?uri .
+}
+</query>
+</question>
+<question id="6">
+<string>
+Which actors were born in Germany?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res:  &lt;http://dbpedia.org/resource/&gt;
+PREFIX yago: &lt;http://dbpedia.org/class/yago/&gt;
+SELECT DISTINCT ?uri 
+WHERE
+{
+  ?uri rdf:type onto:Actor .
+  ?uri onto:birthPlace res:Germany .
+ }
+</query>
+
+
+</question>
+<question id="20">
+<string>
+Which country does the Airedale Terrier come from?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX prop: &lt;http://dbpedia.org/property/&gt;
+PREFIX res:  &lt;http://dbpedia.org/resource/&gt;
+SELECT ?country
+WHERE 
+{
+        res:Airedale_Terrier prop:country ?country      
+}
+</query>
+</question>
+<question id="22">
+<string>
+Which birds are there in the United States?
+</string>
+<query>
+PREFIX yago: &lt;http://dbpedia.org/class/yago/&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+SELECT DISTINCT ?uri 
+WHERE 
+{
+        ?uri rdf:type yago:BirdsOfTheUnitedStates.
+}
+</query>
+
+
+</question>
+<question id="46">
+<string>
+Give me all European Capitals!
+</string>
+<query>
+PREFIX yago: &lt;http://dbpedia.org/class/yago/&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+SELECT ?uri 
+WHERE 
+{ 
+        ?uri rdf:type yago:CapitalsInEurope.
+}
+</query>
+
+
+</question>
+<question id="13">
+<string>
+Which cities have more than 2 million inhabitants?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX prop: &lt;http://dbpedia.org/property/&gt;
+PREFIX xsd: &lt;http://www.w3.org/2001/XMLSchema#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+SELECT DISTINCT ?uri 
+WHERE 
+{ 
+        ?uri rdf:type onto:City.
+              ?uri prop:population ?population.
+                FILTER (xsd:integer(?population) &gt; 2000000) .
+}
+</query>
+
+
+</question>
+<question id="4">
+<string>
+Who was Tom Hanks married to?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX prop: &lt;http://dbpedia.org/property/&gt;
+PREFIX res:  &lt;http://dbpedia.org/resource/&gt;
+SELECT DISTINCT ?spouse
+WHERE 
+{
+      res:Tom_Hanks prop:spouse ?spouse .
+}
+</query>
+</question>
+<question id="26">
+<string>
+When was DBpedia released?
+</string>
+<query>
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX res:  &lt;http://dbpedia.org/resource/&gt;
+SELECT ?date
+WHERE 
+{
+        res:DBpedia onto:releaseDate ?date .
+}
+</query>
+</question>
+<question id="5">
+<string>
+Which people were born in Heraklion?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX yago: &lt;http://dbpedia.org/class/yago/&gt;
+PREFIX res:  &lt;http://dbpedia.org/resource/&gt;
+SELECT DISTINCT ?uri
+WHERE 
+{
+      ?uri rdf:type onto:Person .
+      ?uri onto:birthPlace res:Heraklion .
+}
+</query>
+
+
+</question>
+<question id="12">
+<string>
+Which caves have more than 3 entrances?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+SELECT ?uri ?string
+WHERE
+{ 
+        ?uri  rdf:type onto:Cave  .
+        ?uri onto:numberOfEntrances ?entrance .
+        FILTER (?entrance &gt; 3) .
+}
+</query>
+
+
+</question>
+<question id="34">
+<string>
+Give me all films produced by Hal Roach.
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+SELECT DISTINCT ?uri 
+WHERE 
+{
+        ?uri rdf:type onto:Film .
+        ?uri onto:producer res:Hal_Roach 
+}
+</query>
+
+
+</question>
+<question id="42">
+<string>
+Which software has been published by Mean Hamster Software?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX prop: &lt;http://dbpedia.org/property/&gt;
+PREFIX res:  &lt;http://dbpedia.org/resource/&gt;
+SELECT DISTINCT ?uri 
+WHERE 
+{
+        ?uri rdf:type onto:Software .
+              ?uri onto:publisher res:Mean_Hamster_Software . 
+}
+</query>
+
+
+</question>
+<question id="18">
+<string>
+What languages are spoken in Estonia?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+SELECT DISTINCT ?uri 
+WHERE 
+{ 
+?uri onto:spokenIn res:Estonia . 
+}
+</query>
+
+
+</question>
+<question id="14">
+<string>
+Who owns Aldi?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+SELECT ?uri 
+WHERE 
+{
+        res:Aldi onto:keyPerson ?uri .
+}
+</query>
+
+
+</question>
+<question id="15">
+<string>
+Which capitals in Europe were host cities of the Summer Olympic Games?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX yago: &lt;http://dbpedia.org/class/yago/&gt;
+SELECT ?uri ?string
+WHERE 
+{
+        ?uri rdf:type yago:CapitalsInEurope .
+        ?uri rdf:type yago:HostCitiesOfTheSummerOlympicGames .
+        OPTIONAL {?uri rdfs:label ?string . FILTER (lang(?string) = 'en') } 
+}
+</query>
+
+
+</question>
+<question id="2">
+<string>
+Who has been the 5th president of the United States of America?
+</string>
+<query>
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+SELECT ?uri WHERE 
+{
+        ?uri rdf:type onto:President .
+        ?uri onto:orderInOffice '5th President of the United States'@en .
+ }
+</query>
+
+
+</question>
+<question id="19">
+<string>
+Who is called Dana?
+</string>
+<query>
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+PREFIX prop: &lt;http://dbpedia.org/property/&gt;
+SELECT DISTINCT ?uri ?string
+WHERE 
+{
+      ?uri rdf:type foaf:Person.        
+      ?uri foaf:givenName 'Dana'@en. }
+</query>
+
+
+</question>
+<question id="33">
+<string>
+Which music albums contain the song Last Christmas?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+SELECT DISTINCT ?uri ?string
+WHERE 
+{
+        ?single rdf:type onto:Single .
+        ?single onto:album ?uri .
+        ?single foaf:name 'Last Christmas'@en .
+        OPTIONAL {?uri rdfs:label ?string . FILTER (lang(?string) = 'en') }
+}
+</query>
+
+
+</question>
+<question id="38">
+<string>
+Which books were written by Danielle Steel?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+SELECT ?uri 
+WHERE 
+{
+        ?uri rdf:type onto:Book .
+                ?uri onto:author res:Danielle_Steel .
+ }
+</query>
+
+
+</question>
+<question id="28">
+<string>
+Which companies are located in California, USA?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+SELECT DISTINCT ?uri WHERE
+{ 
+        ?uri rdf:type onto:Organisation .
+        ?uri onto:location res:California .
+}
+</query>
+
+
+</question>
+<question id="25">
+<string>
+Which genre does DBpedia belong to?
+</string>
+<query>
+PREFIX prop: &lt;http://dbpedia.org/property/&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+SELECT ?uri ?string
+WHERE 
+{
+        ?dbpedia rdf:type onto:Software .
+        ?dbpedia onto:genre ?uri .
+        ?dbpedia rdfs:label 'DBpedia'@en .
+        OPTIONAL {?uri rdfs:label ?string . FILTER (lang(?string) = 'en') } 
+}
+</query>
+
+
+</question>
+<!-- question id="45">
+<string>
+Which country has the most official languages?
+</string>
+<query>
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+SELECT ?uri (COUNT(?language) AS ?cnt)
+WHERE
+{ 
+	?uri  rdf:type onto:Country  .
+	?uri onto:language ?language .             
+} 
+GROUP BY ?uri 
+ORDER BY DESC(?cnt)
+LIMIT 1
+</query>
+
+
+</question-->
+<question id="17">
+<string>
+In which programming language is GIMP written?
+</string>
+<query>
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+SELECT ?uri
+WHERE 
+{ 
+  res:GIMP onto:programmingLanguage ?uri .
+}
+</query>
+</question>
+<question id="48">
+<string>
+Who produced films starring Natalie Portman?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+SELECT DISTINCT ?uri
+WHERE 
+{
+        ?film rdf:type onto:Film .
+        ?film onto:starring res:Natalie_Portman .
+        ?film onto:producer ?uri .
+}
+</query>
+
+
+</question>
+<question id="36">
+<string>
+Give me all movies with Tom Cruise!
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX prop: &lt;http://dbpedia.org/property/&gt;
+SELECT DISTINCT ?uri 
+WHERE 
+{
+        ?uri rdf:type onto:Film.
+        ?uri onto:starring res:Tom_Cruise .
+}
+</query>
+</question>
+<question id="49">
+<string>
+In which films did Julia Roberts as well as Richard Gere play?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+SELECT ?uri ?string
+WHERE 
+{
+?uri rdf:type onto:Film .
+                ?uri onto:starring res:Julia_Roberts .
+                ?uri onto:starring res:Richard_Gere.
+}
+</query>
+
+
+</question>
+<question id="3">
+<string>
+Give me all female German chancellors!
+</string>
+<query>
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX yago: &lt;http://dbpedia.org/class/yago/&gt;
+PREFIX prop: &lt;http://dbpedia.org/property/&gt;
+SELECT ?uri ?string
+WHERE 
+{
+        ?uri rdf:type yago:FemaleHeadsOfGovernment.
+        ?uri prop:office ?office .
+        FILTER regex(?office, 'Chancellor of Germany').        
+        OPTIONAL {?uri rdfs:label ?string . FILTER (lang(?string) = 'en') }
+}
+</query>
+
+
+</question>
+<question id="39">
+<string>
+Who wrote the book The pillars of the Earth?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+SELECT ?uri
+WHERE 
+{
+        res:The_Pillars_of_the_Earth onto:author ?uri .
+}
+</query>
+
+
+</question>
+<!-- question id="30">
+<string>
+How many films did Leonardo DiCaprio star in?
+</string>
+<query>
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+SELECT COUNT(?film)
+WHERE 
+{
+        ?film rdf:type onto:Film .
+        ?film onto:starring res:Leonardo_DiCaprio .
+}
+</query>
+</question-->
+<question id="16">
+<string>
+Give me all soccer clubs in the Premier League.
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+SELECT DISTINCT ?uri
+WHERE
+{ 
+   ?uri onto:league res:Premier_League . 
+}
+</query>
+
+
+</question>
+<question id="41">
+<string>
+When was Capcom founded?
+</string>
+<query>
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+PREFIX prop: &lt;http://dbpedia.org/property/&gt;
+SELECT ?date
+WHERE 
+{
+     res:Capcom prop:foundation ?date .
+}
+</query>
+</question>
+<question id="24">
+<string>
+Which organizations were founded in 1950?
+</string>
+<query>
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX prop: &lt;http://dbpedia.org/property/&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+SELECT DISTINCT ?uri
+WHERE 
+{
+        ?uri rdf:type onto:Organisation .
+        ?uri prop:foundation ?date .
+        FILTER regex(?date,'^1950') .
+}
+</query>
+
+
+</question>
+<question id="21">
+<string>
+What is the highest mountain?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+SELECT ?uri 
+WHERE
+{ 
+?uri  rdf:type onto:Mountain  .
+               ?uri onto:elevation ?elevation .
+} 
+ORDER BY DESC(?elevation) LIMIT 1
+</query>
+
+
+</question>
+<!-- question id="47">
+<string>
+Is Natalie Portman an actress?
+</string>
+<query>
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX res: &lt;http://dbpedia.org/resource/&gt;
+PREFIX onto: &lt;http://dbpedia.org/ontology/&gt;
+ASK
+WHERE 
+{ 
+        res:Natalie_Portman rdf:type onto:Actor.
+}
+</query>
+
+
+</question-->
+</dataset>

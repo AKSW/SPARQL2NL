@@ -1,5 +1,6 @@
 package org.aksw.sparql2nl;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,6 +23,7 @@ import org.aksw.sparql2nl.naturallanguagegeneration.NaturalLanguageGenerator;
 import org.aksw.sparql2nl.queryprocessing.Query;
 import org.aksw.sparql2nl.queryprocessing.Similarity;
 import org.aksw.sparql2nl.queryprocessing.Similarity.SimilarityMeasure;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.dllearner.algorithm.tbsl.sparql.Template;
 
 import com.hp.hpl.jena.query.QueryFactory;
@@ -63,6 +65,12 @@ public class SPARQL2NL {
 		}
 	}
 	
+	private String expandPrefixes(String queryString){
+		com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString);
+		expandPrefixes(query);
+		return query.toString();
+	}
+	
 	private <K, V extends Comparable<V>> List<Entry<K, V>> sortByValues(Map<K, V> map){
 		List<Entry<K, V>> entries = new ArrayList<Entry<K, V>>(map.entrySet());
         Collections.sort(entries, new Comparator<Entry<K, V>>() {
@@ -79,7 +87,7 @@ public class SPARQL2NL {
 		List<Entry<K, V>> entries = new ArrayList<Entry<K, V>>(map.entrySet());
         Collections.sort(entries, new Comparator<Entry<K, V>>() {
 
-			@Override
+//			@Override
 			public int compare(Entry<K, V> o1, Entry<K, V> o2) {
 				int value = o2.getValue().compareTo(o1.getValue());
 				if(value == 0){
@@ -98,7 +106,7 @@ public class SPARQL2NL {
 	public Set<String> getNaturalLanguageRepresentations(String sparqlQuery, int limit){
 		Set<String> nl = new HashSet<String>();
 		
-		Query q1 = new Query(sparqlQuery);
+		Query q1 = new Query(expandPrefixes(sparqlQuery));
 		
 		Map<Template, Double> template2simMap = new HashMap<Template, Double>();
 		for(Template t : corpus.keySet()){
@@ -117,8 +125,8 @@ public class SPARQL2NL {
 		for(Entry<Template, Double> entry : sortedEntries){
 			nlGen = new NaturalLanguageGenerator(q1, entry.getKey(), corpus.get(entry.getKey()));
 //			System.out.println(q1.getOriginalQuery());
-			System.out.println(entry.getKey().getQuery());
-			System.out.println(corpus.get(entry.getKey()));
+//			System.out.println(entry.getKey().getQuery());
+//			System.out.println(corpus.get(entry.getKey()));
 			nl.add(nlGen.generateNaturalLanguageFromSparqlQuery());
 		}
 		
@@ -128,10 +136,21 @@ public class SPARQL2NL {
 	/**
 	 * @param args 
 	 */
-	public static void main(String[] args) {
-		System.out.println(new SPARQL2NL().getNaturalLanguageRepresentations(
-				"SELECT ?var0 WHERE { ?var0 <http://www.w3.org/2004/02/skos/core#subject> <http://dbpedia.org/resource/Category:Army_Medal_of_Honor_recipients> . }")
-		);
+	public static void main(String[] args) throws Exception{
+		String filePath = "resources/single_test.txt";
+	byte[] buffer = new byte[(int) new File(filePath).length()];
+    BufferedInputStream f = null;
+    try {
+        f = new BufferedInputStream(new FileInputStream(filePath));
+        f.read(buffer);
+    } finally {
+        if (f != null) try { f.close(); } catch (IOException ignored) { }
+    }
+    String queryString = new String(buffer);
+    queryString = StringEscapeUtils.unescapeHtml4(queryString);
+    System.out.println(queryString);
+    
+		System.out.println(new SPARQL2NL().getNaturalLanguageRepresentations(queryString));
 	}
 
 }
