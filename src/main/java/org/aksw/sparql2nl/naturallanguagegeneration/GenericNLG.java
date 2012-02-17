@@ -138,6 +138,29 @@ public class GenericNLG {
         //throw new UnsupportedOperationException("Not yet implemented");
     }
 
+    /** Processes a list of elements. These can be elements of the where clause or 
+     * of an optional clause
+     * @param e List of query elements
+     * @return Conjunctive natural representation of the list of elements.
+     */    
+    public NLGElement getNLFromElements(List<Element> e) {
+
+        if (e.isEmpty()) {
+            return null;
+        }
+        if (e.size() == 1) {
+            return getNLFromSingleClause(e.get(0));
+        } else {
+            CoordinatedPhraseElement cpe;            
+            cpe = nlgFactory.createCoordinatedPhrase(getNLFromSingleClause(e.get(0)), getNLFromSingleClause(e.get(1)));
+            for (int i = 2; i < e.size(); i++) {                
+                cpe.addCoordinate(getNLFromSingleClause(e.get(i)));                
+            }            
+            cpe.setConjunction("and");
+            return cpe;
+        }
+    }
+
     public NLGElement getNLFromSingleClause(Element e) {
         // if clause is union clause then we generate or statements
         if (e.getClass() == ElementUnion.class) {
@@ -145,30 +168,29 @@ public class GenericNLG {
             //cast to union
             ElementUnion union = (ElementUnion) e;
             List<Triple> triples = new ArrayList<Triple>();
-            
+
             //get all triples. We assume that the depth of union is always 1
             for (Element atom : union.getElements()) {
-                    Triple t = ((ElementPathBlock) (((ElementGroup) atom).getElements().get(0))).getPattern().get(0).asTriple();
-                    triples.add(t);
-                }
+                Triple t = ((ElementPathBlock) (((ElementGroup) atom).getElements().get(0))).getPattern().get(0).asTriple();
+                triples.add(t);
+            }
             //if empty
             if (triples.isEmpty()) {
                 return null;
             }
-            if (triples.size() == 1) {                
-                    return getNLForTriple(triples.get(0));                
+            if (triples.size() == 1) {
+                return getNLForTriple(triples.get(0));
             } else {
                 Triple t0 = triples.get(0);
                 Triple t1 = triples.get(1);
                 cpe = nlgFactory.createCoordinatedPhrase(getNLForTriple(t0), getNLForTriple(t1));
-                for (int i = 2; i < triples.size(); i++) {                    
+                for (int i = 2; i < triples.size(); i++) {
                     cpe.addComplement(getNLForTriple(triples.get(i)));
                 }
                 cpe.setConjunction("or");
                 return cpe;
-            }            
-        }                 
-                //case no union, i.e., just a path block
+            }
+        } //case no union, i.e., just a path block
         else if (e.getClass() == ElementPathBlock.class) {
             Triple t = ((ElementPathBlock) e).getPattern().get(0).asTriple();
             return getNLForTriple(t);
@@ -177,7 +199,7 @@ public class GenericNLG {
             SPhraseSpec p = nlgFactory.createClause();
             ElementFilter filter = (ElementFilter) e;
             Expr expr = filter.getExpr();
-            
+
             //process REGEX
             if (expr.getClass().equals(E_Regex.class)) {
                 E_Regex expression;
@@ -190,9 +212,9 @@ public class GenericNLG {
                 p.setVerb("match");
                 p.setObject(pattern);
             }
-            
+
             //process >
-            
+
             //process <
             return p;
         }
