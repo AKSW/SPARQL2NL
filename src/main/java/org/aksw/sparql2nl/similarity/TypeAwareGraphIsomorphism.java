@@ -107,12 +107,13 @@ public class TypeAwareGraphIsomorphism implements QuerySimilarity {
         try {
             for (String node1 : nodeMapping.keySet()) {
                 String node2 = nodeMapping.get(node1);
-                TreeSet<String> succ2 = successors2.get(node2);
-                for (String succ1 : successors1.get(node1)) {
-                    if (succ2.contains(nodeMapping.get(succ1))) {
-                        //System.out.println(node1+" -> "+node2);
-                        if ((node1.equals("rdf:type") && node2.equals("rdf:type"))
-                                || (!node2.equals("rdf:type") && !node1.equals("rdf:type"))) {
+                //check for the source of the edge and make sure they are of the same 
+                //type
+                if ((node1.equals("rdf:type") && node2.equals("rdf:type"))
+                        || (!node2.equals("rdf:type") && !node1.equals("rdf:type"))) {
+                    TreeSet<String> succ2 = successors2.get(node2);
+                    for (String succ1 : successors1.get(node1)) {
+                        if (succ2.contains(nodeMapping.get(succ1))) {
                             count++;
                         }
                     }

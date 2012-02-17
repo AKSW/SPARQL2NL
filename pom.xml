@@ -53,6 +53,13 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
+            <groupId>simplenlp</groupId>
+            <artifactId>simplenlg</artifactId>
+            <version>4.3</version>
+            <type>jar</type>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
         	<groupId>org.apache.commons</groupId>
         	<artifactId>commons-lang3</artifactId>
         	<version>3.1</version>
