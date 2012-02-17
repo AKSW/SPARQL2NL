@@ -117,7 +117,8 @@ public class SPARQL2NL {
 			template2simMap.put(t, sim);
 		}
 		
-		List<Entry<Template, Double>> sortedEntries = sortByValuesThanKeys(template2simMap);
+		//List<Entry<Template, Double>> sortedEntries = sortByValuesThanKeys(template2simMap);
+                List<Entry<Template, Double>> sortedEntries = new ArrayList<Entry<Template, Double>>();
 		if(limit > 0){
 			sortedEntries = sortedEntries.subList(0, Math.min(sortedEntries.size(), limit));
 		}

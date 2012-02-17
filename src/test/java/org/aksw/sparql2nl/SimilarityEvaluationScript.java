@@ -87,7 +87,7 @@ public class SimilarityEvaluationScript {
 				}
 			}
 			latex.endDocument();
-			String doc = latex.loadPraeambel();
+			String doc = "";//latex.loadPraeambel();
 			doc += "\\subtitle{" + measure.toString().replace("_", "\\_") + "}\n";
 			doc += latex.toString();
 			try {
