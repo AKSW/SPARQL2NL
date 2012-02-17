@@ -7,6 +7,13 @@ package org.aksw.sparql2nl.naturallanguagegeneration;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.graph.query.Query;
+import com.hp.hpl.jena.sparql.expr.E_Regex;
+import com.hp.hpl.jena.sparql.expr.Expr;
+import com.hp.hpl.jena.sparql.syntax.Element;
+import com.hp.hpl.jena.sparql.syntax.ElementFilter;
+import com.hp.hpl.jena.sparql.syntax.ElementGroup;
+import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
+import com.hp.hpl.jena.sparql.syntax.ElementUnion;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import simplenlg.features.Feature;
+import simplenlg.features.Tense;
 import simplenlg.framework.*;
 import simplenlg.lexicon.*;
 import simplenlg.phrasespec.NPPhraseSpec;
@@ -52,7 +60,7 @@ public class GenericNLG {
         //first create the beginning of the NLR
         SPhraseSpec p = nlgFactory.createClause();
         p.setSubject("This query");
-        p.setVerb("return");
+        p.setVerb("retrieve");
         List<NPPhraseSpec> objects = new ArrayList<NPPhraseSpec>();
 
         //process the type information to create the object(s)    
@@ -113,10 +121,10 @@ public class GenericNLG {
         if (t.getObject().isVariable()) {
             p.setObject(t.getObject().toString());
         } else {
-            p.setObject(getNPPhrase(t.getSubject().toString(), false));
+            p.setObject(getNPPhrase(t.getObject().toString(), false));
         }
 
-        p.setFeature(Feature.TENSE, Feature.PERFECT);
+        p.setFeature(Feature.TENSE, Tense.PRESENT);
         return p;
     }
 
@@ -126,10 +134,83 @@ public class GenericNLG {
      * @return predicate as String
      */
     private String getVerbFrom(Node predicate) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return "test";
+        //throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    public static void main(String args[]) {
+    public NLGElement getNLFromSingleClause(Element e) {
+        // if clause is union clause then we generate or statements
+        if (e.getClass() == ElementUnion.class) {
+            CoordinatedPhraseElement cpe;
+            //cast to union
+            ElementUnion union = (ElementUnion) e;
+            List<Triple> triples = new ArrayList<Triple>();
+            
+            //get all triples. We assume that the depth of union is always 1
+            for (Element atom : union.getElements()) {
+                    Triple t = ((ElementPathBlock) (((ElementGroup) atom).getElements().get(0))).getPattern().get(0).asTriple();
+                    triples.add(t);
+                }
+            //if empty
+            if (triples.isEmpty()) {
+                return null;
+            }
+            if (triples.size() == 1) {                
+                    return getNLForTriple(triples.get(0));                
+            } else {
+                Triple t0 = triples.get(0);
+                Triple t1 = triples.get(1);
+                cpe = nlgFactory.createCoordinatedPhrase(getNLForTriple(t0), getNLForTriple(t1));
+                for (int i = 2; i < triples.size(); i++) {                    
+                    cpe.addComplement(getNLForTriple(triples.get(i)));
+                }
+                cpe.setConjunction("or");
+                return cpe;
+            }            
+        }                 
+                //case no union, i.e., just a path block
+        else if (e.getClass() == ElementPathBlock.class) {
+            Triple t = ((ElementPathBlock) e).getPattern().get(0).asTriple();
+            return getNLForTriple(t);
+        } // if it's a filter
+        else if (e.getClass() == ElementFilter.class) {
+            SPhraseSpec p = nlgFactory.createClause();
+            ElementFilter filter = (ElementFilter) e;
+            Expr expr = filter.getExpr();
+            
+            //process REGEX
+            if (expr.getClass().equals(E_Regex.class)) {
+                E_Regex expression;
+                expression = (E_Regex) expr;
+                String text = expression.toString();
+                text = text.substring(6, text.length() - 1);
+                String var = text.substring(0, text.indexOf(","));
+                String pattern = text.substring(text.indexOf(",") + 1);
+                p.setSubject(var);
+                p.setVerb("match");
+                p.setObject(pattern);
+            }
+            
+            //process >
+            
+            //process <
+            return p;
+        }
+        return null;
+    }
+
+    public static void tenseTest() {
+        GenericNLG gnlg = new GenericNLG();
+        SPhraseSpec p = gnlg.nlgFactory.createClause();
+        p.setSubject("This query");
+        p.setVerb("was born in");
+        p.setObject("Cameroon");
+        //p.setFeature(Feature.TENSE, Feature.PERFECT);
+        p.setFeature(Feature.TENSE, Tense.PAST);
+        System.out.println(gnlg.realiser.realiseSentence(p));
+    }
+
+    public static void test() {
         Map<String, Set<String>> typeMap = new HashMap<String, Set<String>>();
         String s = "x";
         HashSet type = new HashSet();
