@@ -19,6 +19,7 @@ import com.hp.hpl.jena.sparql.syntax.Element;
 import com.hp.hpl.jena.sparql.syntax.ElementGroup;
 import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
 import com.hp.hpl.jena.sparql.syntax.ElementTriplesBlock;
+import com.hp.hpl.jena.sparql.syntax.ElementUnion;
 import com.hp.hpl.jena.sparql.syntax.ElementVisitorBase;
 import com.hp.hpl.jena.vocabulary.RDF;
 
@@ -33,6 +34,9 @@ public class TypeExtractor extends ElementVisitorBase {
 	private DomainExtractor domainExtractor;
 	private RangeExtractor rangeExtractor;
 	
+	private boolean inferTypes = false;
+	
+
 	public Map<String, Set<String>> extractTypes(Query query) {
 		projectionVars = query.getProjectVars();
 		
@@ -49,11 +53,26 @@ public class TypeExtractor extends ElementVisitorBase {
 	public void setRangeExtractor(RangeExtractor rangeExtractor) {
 		this.rangeExtractor = rangeExtractor;
 	}
+	
+	public void setInferTypes(boolean inferTypes) {
+		this.inferTypes = inferTypes;
+	}
 
 	@Override
 	public void visit(ElementGroup el) {
-		for (Element e : el.getElements()) {
+		ElementPathBlock bgp = null;
+		for (Iterator<Element> iterator = el.getElements().iterator(); iterator.hasNext();) {
+			Element e = iterator.next();
 			e.visit(this);
+			if(e instanceof ElementUnion){
+				if(((ElementUnion) e).getElements().size() == 1){
+					bgp = (ElementPathBlock) ((ElementGroup)((ElementUnion) e).getElements().get(0)).getElements().get(0);
+					iterator.remove();
+				}
+			}
+		}
+		if(bgp != null){
+			el.addElement(bgp);
 		}
 	}
 
@@ -76,6 +95,18 @@ public class TypeExtractor extends ElementVisitorBase {
 					iter.remove();
 				}
 			}
+		}
+	}
+	
+	@Override
+	public void visit(ElementUnion el) {
+		for (Iterator<Element> iterator = el.getElements().iterator(); iterator.hasNext();) {
+			Element e = iterator.next();
+			e.visit(this);
+			if(((ElementPathBlock)((ElementGroup)e).getElements().get(0)).isEmpty()){
+				iterator.remove();
+			}
+			
 		}
 	}
 	
@@ -102,7 +133,7 @@ public class TypeExtractor extends ElementVisitorBase {
 					
 				}
 			}
-		} else if(triple.getPredicate().isURI()){//process triples where predicate is not rdf:type, i.e. use rdfs:domain and rdfs:range for inferencing the type
+		} else if(inferTypes && triple.getPredicate().isURI()){//process triples where predicate is not rdf:type, i.e. use rdfs:domain and rdfs:range for inferencing the type
 			Node predicate = triple.getPredicate();
 			for(Var projectVar : projectionVars){
 				if(subject.isVariable() && projectVar.equals(Var.alloc(subject.getName()))){
@@ -139,14 +170,16 @@ public class TypeExtractor extends ElementVisitorBase {
 				.create("PREFIX dbo:<http://dbpedia.org/ontology/> "
 						+ "PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#> "
 						+ "SELECT ?s ?o1 WHERE {" 
-						+ "?s ?p ?o. "
+						+ "{?s ?p ?o. "
 						+ "?s1 ?p ?o1. " 
 						+ "?s a dbo:Book."
 						+ "?s a ?y. ?y rdfs:subClassOf dbo:Film."
 						+ "?o1 a dbo:Bridge." 
 						+ "?o1 a dbo:Musican."
 						+ "?s dbo:birthPlace ?o2."
-						+ "?o a dbo:City.}");
+						+ "?o a dbo:City.}" +
+						"UNION{?s a dbo:Table.}" +
+						"}");
 		
 		TypeExtractor extr = new TypeExtractor();
 		

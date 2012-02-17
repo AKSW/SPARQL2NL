@@ -53,7 +53,7 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>simplenlp</groupId>
+            <groupId>simplenlg</groupId>
             <artifactId>simplenlg</artifactId>
             <version>4.3</version>
             <type>jar</type>
