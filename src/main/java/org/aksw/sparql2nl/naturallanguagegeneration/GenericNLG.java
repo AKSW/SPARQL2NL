@@ -32,7 +32,7 @@ import simplenlg.realiser.english.*;
  *
  * @author ngonga
  */
-public class GenericNLG {
+public class GenericNLG implements Sparql2NLConverter {
 
     Lexicon lexicon;
     NLGFactory nlgFactory;
@@ -247,4 +247,13 @@ public class GenericNLG {
         typeMap.put(s, type);
         (new GenericNLG()).generateNL(typeMap, null);
     }
+
+    public String getNLR(com.hp.hpl.jena.query.Query query) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public DocumentElement convert2NLE(com.hp.hpl.jena.query.Query query) {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
 }
