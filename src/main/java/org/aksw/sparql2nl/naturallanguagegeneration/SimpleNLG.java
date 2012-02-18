@@ -4,9 +4,14 @@
  */
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
+import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.sparql.expr.E_Regex;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.syntax.Element;
@@ -22,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import org.aksw.sparql2nl.queryprocessing.TypeExtractor;
 import simplenlg.features.Feature;
+import simplenlg.features.Tense;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.DocumentElement;
 import simplenlg.framework.NLGElement;
@@ -35,7 +41,14 @@ import simplenlg.realiser.english.Realiser;
  *
  * @author ngonga
  */
-public class SimpleNLG extends GenericNLG {
+public class SimpleNLG implements Sparql2NLConverter {
+
+    Lexicon lexicon;
+    NLGFactory nlgFactory;
+    Realiser realiser;
+    public static final String OWLTHING = "owl#thing";
+    public static String ENDPOINT = "http://live.dbpedia.org/sparql";
+    public static String GRAPH = null;
 
     public SimpleNLG() {
         lexicon = Lexicon.getDefaultLexicon();
@@ -101,22 +114,30 @@ public class SimpleNLG extends GenericNLG {
         //we could create a lexicon from which we could read these
         head.setSubject("This query");
         head.setVerb("retrieve");
-        head.setObject(processTypes(typeMap));
-        //now generate body
-        body = getNLFromElements(getWhereElements(query));
-        //now add conjunction
-        CoordinatedPhraseElement phrase1 = nlgFactory.createCoordinatedPhrase(head, body);
-        phrase1.setConjunction("such that");
-        // add as first sentence
-        sentences.add(nlgFactory.createSentence(phrase1));
-        //this concludes the first sentence. 
+        head.setObject(processTypes(typeMap, query.isDistinct(), query.isDistinct()));
+        Element e;
 
+        //now generate body
+        List<Element> whereElements = getWhereElements(query);
+        if (!whereElements.isEmpty()) {
+            body = getNLFromElements(whereElements);
+            //now add conjunction
+            CoordinatedPhraseElement phrase1 = nlgFactory.createCoordinatedPhrase(head, body);
+            phrase1.setConjunction("such that");
+            // add as first sentence
+            sentences.add(nlgFactory.createSentence(phrase1));
+            //this concludes the first sentence. 
+        } else {
+            sentences.add(nlgFactory.createSentence(head));
+        }
         // The second sentence deals with the optional clause (if it exists)
+
+
         List<Element> optionalElements = getOptionalElements(query);
-        if (optionalElements != null) {
+        if (optionalElements != null && !optionalElements.isEmpty()) {
             NLGElement optional = getNLFromElements(optionalElements);
             optional.setFeature(Feature.CUE_PHRASE, "Optionally,");
-            sentences.add(nlgFactory.createSentence(optional));            
+            sentences.add(nlgFactory.createSentence(optional));
         }
 
         //The last sentence deals with the result modifiers
@@ -157,7 +178,63 @@ public class SimpleNLG extends GenericNLG {
         return new ArrayList<Element>();
     }
 
-    private NLGElement processTypes(Map<String, Set<String>> typeMap) {
+    /** Takes a DBPedia class and returns the correct label for it
+     * 
+     * @param className Name of a class
+     * @return Label
+     */
+    public NPPhraseSpec getNPPhrase(String className, boolean plural) {
+        NPPhraseSpec object;
+        if (!className.toLowerCase().contains(OWLTHING)) {
+            try {
+                String labelQuery = "SELECT ?label WHERE {<" + className + "> "
+                        + "<http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en')}";
+
+                Query sparqlQuery = QueryFactory.create(labelQuery);
+                QueryExecution qexec;
+
+                // take care of graph issues. Only takes one graph. Seems like some sparql endpoint do
+                // not like the FROM option.
+
+                if (GRAPH != null) {
+                    qexec = QueryExecutionFactory.sparqlService(ENDPOINT, sparqlQuery, GRAPH);
+                } //
+                else {
+                    qexec = QueryExecutionFactory.sparqlService(ENDPOINT, sparqlQuery);
+                }
+                ResultSet results = qexec.execSelect();
+
+                //get label from knowledge base
+                String label = null;
+                QuerySolution soln;
+                while (results.hasNext()) {
+                    soln = results.nextSolution();
+                    // process query here
+                    {
+                        label = soln.get("label").toString();
+                    }
+                }
+                if (label != null) {
+                    if (label.contains("@")) {
+                        label = label.substring(0, label.indexOf("@"));
+                    }
+                    object = nlgFactory.createNounPhrase(label);
+                } else {
+                    object = nlgFactory.createNounPhrase("entity");
+                }
+                object.setPlural(plural);
+                return object;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        // if something goes wrong, we return entity
+        object = nlgFactory.createNounPhrase("entity");
+        object.setPlural(plural);
+        return object;
+    }
+
+    private NLGElement processTypes(Map<String, Set<String>> typeMap, boolean count, boolean distinct) {
         List<NPPhraseSpec> objects = new ArrayList<NPPhraseSpec>();
         //process the type information to create the object(s)    
         for (String s : typeMap.keySet()) {
@@ -165,7 +242,12 @@ public class SimpleNLG extends GenericNLG {
             NPPhraseSpec object = nlgFactory.createNounPhrase(s);
             Set<String> types = typeMap.get(s);
             for (String type : types) {
-                object.addPreModifier(getNPPhrase(type, true));
+                NPPhraseSpec np = getNPPhrase(type, true);
+                if(distinct)
+                {
+                    np.addModifier("distinct");                       
+                }
+                object.addPreModifier(np);                
             }
             object.setFeature(Feature.CONJUNCTION, "or");
             objects.add(object);
@@ -204,7 +286,7 @@ public class SimpleNLG extends GenericNLG {
         if (e.size() == 1) {
             return getNLFromSingleClause(e.get(0));
         } else {
-            CoordinatedPhraseElement cpe;            
+            CoordinatedPhraseElement cpe;
             cpe = nlgFactory.createCoordinatedPhrase(getNLFromSingleClause(e.get(0)), getNLFromSingleClause(e.get(1)));
             for (int i = 2; i < e.size(); i++) {
                 cpe.addCoordinate(getNLFromSingleClause(e.get(i)));
@@ -280,23 +362,55 @@ public class SimpleNLG extends GenericNLG {
         return null;
     }
 
+    public SPhraseSpec getNLForTriple(Triple t) {
+        SPhraseSpec p = nlgFactory.createClause();
+        //process subject
+        if (t.getSubject().isVariable()) {
+            p.setSubject(t.getSubject().toString());
+        } else {
+            p.setSubject(getNPPhrase(t.getSubject().toString(), false));
+        }
+
+        //process predicate
+        if (t.getPredicate().isVariable()) {
+            p.setVerb("relate to");
+        } else {
+            p.setVerb(getVerbFrom(t.getPredicate()));
+        }
+
+        //process object
+        if (t.getObject().isVariable()) {
+            p.setObject(t.getObject().toString());
+        } else {
+            p.setObject(getNPPhrase(t.getObject().toString(), false));
+        }
+
+        p.setFeature(Feature.TENSE, Tense.PRESENT);
+        return p;
+    }
+
+    private String getVerbFrom(Node predicate) {
+        return "test";
+        //throw new UnsupportedOperationException("Not yet implemented");
+    }
+
     public static void main(String args[]) {
         String query = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
                 + "PREFIX res: <http://dbpedia.org/resource/> "
-                + "SELECT DISTINCT ?uri ?x "
+                + "SELECT DISTINCT ?uri "
                 + "WHERE { "
                 + "{res:Abraham_Lincoln dbo:deathPlace ?uri} "
                 + "UNION {res:Abraham_Lincoln dbo:birthPlace ?uri} . "
                 + "?uri rdf:type dbo:Place. "
                 + "FILTER regex(?uri, \"France\").  "
-                + "OPTIONAL { ?uri dbo:description ?x }. "
+                //                + "OPTIONAL { ?uri dbo:description ?x }. "
                 + "}";
 
         try {
-            GenericNLG nlg = new GenericNLG();
             SimpleNLG snlg = new SimpleNLG();
             Query sparqlQuery = QueryFactory.create(query);
+            System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
             e.printStackTrace();
