@@ -12,6 +12,8 @@ import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.sparql.expr.E_Equals;
+import com.hp.hpl.jena.sparql.expr.E_LangMatches;
 import com.hp.hpl.jena.sparql.expr.E_Regex;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.syntax.Element;
@@ -47,7 +49,7 @@ public class SimpleNLG implements Sparql2NLConverter {
     NLGFactory nlgFactory;
     Realiser realiser;
     public static final String OWLTHING = "owl#thing";
-    public static String ENDPOINT = "http://live.dbpedia.org/sparql";
+    public static String ENDPOINT = "http://dbpedia.org/sparql";
     public static String GRAPH = null;
 
     public SimpleNLG() {
@@ -243,11 +245,10 @@ public class SimpleNLG implements Sparql2NLConverter {
             Set<String> types = typeMap.get(s);
             for (String type : types) {
                 NPPhraseSpec np = getNPPhrase(type, true);
-                if(distinct)
-                {
-                    np.addModifier("distinct");                       
+                if (distinct) {
+                    np.addModifier("distinct");
                 }
-                object.addPreModifier(np);                
+                object.addPreModifier(np);
             }
             object.setFeature(Feature.CONJUNCTION, "or");
             objects.add(object);
@@ -342,7 +343,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             Expr expr = filter.getExpr();
 
             //process REGEX
-            if (expr.getClass().equals(E_Regex.class)) {
+            if (expr instanceof E_Regex) {
                 E_Regex expression;
                 expression = (E_Regex) expr;
                 String text = expression.toString();
@@ -354,8 +355,27 @@ public class SimpleNLG implements Sparql2NLConverter {
                 p.setObject(pattern);
             }
 
-            //process >
-
+            //process language filter
+            if (expr instanceof E_Equals) {
+                E_Equals expression;
+                expression = (E_Equals) expr;
+                String text = expression.toString();
+                text = text.substring(1, text.length() - 1);
+                String[] split = text.split("=");
+                String arg1 = split[0].trim();
+                String arg2 = split[1].trim();
+                if (arg1.startsWith("lang")) {
+                    String var = arg1.substring(5, arg1.length()-1);
+                    p.setSubject(var);
+                    p.setVerb("be in");
+                    if(arg2.contains("en"))
+                    p.setObject("English");
+                } else {
+                    p.setSubject(arg1);
+                    p.setVerb("equal");
+                    p.setObject(arg2);
+                }
+            }
             //process <
             return p;
         }
@@ -404,12 +424,14 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "UNION {res:Abraham_Lincoln dbo:birthPlace ?uri} . "
                 + "?uri rdf:type dbo:Place. "
                 + "FILTER regex(?uri, \"France\").  "
+                + "FILTER (lang(?uri) = 'en')"
                 //                + "OPTIONAL { ?uri dbo:description ?x }. "
                 + "}";
 
         try {
             SimpleNLG snlg = new SimpleNLG();
             Query sparqlQuery = QueryFactory.create(query);
+            System.out.println(query);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
