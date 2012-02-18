@@ -1,5 +1,6 @@
 package org.aksw.sparql2nl.queryprocessing;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -13,14 +14,17 @@ import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.sparql.core.TriplePath;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.syntax.Element;
 import com.hp.hpl.jena.sparql.syntax.ElementGroup;
+import com.hp.hpl.jena.sparql.syntax.ElementOptional;
 import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
 import com.hp.hpl.jena.sparql.syntax.ElementTriplesBlock;
 import com.hp.hpl.jena.sparql.syntax.ElementUnion;
 import com.hp.hpl.jena.sparql.syntax.ElementVisitorBase;
+import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 
 public class TypeExtractor extends ElementVisitorBase {
@@ -42,6 +46,13 @@ public class TypeExtractor extends ElementVisitorBase {
 		
 		ElementGroup wherePart = (ElementGroup) query.getQueryPattern();
 		wherePart.visit(this);
+		
+		//give all projection vars which have no explicit type the most general type owl:Thing 
+		for(Var var : projectionVars){
+			if(!var2TypesMap.containsKey(var.getName())){
+				var2TypesMap.put(var.getName(), Collections.singleton(OWL.Thing.getURI()));
+			}
+		}
 		
 		return var2TypesMap;
 	}
@@ -67,6 +78,10 @@ public class TypeExtractor extends ElementVisitorBase {
 			if(e instanceof ElementUnion){
 				if(((ElementUnion) e).getElements().size() == 1){
 					bgp = (ElementPathBlock) ((ElementGroup)((ElementUnion) e).getElements().get(0)).getElements().get(0);
+					iterator.remove();
+				}
+			} else if(e instanceof ElementPathBlock){
+				if(((ElementPathBlock) e).getPattern().getList().size() == 0){
 					iterator.remove();
 				}
 			}
@@ -108,6 +123,11 @@ public class TypeExtractor extends ElementVisitorBase {
 			}
 			
 		}
+	}
+	
+	@Override
+	public void visit(ElementOptional el) {
+		
 	}
 	
 	/**
@@ -166,7 +186,7 @@ public class TypeExtractor extends ElementVisitorBase {
 	}
 	
 	public static void main(String[] args) {
-		com.hp.hpl.jena.query.Query q = QueryFactory
+		/*com.hp.hpl.jena.query.Query q = QueryFactory
 				.create("PREFIX dbo:<http://dbpedia.org/ontology/> "
 						+ "PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#> "
 						+ "SELECT ?s ?o1 WHERE {" 
@@ -180,7 +200,19 @@ public class TypeExtractor extends ElementVisitorBase {
 						+ "?o a dbo:City.}" +
 						"UNION{?s a dbo:Table.}" +
 						"}");
-		
+		*/
+		String queryString = "PREFIX  res: <http://dbpedia.org/resource/>" +
+				"PREFIX  dbo: <http://dbpedia.org/ontology/>" +
+				"PREFIX  rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>" +
+				"SELECT DISTINCT  * WHERE{" +
+				"{ res:Abraham_Lincoln dbo:deathPlace ?uri }" +
+				"UNION" +
+				"{ res:Abraham_Lincoln dbo:birthPlace ?uri }" +
+				"?uri rdf:type dbo:Place " +
+				"FILTER(regex(?uri, \"France\")) " +
+				"OPTIONAL{ ?uri dbo:description ?x }  " +
+				"} ";
+		com.hp.hpl.jena.query.Query q = QueryFactory.create(queryString, Syntax.syntaxARQ);
 		TypeExtractor extr = new TypeExtractor();
 		
 		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpediaLiveAKSW();
