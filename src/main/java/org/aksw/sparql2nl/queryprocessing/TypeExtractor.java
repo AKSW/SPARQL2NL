@@ -1,5 +1,7 @@
 package org.aksw.sparql2nl.queryprocessing;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,6 +26,7 @@ import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
 import com.hp.hpl.jena.sparql.syntax.ElementTriplesBlock;
 import com.hp.hpl.jena.sparql.syntax.ElementUnion;
 import com.hp.hpl.jena.sparql.syntax.ElementVisitorBase;
+import com.hp.hpl.jena.sparql.syntax.PatternVars;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 
@@ -33,7 +36,7 @@ public class TypeExtractor extends ElementVisitorBase {
 
 	private List<Var> projectionVars;
 	
-	private Map<String, Set<String>> var2TypesMap = new HashMap<String, Set<String>>();
+	private Map<String, Set<String>> var2TypesMap;
 	
 	private DomainExtractor domainExtractor;
 	private RangeExtractor rangeExtractor;
@@ -42,7 +45,13 @@ public class TypeExtractor extends ElementVisitorBase {
 	
 
 	public Map<String, Set<String>> extractTypes(Query query) {
+		var2TypesMap = new HashMap<String, Set<String>>();
 		projectionVars = query.getProjectVars();
+		
+		//if query is ASK query use all variables
+		if(query.isAskType()){
+			projectionVars = new ArrayList<Var>(PatternVars.vars(query.getQueryPattern()));
+		}
 		
 		ElementGroup wherePart = (ElementGroup) query.getQueryPattern();
 		wherePart.visit(this);
@@ -118,7 +127,7 @@ public class TypeExtractor extends ElementVisitorBase {
 		for (Iterator<Element> iterator = el.getElements().iterator(); iterator.hasNext();) {
 			Element e = iterator.next();
 			e.visit(this);
-			if(((ElementPathBlock)((ElementGroup)e).getElements().get(0)).isEmpty()){
+			if(((ElementGroup)e).getElements().isEmpty() || ((ElementPathBlock)((ElementGroup)e).getElements().get(0)).isEmpty()){
 				iterator.remove();
 			}
 			
@@ -186,22 +195,29 @@ public class TypeExtractor extends ElementVisitorBase {
 	}
 	
 	public static void main(String[] args) {
-		/*com.hp.hpl.jena.query.Query q = QueryFactory
-				.create("PREFIX dbo:<http://dbpedia.org/ontology/> "
-						+ "PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#> "
-						+ "SELECT ?s ?o1 WHERE {" 
-						+ "{?s ?p ?o. "
-						+ "?s1 ?p ?o1. " 
-						+ "?s a dbo:Book."
-						+ "?s a ?y. ?y rdfs:subClassOf dbo:Film."
-						+ "?o1 a dbo:Bridge." 
-						+ "?o1 a dbo:Musican."
-						+ "?s dbo:birthPlace ?o2."
-						+ "?o a dbo:City.}" +
-						"UNION{?s a dbo:Table.}" +
-						"}");
-		*/
-		String queryString = "PREFIX  res: <http://dbpedia.org/resource/>" +
+		TypeExtractor extr = new TypeExtractor();
+		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpediaLiveAKSW();
+		extr.setDomainExtractor(new SPARQLDomainExtractor(endpoint));
+		extr.setRangeExtractor(new SPARQLRangeExtractor(endpoint));
+		
+		String queryString = "PREFIX dbo:<http://dbpedia.org/ontology/> "
+			+ "PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#> "
+			+ "SELECT ?s ?o1 WHERE {" 
+			+ "{?s ?p ?o. "
+			+ "?s1 ?p ?o1. " 
+			+ "?s a dbo:Book."
+			+ "?s a ?y. ?y rdfs:subClassOf dbo:Film."
+			+ "?o1 a dbo:Bridge." 
+			+ "?o1 a dbo:Musican."
+			+ "?s dbo:birthPlace ?o2."
+			+ "?o a dbo:City.}" +
+			"UNION{?s a dbo:Table.}" +
+			"}";
+		com.hp.hpl.jena.query.Query q = QueryFactory.create(queryString);
+		System.out.println(extr.extractTypes(q));
+		System.out.println(q);
+	
+		queryString = "PREFIX  res: <http://dbpedia.org/resource/>" +
 				"PREFIX  dbo: <http://dbpedia.org/ontology/>" +
 				"PREFIX  rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>" +
 				"SELECT DISTINCT  * WHERE{" +
@@ -212,14 +228,26 @@ public class TypeExtractor extends ElementVisitorBase {
 				"FILTER(regex(?uri, \"France\")) " +
 				"OPTIONAL{ ?uri dbo:description ?x }  " +
 				"} ";
-		com.hp.hpl.jena.query.Query q = QueryFactory.create(queryString, Syntax.syntaxARQ);
-		TypeExtractor extr = new TypeExtractor();
-		
-		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpediaLiveAKSW();
-		extr.setDomainExtractor(new SPARQLDomainExtractor(endpoint));
-		extr.setRangeExtractor(new SPARQLRangeExtractor(endpoint));
+		q = QueryFactory.create(queryString);
 		System.out.println(extr.extractTypes(q));
 		System.out.println(q);
+		
+		queryString = "PREFIX  res: <http://dbpedia.org/resource/>" +
+		"PREFIX  dbo: <http://dbpedia.org/ontology/>" +
+		"PREFIX  rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>" +
+		"ASK{" +
+		"{ res:Abraham_Lincoln dbo:deathPlace ?uri }" +
+		"UNION" +
+		"{ res:Abraham_Lincoln dbo:birthPlace ?uri }" +
+		"?uri rdf:type dbo:Place " +
+		"FILTER(regex(?uri, \"France\")) " +
+		"OPTIONAL{ ?uri dbo:description ?x }  " +
+		"} ";
+		q = QueryFactory.create(queryString, Syntax.syntaxARQ);
+		System.out.println(extr.extractTypes(q));
+		System.out.println(q);
+		
+		
 	}
 	
 	
