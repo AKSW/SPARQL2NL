@@ -34,25 +34,9 @@ public class GenericNLGTest {
 
         try {
             GenericNLG nlg = new GenericNLG();
+            SimpleNLG snlg = new SimpleNLG();
             Query sparqlQuery = QueryFactory.create(query);
-            List<Element> l = getWhereElements(sparqlQuery);
-            System.err.println("WHERE ====");
-            for(Element e: l)
-            {                
-                System.err.println(e);
-                //NLGElement text = nlg.getNLFromSingleClause(e);
-                //System.err.println(e +" -> "+nlg.realiser.realise(text));
-            }
-            System.err.println("OPTIONAL ====");
-            l = getOptionalElements(sparqlQuery);
-            for(Element e: l)
-            {                
-                System.err.println(e);
-                //NLGElement text = nlg.getNLFromSingleClause(e);
-                //System.err.println(e +" -> "+nlg.realiser.realise(text));
-            }
-            NLGElement text = nlg.getNLFromElements(l);
-            System.err.println("Overall:"+nlg.realiser.realise(text));
+            System.out.println("Simple NLG: "+snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
             e.printStackTrace();
         }
