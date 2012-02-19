@@ -13,7 +13,6 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
-import com.hp.hpl.jena.sparql.expr.E_LangMatches;
 import com.hp.hpl.jena.sparql.expr.E_Regex;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.syntax.Element;
@@ -27,13 +26,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.aksw.sparql2nl.queryprocessing.TypeExtractor;
 import simplenlg.features.Feature;
 import simplenlg.features.Tense;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.DocumentElement;
+import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
+import simplenlg.framework.PhraseElement;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
@@ -65,7 +67,12 @@ public class SimpleNLG implements Sparql2NLConverter {
      */
     @Override
     public String getNLR(Query query) {
-        return realiser.realiseSentence(convert2NLE(query));
+        String output = realiser.realiseSentence(convert2NLE(query));
+        output = output.replaceAll(Pattern.quote("\n"), "");
+        if (!output.endsWith(".")) {
+            output = output + ".";
+        }
+        return output;
     }
 
     /** Generates a natural language representation for a query
@@ -188,52 +195,63 @@ public class SimpleNLG implements Sparql2NLConverter {
     public NPPhraseSpec getNPPhrase(String className, boolean plural) {
         NPPhraseSpec object;
         if (!className.toLowerCase().contains(OWLTHING)) {
-            try {
-                String labelQuery = "SELECT ?label WHERE {<" + className + "> "
-                        + "<http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en')}";
-
-                Query sparqlQuery = QueryFactory.create(labelQuery);
-                QueryExecution qexec;
-
-                // take care of graph issues. Only takes one graph. Seems like some sparql endpoint do
-                // not like the FROM option.
-
-                if (GRAPH != null) {
-                    qexec = QueryExecutionFactory.sparqlService(ENDPOINT, sparqlQuery, GRAPH);
-                } //
-                else {
-                    qexec = QueryExecutionFactory.sparqlService(ENDPOINT, sparqlQuery);
-                }
-                ResultSet results = qexec.execSelect();
-
-                //get label from knowledge base
-                String label = null;
-                QuerySolution soln;
-                while (results.hasNext()) {
-                    soln = results.nextSolution();
-                    // process query here
-                    {
-                        label = soln.get("label").toString();
-                    }
-                }
-                if (label != null) {
-                    if (label.contains("@")) {
-                        label = label.substring(0, label.indexOf("@"));
-                    }
-                    object = nlgFactory.createNounPhrase(label);
-                } else {
-                    object = nlgFactory.createNounPhrase("entity");
-                }
+            String label = getEnglishLabel(className);
+            if (label != null) {
+                object = nlgFactory.createNounPhrase(label);
                 object.setPlural(plural);
                 return object;
-            } catch (Exception e) {
-                e.printStackTrace();
             }
         }
         // if something goes wrong, we return entity
         object = nlgFactory.createNounPhrase("entity");
         object.setPlural(plural);
         return object;
+    }
+
+    /** Gets the english label of a resource from the specified endpoint and graph
+     * 
+     * @param resource Resource
+     * @return English label, null if none is found
+     */
+    private String getEnglishLabel(String resource) {
+        try {
+            String labelQuery = "SELECT ?label WHERE {<" + resource + "> "
+                    + "<http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en')}";
+
+            Query sparqlQuery = QueryFactory.create(labelQuery);
+            QueryExecution qexec;
+
+            // take care of graph issues. Only takes one graph. Seems like some sparql endpoint do
+            // not like the FROM option.
+
+            if (GRAPH != null) {
+                qexec = QueryExecutionFactory.sparqlService(ENDPOINT, sparqlQuery, GRAPH);
+            } //
+            else {
+                qexec = QueryExecutionFactory.sparqlService(ENDPOINT, sparqlQuery);
+            }
+            ResultSet results = qexec.execSelect();
+
+            //get label from knowledge base
+            String label = null;
+            QuerySolution soln;
+            while (results.hasNext()) {
+                soln = results.nextSolution();
+                // process query here
+                {
+                    label = soln.get("label").toString();
+                }
+            }
+            if (label != null) {
+                if (label.contains("@")) {
+                    label = label.substring(0, label.indexOf("@"));
+                }
+            }
+            return label;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private NLGElement processTypes(Map<String, Set<String>> typeMap, boolean count, boolean distinct) {
@@ -365,11 +383,12 @@ public class SimpleNLG implements Sparql2NLConverter {
                 String arg1 = split[0].trim();
                 String arg2 = split[1].trim();
                 if (arg1.startsWith("lang")) {
-                    String var = arg1.substring(5, arg1.length()-1);
+                    String var = arg1.substring(5, arg1.length() - 1);
                     p.setSubject(var);
                     p.setVerb("be in");
-                    if(arg2.contains("en"))
-                    p.setObject("English");
+                    if (arg2.contains("en")) {
+                        p.setObject("English");
+                    }
                 } else {
                     p.setSubject(arg1);
                     p.setVerb("equal");
@@ -382,7 +401,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         return null;
     }
 
-    public SPhraseSpec getNLForTriple(Triple t) {
+    public SPhraseSpec getNLForTriple2(Triple t) {
         SPhraseSpec p = nlgFactory.createClause();
         //process subject
         if (t.getSubject().isVariable()) {
@@ -393,7 +412,7 @@ public class SimpleNLG implements Sparql2NLConverter {
 
         //process predicate
         if (t.getPredicate().isVariable()) {
-            p.setVerb("relate to");
+            p.setVerb("relate via " + t.getPredicate() + " to");
         } else {
             p.setVerb(getVerbFrom(t.getPredicate()));
         }
@@ -409,6 +428,42 @@ public class SimpleNLG implements Sparql2NLConverter {
         return p;
     }
 
+    public SPhraseSpec getNLForTriple(Triple t) {
+        SPhraseSpec p = nlgFactory.createClause();
+        //process predicate then return subject is related to
+        if (t.getPredicate().isVariable()) {
+            if (t.getSubject().isVariable()) {
+                p.setSubject(t.getSubject().toString());
+            } else {
+                p.setSubject(getNPPhrase(t.getSubject().toString(), false));                
+            }
+            p.setVerb("be relate via \"" + getEnglishLabel(t.getPredicate().toString()) + "\" to");
+            if (t.getObject().isVariable()) {
+                p.setObject(t.getObject().toString());
+            } else {
+                p.setObject(getNPPhrase(t.getObject().toString(), false));
+            }
+        } else {
+            NLGElement subj;
+            if (t.getSubject().isVariable()) {
+                subj = nlgFactory.createWord(t.getSubject().toString(), LexicalCategory.NOUN);
+            } else {
+                subj = nlgFactory.createWord(getEnglishLabel(t.getSubject().toString()), LexicalCategory.NOUN);
+            }
+    //        subj.setFeature(Feature.POSSESSIVE, true);            
+    //        PhraseElement np = nlgFactory.createNounPhrase(subj, getEnglishLabel(t.getPredicate().toString()));
+            p.setSubject(realiser.realise(subj)+"\'s "+getEnglishLabel(t.getPredicate().toString()));
+            p.setVerb("be");
+            if (t.getObject().isVariable()) {
+                p.setObject(t.getObject().toString());
+            } else {
+                p.setObject(getNPPhrase(t.getObject().toString(), false));
+            }
+        }
+        p.setFeature(Feature.TENSE, Tense.PRESENT);
+        return p;
+    }
+
     private String getVerbFrom(Node predicate) {
         return "test";
         //throw new UnsupportedOperationException("Not yet implemented");
@@ -418,14 +473,14 @@ public class SimpleNLG implements Sparql2NLConverter {
         String query = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
                 + "PREFIX res: <http://dbpedia.org/resource/> "
-                + "SELECT DISTINCT ?uri "
+                + "SELECT DISTINCT ?uri ?x "
                 + "WHERE { "
                 + "{res:Abraham_Lincoln dbo:deathPlace ?uri} "
                 + "UNION {res:Abraham_Lincoln dbo:birthPlace ?uri} . "
                 + "?uri rdf:type dbo:Place. "
                 + "FILTER regex(?uri, \"France\").  "
                 + "FILTER (lang(?uri) = 'en')"
-                //                + "OPTIONAL { ?uri dbo:description ?x }. "
+                + "OPTIONAL { ?uri dbo:Name ?x }. "
                 + "}";
 
         try {
