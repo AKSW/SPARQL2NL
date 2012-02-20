@@ -7,8 +7,6 @@ package org.aksw.sparql2nl.naturallanguagegeneration;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryExecution;
-import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
@@ -16,6 +14,7 @@ import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
 import com.hp.hpl.jena.sparql.expr.E_LessThan;
+import com.hp.hpl.jena.sparql.expr.E_NotEquals;
 import com.hp.hpl.jena.sparql.expr.E_Regex;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.syntax.Element;
@@ -396,12 +395,33 @@ public class SimpleNLG implements Sparql2NLConverter {
                     p.setVerb("equal");
                     p.setObject(arg2);
                 }
-            } else if(expr instanceof E_GreaterThan){
-            	
-            }
-            //process >
+            } 
+                    //not equals
+            else if (expr instanceof E_NotEquals) {
+                E_NotEquals expression;
+                expression = (E_NotEquals) expr;
+                String text = expression.toString();
+                text = text.substring(1, text.length() - 1);
+                String[] split = text.split("!=");
+                String arg1 = split[0].trim();
+                String arg2 = split[1].trim();
+                if (arg1.startsWith("lang")) {
+                    String var = arg1.substring(5, arg1.length() - 1);
+                    p.setSubject(var);
+                    p.setVerb("be in");
+                    if (arg2.contains("en")) {
+                        p.setObject("English");
+                    }                    
+                } else {
+                    p.setSubject(arg1);
+                    p.setVerb("equal");                    
+                    p.setObject(arg2);                    
+                }
+                p.setFeature(Feature.NEGATED, true);
+            } 
+                    //process >
             else if (expr instanceof E_GreaterThan) {
-                String text = expr.toString();
+                String text = expr.toString().substring(2, expr.toString().length()-2);
                 String[] split = text.split(">");
                 String arg1 = split[0].trim();
                 String arg2 = split[1].trim();
@@ -412,7 +432,7 @@ public class SimpleNLG implements Sparql2NLConverter {
 
             //process <
             else if (expr instanceof E_LessThan) {
-                String text = expr.toString();
+                String text = expr.toString().substring(2, expr.toString().length()-2);
                 String[] split = text.split("<");
                 String arg1 = split[0].trim();
                 String arg2 = split[1].trim();
@@ -515,11 +535,11 @@ public class SimpleNLG implements Sparql2NLConverter {
         String query3 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
                 + "PREFIX yago: <http://dbpedia.org/class/yago/> "
-                //+ "SELECT COUNT(DISTINCT ?uri) "
-                + "SELECT ?uri "
+                + "SELECT COUNT(DISTINCT ?uri) "
+                //+ "SELECT ?uri "
                 + "WHERE { ?uri rdf:type yago:EuropeanCountries . ?uri dbo:governmentType ?govern . "
                 + "FILTER regex(?govern,'monarchy') . "
-                + "FILTER (?govern < 1000) . "
+                + "FILTER (?govern != 1000) . "
                 + "}";
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
