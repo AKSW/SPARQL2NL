@@ -14,6 +14,7 @@ import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
+import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
 import com.hp.hpl.jena.sparql.expr.E_Regex;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.syntax.Element;
@@ -217,7 +218,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             if (label != null) {
                 object = nlgFactory.createNounPhrase(label);
             } else {
-            	object = nlgFactory.createNounPhrase("entity");
+            	object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
             }
         }
         
@@ -246,12 +247,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                 soln = results.nextSolution();
                 // process query here
                 {
-                    label = soln.get("label").toString();
-                }
-            }
-            if (label != null) {
-                if (label.contains("@")) {
-                    label = label.substring(0, label.indexOf("@"));
+                    label = soln.getLiteral("label").getLexicalForm();
                 }
             }
             return label;
@@ -378,10 +374,10 @@ public class SimpleNLG implements Sparql2NLConverter {
                 p.setSubject(var);
                 p.setVerb("match");
                 p.setObject(pattern);
-            }
+            } else
 
             //process language filter
-            if (expr instanceof E_Equals) {
+            if (expr instanceof E_Equals) {System.out.println(((E_Equals) expr).getArg1());
                 E_Equals expression;
                 expression = (E_Equals) expr;
                 String text = expression.toString();
@@ -401,6 +397,8 @@ public class SimpleNLG implements Sparql2NLConverter {
                     p.setVerb("equal");
                     p.setObject(arg2);
                 }
+            } else if(expr instanceof E_GreaterThan){
+            	
             }
             //process <
             return p;
