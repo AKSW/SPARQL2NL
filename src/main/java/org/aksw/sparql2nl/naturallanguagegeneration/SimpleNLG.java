@@ -28,6 +28,7 @@ import com.hp.hpl.jena.vocabulary.RDFS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -132,15 +133,27 @@ public class SimpleNLG implements Sparql2NLConverter {
         NLGElement body;
         NLGElement postConditions;
 
+        List<Element> whereElements = getWhereElements(query);
+        List<Element> optionalElements = getOptionalElements(query);
+        // first sort out variables
+        Set<String> projectionVars = typeMap.keySet();
+        Set<String> whereVars = getVars(whereElements, projectionVars);
+        Set<String> optionalVars = getVars(optionalElements, projectionVars);
+        //important. Remove variables that have already been declared in first
+        //sentence from second sentence
+        for (String var : whereVars) {
+            if (optionalVars.contains(var)) {
+                optionalVars.remove(var);
+            }
+        }
         //process head
         //we could create a lexicon from which we could read these
         head.setSubject("This query");
         head.setVerb("retrieve");
-        head.setObject(processTypes(typeMap, query.isDistinct(), query.isDistinct()));
+        head.setObject(processTypes(typeMap, whereVars, query.isDistinct(), query.isDistinct()));
         Element e;
 
         //now generate body
-        List<Element> whereElements = getWhereElements(query);
         if (!whereElements.isEmpty()) {
             body = getNLFromElements(whereElements);
             //now add conjunction
@@ -152,14 +165,21 @@ public class SimpleNLG implements Sparql2NLConverter {
         } else {
             sentences.add(nlgFactory.createSentence(head));
         }
+        
         // The second sentence deals with the optional clause (if it exists)
-
-
-        List<Element> optionalElements = getOptionalElements(query);
         if (optionalElements != null && !optionalElements.isEmpty()) {
-            NLGElement optional = getNLFromElements(optionalElements);
-            optional.setFeature(Feature.CUE_PHRASE, "Optionally,");
-            sentences.add(nlgFactory.createSentence(optional));
+            //the optional clause exists
+            //if no supplementary projection variables are used in the clause 
+            if (!optionalVars.isEmpty()) {
+                NLGElement optional = getNLFromElements(optionalElements);
+                optional.setFeature(Feature.CUE_PHRASE, "Optionally,");
+                sentences.add(nlgFactory.createSentence(optional));
+            }
+            //if supplementary projection variables are used in the clause 
+            else
+            {
+                
+            }
         }
 
         //The last sentence deals with the result modifiers
@@ -255,22 +275,24 @@ public class SimpleNLG implements Sparql2NLConverter {
         return null;
     }
 
-    private NLGElement processTypes(Map<String, Set<String>> typeMap, boolean count, boolean distinct) {
+    private NLGElement processTypes(Map<String, Set<String>> typeMap, Set<String> vars, boolean count, boolean distinct) {
         List<NPPhraseSpec> objects = new ArrayList<NPPhraseSpec>();
         //process the type information to create the object(s)    
         for (String s : typeMap.keySet()) {
-            // contains the objects to the sentence
-            NPPhraseSpec object = nlgFactory.createNounPhrase("?" + s);
-            Set<String> types = typeMap.get(s);
-            for (String type : types) {
-                NPPhraseSpec np = getNPPhrase(type, true);
-                if (distinct) {
-                    np.addModifier("distinct");
+            if (vars.contains(s)) {
+                // contains the objects to the sentence
+                NPPhraseSpec object = nlgFactory.createNounPhrase("?" + s);
+                Set<String> types = typeMap.get(s);
+                for (String type : types) {
+                    NPPhraseSpec np = getNPPhrase(type, true);
+                    if (distinct) {
+                        np.addModifier("distinct");
+                    }
+                    object.addPreModifier(np);
                 }
-                object.addPreModifier(np);
+                object.setFeature(Feature.CONJUNCTION, "or");
+                objects.add(object);
             }
-            object.setFeature(Feature.CONJUNCTION, "or");
-            objects.add(object);
         }
         if (objects.size() == 1) {
             return objects.get(0);
@@ -420,8 +442,9 @@ public class SimpleNLG implements Sparql2NLConverter {
                 String text = expr.toString().substring(2, expr.toString().length() - 2);
                 String[] split = text.split(" > ");
                 String arg1 = split[0].trim();
-                if(arg1.contains("("))
-                    arg1 = arg1.substring(arg1.lastIndexOf("(")+1, arg1.indexOf(")"));
+                if (arg1.contains("(")) {
+                    arg1 = arg1.substring(arg1.lastIndexOf("(") + 1, arg1.indexOf(")"));
+                }
                 String arg2 = split[1].trim();
                 p.setSubject(arg1);
                 p.setVerb("is larger than");
@@ -510,6 +533,18 @@ public class SimpleNLG implements Sparql2NLConverter {
         //throw new UnsupportedOperationException("Not yet implemented");
     }
 
+    private Set<String> getVars(List<Element> elements, Set<String> projectionVars) {
+        Set<String> result = new HashSet<String>();
+        for (Element e : elements) {
+            for (String var : projectionVars) {
+                if (e.toString().contains("?" + var)) {
+                    result.add(var);
+                }
+            }
+        }
+        return result;
+    }
+
     public static void main(String args[]) {
         String query2 = "PREFIX res: <http://dbpedia.org/resource/> "
                 + "PREFIX dbo: <http://dbpedia.org/ontology/> "
@@ -519,7 +554,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         String query = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
                 + "PREFIX res: <http://dbpedia.org/resource/> "
-                + "SELECT count(DISTINCT ?uri) "
+                + "SELECT ?uri ?x "
                 + "WHERE { "
                 + "{res:Abraham_Lincoln dbo:deathPlace ?uri} "
                 + "UNION {res:Abraham_Lincoln dbo:birthPlace ?uri} . "
@@ -541,7 +576,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
             SimpleNLG snlg = new SimpleNLG(ep);
-            Query sparqlQuery = QueryFactory.create(query3, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
