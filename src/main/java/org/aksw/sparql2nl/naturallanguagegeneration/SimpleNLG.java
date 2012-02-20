@@ -14,6 +14,8 @@ import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
+import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
+import com.hp.hpl.jena.sparql.expr.E_LessThan;
 import com.hp.hpl.jena.sparql.expr.E_Regex;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.syntax.Element;
@@ -36,7 +38,6 @@ import simplenlg.framework.DocumentElement;
 import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
-import simplenlg.framework.PhraseElement;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
@@ -262,7 +263,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         //process the type information to create the object(s)    
         for (String s : typeMap.keySet()) {
             // contains the objects to the sentence
-            NPPhraseSpec object = nlgFactory.createNounPhrase("?"+s);
+            NPPhraseSpec object = nlgFactory.createNounPhrase("?" + s);
             Set<String> types = typeMap.get(s);
             for (String type : types) {
                 NPPhraseSpec np = getNPPhrase(type, true);
@@ -377,7 +378,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             }
 
             //process language filter
-            if (expr instanceof E_Equals) {
+            else if (expr instanceof E_Equals) {
                 E_Equals expression;
                 expression = (E_Equals) expr;
                 String text = expression.toString();
@@ -398,7 +399,28 @@ public class SimpleNLG implements Sparql2NLConverter {
                     p.setObject(arg2);
                 }
             }
+            //process >
+            else if (expr instanceof E_GreaterThan) {
+                String text = expr.toString();
+                String[] split = text.split("=");
+                String arg1 = split[0].trim();
+                String arg2 = split[1].trim();
+                p.setSubject(arg1);
+                p.setVerb("is larger than");
+                p.setObject(arg2);
+            }
+
             //process <
+            else if (expr instanceof E_LessThan) {
+                String text = expr.toString();
+                String[] split = text.split("=");
+                String arg1 = split[0].trim();
+                String arg2 = split[1].trim();
+                p.setSubject(arg1);
+                p.setVerb("is less than");
+                p.setObject(arg2);
+            }
+
             return p;
         }
         return null;
@@ -438,7 +460,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             if (t.getSubject().isVariable()) {
                 p.setSubject(t.getSubject().toString());
             } else {
-                p.setSubject(getNPPhrase(t.getSubject().toString(), false));                
+                p.setSubject(getNPPhrase(t.getSubject().toString(), false));
             }
             p.setVerb("be relate via \"" + getEnglishLabel(t.getPredicate().toString()) + "\" to");
             if (t.getObject().isVariable()) {
@@ -453,9 +475,9 @@ public class SimpleNLG implements Sparql2NLConverter {
             } else {
                 subj = nlgFactory.createWord(getEnglishLabel(t.getSubject().toString()), LexicalCategory.NOUN);
             }
-    //        subj.setFeature(Feature.POSSESSIVE, true);            
-    //        PhraseElement np = nlgFactory.createNounPhrase(subj, getEnglishLabel(t.getPredicate().toString()));
-            p.setSubject(realiser.realise(subj)+"\'s "+getEnglishLabel(t.getPredicate().toString()));
+            //        subj.setFeature(Feature.POSSESSIVE, true);            
+            //        PhraseElement np = nlgFactory.createNounPhrase(subj, getEnglishLabel(t.getPredicate().toString()));
+            p.setSubject(realiser.realise(subj) + "\'s " + getEnglishLabel(t.getPredicate().toString()));
             p.setVerb("be");
             if (t.getObject().isVariable()) {
                 p.setObject(t.getObject().toString());
@@ -477,7 +499,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "SELECT DISTINCT ?height "
                 + "WHERE { res:Claudia_Schiffer dbo:height ?height . }";
-        
+
         String query = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
                 + "PREFIX res: <http://dbpedia.org/resource/> "
@@ -490,11 +512,17 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "FILTER (lang(?uri) = 'en')"
                 + "OPTIONAL { ?uri dbo:Name ?x }. "
                 + "}";
-        String query3 = "PREFIX dbo: <http://dbpedia.org/ontology/> PREFIX yago: <http://dbpedia.org/class/yago/> SELECT COUNT(DISTINCT ?uri) WHERE { ?uri rdf:type yago:EuropeanCountries . ?uri dbo:governmentType ?govern . FILTER regex(?govern,'monarchy') . }";
+        String query3 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
+                + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
+                + "PREFIX yago: <http://dbpedia.org/class/yago/> "
+                + "SELECT COUNT(DISTINCT ?uri) "
+                + "WHERE { ?uri rdf:type yago:EuropeanCountries . ?uri dbo:governmentType ?govern . "
+                + "FILTER regex(?govern,'monarchy') . "
+                + "FILTER (?govern < 1000) . "
+                + "}";
         try {
             SimpleNLG snlg = new SimpleNLG();
-            Query sparqlQuery = QueryFactory.create(query3, Syntax.syntaxSPARQL_11);
-            System.out.println(query);
+            Query sparqlQuery = QueryFactory.create(query3, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
