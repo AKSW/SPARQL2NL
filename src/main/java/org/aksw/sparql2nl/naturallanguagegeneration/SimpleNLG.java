@@ -46,8 +46,11 @@ import com.hp.hpl.jena.sparql.expr.E_LessThanOrEqual;
 import com.hp.hpl.jena.sparql.expr.E_NotEquals;
 import com.hp.hpl.jena.sparql.expr.E_Regex;
 import com.hp.hpl.jena.sparql.expr.Expr;
+import com.hp.hpl.jena.sparql.expr.ExprAggregator;
 import com.hp.hpl.jena.sparql.expr.ExprFunction;
 import com.hp.hpl.jena.sparql.expr.ExprFunction2;
+import com.hp.hpl.jena.sparql.expr.aggregate.AggCountVar;
+import com.hp.hpl.jena.sparql.expr.aggregate.Aggregator;
 import com.hp.hpl.jena.sparql.syntax.Element;
 import com.hp.hpl.jena.sparql.syntax.ElementFilter;
 import com.hp.hpl.jena.sparql.syntax.ElementGroup;
@@ -300,8 +303,11 @@ public class SimpleNLG implements Sparql2NLConverter {
      * @return English label, null if none is found
      */
     private String getEnglishLabel(String resource) {
-        if(resource.equals(RDF.type))
+        if(resource.equals(RDF.type.getURI())){
             return "type";
+        } else if(resource.equals(RDFS.label.getURI())){
+        	return "label";
+        }
         try {
             String labelQuery = "SELECT ?label WHERE {<" + resource + "> "
                     + "<http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en')}";
@@ -564,60 +570,67 @@ public class SimpleNLG implements Sparql2NLConverter {
             }
         } else if (expr instanceof ExprFunction2) {
             Expr left = ((ExprFunction2) expr).getArg1();
-            if (left.isFunction()) {
-                ExprFunction function = left.getFunction();
-                if (function.getArgs().size() == 1) {
-                    left = function.getArg(1);
-                }
-            }
             Expr right = ((ExprFunction2) expr).getArg2();
+            
+            //invert if right is variable or aggregation and left side not 
+            boolean inverted = false;
+            if(!left.isVariable() && (right.isVariable() || right instanceof ExprAggregator)){
+            	Expr tmp = left;
+            	left = right;
+            	right = tmp;
+            	inverted = true;
+            }
+            
+            //handle subject
+            NLGElement subject = null;
+            if(left instanceof ExprAggregator){
+            	subject = getNLGFromAggregation((ExprAggregator) left);
+            } else {
+            	if (left.isFunction()) {
+                    ExprFunction function = left.getFunction();
+                    if (function.getArgs().size() == 1) {
+                        left = function.getArg(1);
+                    }
+                }
+            	subject = nlgFactory.createNounPhrase(left.toString());
+            }
+            p.setSubject(subject);
+            //handle object
             if (right.isFunction()) {
                 ExprFunction function = right.getFunction();
                 if (function.getArgs().size() == 1) {
                     right = function.getArg(1);
                 }
             }
+            p.setObject(right.toString());
+            //handle verb resp. predicate
+            String verb = null;
             if (expr instanceof E_GreaterThan) {
-                if (!left.isVariable() && right.isVariable()) {
-                    p.setSubject(right.toString());
-                    p.setVerb("be less than");
-                    p.setObject(left.toString());
+                if (inverted) {
+                    verb = "be less than";
                 } else {
-                    p.setSubject(left.toString());
-                    p.setVerb("be greater than");
-                    p.setObject(right.toString());
+                    verb = "be greater than";
                 }
             } else if (expr instanceof E_GreaterThanOrEqual) {
-                if (!left.isVariable() && right.isVariable()) {
-                    p.setSubject(right.toString());
-                    p.setVerb("be less than or equal to");
-                    p.setObject(left.toString());
+                if (inverted) {
+                	verb = "be less than or equal to";
                 } else {
-                    p.setSubject(left.toString());
-                    p.setVerb("be greater than or equal to");
-                    p.setObject(right.toString());
+                    verb = "be greater than or equal to";
                 }
             } else if (expr instanceof E_LessThan) {
-                if (!left.isVariable() && right.isVariable()) {
-                    p.setSubject(right.toString());
-                    p.setVerb("be greater than");
-                    p.setObject(left.toString());
+                if (inverted) {
+                    verb = "be greater than";
                 } else {
-                    p.setSubject(left.toString());
-                    p.setVerb("be less than");
-                    p.setObject(right.toString());
+                    verb = "be less than";
                 }
             } else if (expr instanceof E_LessThanOrEqual) {
-                if (!left.isVariable() && right.isVariable()) {
-                    p.setSubject(right.toString());
-                    p.setVerb("be greater than or equal to");
-                    p.setObject(left.toString());
+                if (inverted) {
+                    verb = "be greater than or equal to";
                 } else {
-                    p.setSubject(left.toString());
-                    p.setVerb("be less than or equal to");
-                    p.setObject(right.toString());
+                    verb = "be less than or equal to";
                 }
             }
+            p.setVerb(verb);
         } //not equals
         else if (expr instanceof E_NotEquals) {
             E_NotEquals expression;
@@ -644,6 +657,16 @@ public class SimpleNLG implements Sparql2NLConverter {
             return null;
         }
         return p;
+    }
+    
+    private NLGElement getNLGFromAggregation(ExprAggregator aggregationExpr){
+    	SPhraseSpec p = nlgFactory.createClause();
+    	Aggregator aggregator = aggregationExpr.getAggregator();
+    	Expr expr = aggregator.getExpr();
+    	if(aggregator instanceof AggCountVar){
+    		p.setSubject("the number of " + expr);
+    	}
+    	return p.getSubject();
     }
 
     private NLGElement getNLFromExpressions(List<Expr> expressions) {
@@ -707,7 +730,8 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "WHERE { ?cave rdf:type dbo:Cave . "
                 + "?cave dbo:location ?uri . "
                 + "?uri rdf:type dbo:Country . "
-                + "OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') } } "
+                + "OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') } }"
+                + " GROUP BY ?uri ?string "
                 + "HAVING (COUNT(?cave) > 2)";
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();

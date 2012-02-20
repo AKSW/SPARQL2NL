@@ -127,6 +127,10 @@ public class TypeExtractor extends ElementVisitorBase {
 		//else we try to infer the type by the predicate type, i.e. whether predicate is of type owl:Data(type)Property or owl:ObjectProperty
 		for(Triple triple : triples){
 			if(triple.getPredicate().isURI()){
+				//if rdfs:label return rdfs:Literal
+				if(triple.getPredicate().getURI().equals(RDFS.label.getURI())){
+					return RDFS.Literal.getURI();
+				}
 				String type = getPropertyType(triple.getPredicate().getURI());
 				if(type != null){
 					if(type.equals(OWL.ObjectProperty.getURI())){
