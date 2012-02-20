@@ -22,13 +22,21 @@ import com.hp.hpl.jena.sparql.syntax.ElementGroup;
 import com.hp.hpl.jena.sparql.syntax.ElementOptional;
 import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
 import com.hp.hpl.jena.sparql.syntax.ElementUnion;
+import com.hp.hpl.jena.vocabulary.OWL;
+import com.hp.hpl.jena.vocabulary.RDFS;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+
+import org.aksw.sparql2nl.queryprocessing.GenericType;
 import org.aksw.sparql2nl.queryprocessing.TypeExtractor;
+import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.dllearner.kb.sparql.SparqlQuery;
+
 import simplenlg.features.Feature;
 import simplenlg.features.Tense;
 import simplenlg.framework.CoordinatedPhraseElement;
@@ -54,10 +62,13 @@ public class SimpleNLG implements Sparql2NLConverter {
     public static final String ENTITY = "owl#thing";
     public static final String VALUE = "value";
     public static final String UNKNOWN = "valueOrEntity";
-    public static String ENDPOINT = "http://live.dbpedia.org/sparql";
     public static String GRAPH = null;
+    
+    private SparqlEndpoint endpoint;
 
-    public SimpleNLG() {
+    public SimpleNLG(SparqlEndpoint endpoint) {
+    	this.endpoint = endpoint;
+    	
         lexicon = Lexicon.getDefaultLexicon();
         nlgFactory = new NLGFactory(lexicon);
         realiser = new Realiser(lexicon);
@@ -113,7 +124,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         List<DocumentElement> sentences = new ArrayList<DocumentElement>();
         System.out.println("Input query = " + query);
         // preprocess the query to get the relevant types
-        TypeExtractor tEx = new TypeExtractor();
+        TypeExtractor tEx = new TypeExtractor(endpoint);
         Map<String, Set<String>> typeMap = tEx.extractTypes(query);
         System.out.println("Processed query = " + query);
         // contains the beginning of the query, e.g., "this query returns"
@@ -196,17 +207,20 @@ public class SimpleNLG implements Sparql2NLConverter {
      * @return Label
      */
     public NPPhraseSpec getNPPhrase(String className, boolean plural) {
-        NPPhraseSpec object;
-        if (!className.toLowerCase().contains(ENTITY)) {
-            String label = getEnglishLabel(className);
+        NPPhraseSpec object = null;
+        if (className.equals(OWL.Thing.getURI())) {
+        	object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
+        } else if(className.equals(RDFS.Literal.getURI())){
+        	object = nlgFactory.createNounPhrase(GenericType.VALUE.getNlr());
+        } else {
+        	String label = getEnglishLabel(className);
             if (label != null) {
                 object = nlgFactory.createNounPhrase(label);
-                object.setPlural(plural);
-                return object;
+            } else {
+            	object = nlgFactory.createNounPhrase("entity");
             }
         }
-        // if something goes wrong, we return entity
-        object = nlgFactory.createNounPhrase("entity");
+        
         object.setPlural(plural);
         return object;
     }
@@ -221,19 +235,9 @@ public class SimpleNLG implements Sparql2NLConverter {
             String labelQuery = "SELECT ?label WHERE {<" + resource + "> "
                     + "<http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en')}";
 
-            Query sparqlQuery = QueryFactory.create(labelQuery);
-            QueryExecution qexec;
-
             // take care of graph issues. Only takes one graph. Seems like some sparql endpoint do
             // not like the FROM option.
-
-            if (GRAPH != null) {
-                qexec = QueryExecutionFactory.sparqlService(ENDPOINT, sparqlQuery, GRAPH);
-            } //
-            else {
-                qexec = QueryExecutionFactory.sparqlService(ENDPOINT, sparqlQuery);
-            }
-            ResultSet results = qexec.execSelect();
+            ResultSet results = new SparqlQuery(labelQuery, endpoint).send();
 
             //get label from knowledge base
             String label = null;
@@ -492,8 +496,8 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "}";
         String query3 = "PREFIX dbo: <http://dbpedia.org/ontology/> PREFIX yago: <http://dbpedia.org/class/yago/> SELECT COUNT(DISTINCT ?uri) WHERE { ?uri rdf:type yago:EuropeanCountries . ?uri dbo:governmentType ?govern . FILTER regex(?govern,'monarchy') . }";
         try {
-            SimpleNLG snlg = new SimpleNLG();
-            Query sparqlQuery = QueryFactory.create(query3, Syntax.syntaxSPARQL_11);
+            SimpleNLG snlg = new SimpleNLG(SparqlEndpoint.getEndpointDBpediaLiveAKSW());
+            Query sparqlQuery = QueryFactory.create(query, Syntax.syntaxARQ);
             System.out.println(query);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
