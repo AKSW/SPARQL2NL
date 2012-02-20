@@ -218,7 +218,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             if (label != null) {
                 object = nlgFactory.createNounPhrase(label);
             } else {
-            	object = nlgFactory.createNounPhrase("entity");
+            	object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
             }
         }
         
@@ -247,12 +247,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                 soln = results.nextSolution();
                 // process query here
                 {
-                    label = soln.get("label").toString();
-                }
-            }
-            if (label != null) {
-                if (label.contains("@")) {
-                    label = label.substring(0, label.indexOf("@"));
+                    label = soln.getLiteral("label").getLexicalForm();
                 }
             }
             return label;
@@ -379,8 +374,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                 p.setSubject(var);
                 p.setVerb("match");
                 p.setObject(pattern);
-            }
-
+            } 
             //process language filter
             else if (expr instanceof E_Equals) {
                 E_Equals expression;
@@ -402,11 +396,13 @@ public class SimpleNLG implements Sparql2NLConverter {
                     p.setVerb("equal");
                     p.setObject(arg2);
                 }
+            } else if(expr instanceof E_GreaterThan){
+            	
             }
             //process >
             else if (expr instanceof E_GreaterThan) {
                 String text = expr.toString();
-                String[] split = text.split("=");
+                String[] split = text.split(">");
                 String arg1 = split[0].trim();
                 String arg2 = split[1].trim();
                 p.setSubject(arg1);
@@ -417,7 +413,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             //process <
             else if (expr instanceof E_LessThan) {
                 String text = expr.toString();
-                String[] split = text.split("=");
+                String[] split = text.split("<");
                 String arg1 = split[0].trim();
                 String arg2 = split[1].trim();
                 p.setSubject(arg1);
@@ -426,7 +422,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             }
 
             return p;
-        }
+    }
         return null;
     }
 
@@ -519,13 +515,15 @@ public class SimpleNLG implements Sparql2NLConverter {
         String query3 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
                 + "PREFIX yago: <http://dbpedia.org/class/yago/> "
-                + "SELECT COUNT(DISTINCT ?uri) "
+                //+ "SELECT COUNT(DISTINCT ?uri) "
+                + "SELECT ?uri "
                 + "WHERE { ?uri rdf:type yago:EuropeanCountries . ?uri dbo:governmentType ?govern . "
                 + "FILTER regex(?govern,'monarchy') . "
                 + "FILTER (?govern < 1000) . "
                 + "}";
         try {
-            SimpleNLG snlg = new SimpleNLG();
+            SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
+            SimpleNLG snlg = new SimpleNLG(ep);
             Query sparqlQuery = QueryFactory.create(query3, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
