@@ -169,20 +169,35 @@ public class SimpleNLG implements Sparql2NLConverter {
         } else {
             sentences.add(nlgFactory.createSentence(head));
         }
-        
+
         // The second sentence deals with the optional clause (if it exists)
         if (optionalElements != null && !optionalElements.isEmpty()) {
             //the optional clause exists
             //if no supplementary projection variables are used in the clause 
-            if (!optionalVars.isEmpty()) {
-                NLGElement optional = getNLFromElements(optionalElements);
-                optional.setFeature(Feature.CUE_PHRASE, "Optionally,");
+            if (optionalVars.isEmpty()) {
+                NLGElement optional = getNLFromElements(optionalElements);                
                 sentences.add(nlgFactory.createSentence(optional));
-            }
-            //if supplementary projection variables are used in the clause 
-            else
-            {
-                
+            } //if supplementary projection variables are used in the clause 
+            else {
+                SPhraseSpec optionalHead = nlgFactory.createClause();
+                optionalHead.setSubject("it");
+                optionalHead.setVerb("retrieve");
+                optionalHead.setObject(processTypes(typeMap, optionalVars, query.isDistinct(), query.isDistinct()));
+                optionalHead.setFeature(Feature.CUE_PHRASE, "Additionally, ");
+                if (!optionalElements.isEmpty()) {
+                    NLGElement optionalBody;
+                    optionalBody = getNLFromElements(optionalElements);
+                    //now add conjunction
+                    CoordinatedPhraseElement optionalPhrase = nlgFactory.createCoordinatedPhrase(optionalHead, optionalBody);
+                    optionalPhrase.setConjunction("such that");
+                    // add as second sentence
+                    optionalPhrase.addComplement("if such exist");
+                    sentences.add(nlgFactory.createSentence(optionalPhrase));
+                    //this concludes the first sentence. 
+                } else {
+                    optionalHead.setFeature(Feature.CUE_PHRASE, "Additionally");
+                    sentences.add(nlgFactory.createSentence(optionalHead));
+                }                                                
             }
         }
 
