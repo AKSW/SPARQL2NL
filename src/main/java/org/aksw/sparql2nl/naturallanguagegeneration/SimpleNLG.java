@@ -12,6 +12,7 @@ import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.E_Regex;
 import com.hp.hpl.jena.sparql.expr.Expr;
@@ -50,8 +51,10 @@ public class SimpleNLG implements Sparql2NLConverter {
     Lexicon lexicon;
     NLGFactory nlgFactory;
     Realiser realiser;
-    public static final String OWLTHING = "owl#thing";
-    public static String ENDPOINT = "http://dbpedia.org/sparql";
+    public static final String ENTITY = "owl#thing";
+    public static final String VALUE = "value";
+    public static final String UNKNOWN = "valueOrEntity";
+    public static String ENDPOINT = "http://live.dbpedia.org/sparql";
     public static String GRAPH = null;
 
     public SimpleNLG() {
@@ -194,7 +197,7 @@ public class SimpleNLG implements Sparql2NLConverter {
      */
     public NPPhraseSpec getNPPhrase(String className, boolean plural) {
         NPPhraseSpec object;
-        if (!className.toLowerCase().contains(OWLTHING)) {
+        if (!className.toLowerCase().contains(ENTITY)) {
             String label = getEnglishLabel(className);
             if (label != null) {
                 object = nlgFactory.createNounPhrase(label);
@@ -259,7 +262,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         //process the type information to create the object(s)    
         for (String s : typeMap.keySet()) {
             // contains the objects to the sentence
-            NPPhraseSpec object = nlgFactory.createNounPhrase(s);
+            NPPhraseSpec object = nlgFactory.createNounPhrase("?"+s);
             Set<String> types = typeMap.get(s);
             for (String type : types) {
                 NPPhraseSpec np = getNPPhrase(type, true);
@@ -470,10 +473,15 @@ public class SimpleNLG implements Sparql2NLConverter {
     }
 
     public static void main(String args[]) {
+        String query2 = "PREFIX res: <http://dbpedia.org/resource/> "
+                + "PREFIX dbo: <http://dbpedia.org/ontology/> "
+                + "SELECT DISTINCT ?height "
+                + "WHERE { res:Claudia_Schiffer dbo:height ?height . }";
+        
         String query = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
                 + "PREFIX res: <http://dbpedia.org/resource/> "
-                + "SELECT DISTINCT ?uri ?x "
+                + "SELECT count(DISTINCT ?uri) "
                 + "WHERE { "
                 + "{res:Abraham_Lincoln dbo:deathPlace ?uri} "
                 + "UNION {res:Abraham_Lincoln dbo:birthPlace ?uri} . "
@@ -482,10 +490,10 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "FILTER (lang(?uri) = 'en')"
                 + "OPTIONAL { ?uri dbo:Name ?x }. "
                 + "}";
-
+        String query3 = "PREFIX dbo: <http://dbpedia.org/ontology/> PREFIX yago: <http://dbpedia.org/class/yago/> SELECT COUNT(DISTINCT ?uri) WHERE { ?uri rdf:type yago:EuropeanCountries . ?uri dbo:governmentType ?govern . FILTER regex(?govern,'monarchy') . }";
         try {
             SimpleNLG snlg = new SimpleNLG();
-            Query sparqlQuery = QueryFactory.create(query);
+            Query sparqlQuery = QueryFactory.create(query3, Syntax.syntaxSPARQL_11);
             System.out.println(query);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
