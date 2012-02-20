@@ -4,30 +4,6 @@
  */
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
-import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.query.QuerySolution;
-import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.query.Syntax;
-import com.hp.hpl.jena.sparql.expr.E_Equals;
-import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
-import com.hp.hpl.jena.sparql.expr.E_GreaterThanOrEqual;
-import com.hp.hpl.jena.sparql.expr.E_LessThan;
-import com.hp.hpl.jena.sparql.expr.E_LessThanOrEqual;
-import com.hp.hpl.jena.sparql.expr.E_NotEquals;
-import com.hp.hpl.jena.sparql.expr.E_Regex;
-import com.hp.hpl.jena.sparql.expr.Expr;
-import com.hp.hpl.jena.sparql.syntax.Element;
-import com.hp.hpl.jena.sparql.syntax.ElementFilter;
-import com.hp.hpl.jena.sparql.syntax.ElementGroup;
-import com.hp.hpl.jena.sparql.syntax.ElementOptional;
-import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
-import com.hp.hpl.jena.sparql.syntax.ElementUnion;
-import com.hp.hpl.jena.vocabulary.OWL;
-import com.hp.hpl.jena.vocabulary.RDFS;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -52,6 +28,32 @@ import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
+
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.query.Syntax;
+import com.hp.hpl.jena.sparql.expr.E_Equals;
+import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
+import com.hp.hpl.jena.sparql.expr.E_GreaterThanOrEqual;
+import com.hp.hpl.jena.sparql.expr.E_LessThan;
+import com.hp.hpl.jena.sparql.expr.E_LessThanOrEqual;
+import com.hp.hpl.jena.sparql.expr.E_NotEquals;
+import com.hp.hpl.jena.sparql.expr.E_Regex;
+import com.hp.hpl.jena.sparql.expr.Expr;
+import com.hp.hpl.jena.sparql.expr.ExprFunction;
+import com.hp.hpl.jena.sparql.expr.ExprFunction2;
+import com.hp.hpl.jena.sparql.syntax.Element;
+import com.hp.hpl.jena.sparql.syntax.ElementFilter;
+import com.hp.hpl.jena.sparql.syntax.ElementGroup;
+import com.hp.hpl.jena.sparql.syntax.ElementOptional;
+import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
+import com.hp.hpl.jena.sparql.syntax.ElementUnion;
+import com.hp.hpl.jena.vocabulary.OWL;
+import com.hp.hpl.jena.vocabulary.RDFS;
 
 /**
  *
@@ -435,55 +437,63 @@ public class SimpleNLG implements Sparql2NLConverter {
                     p.setVerb("equal");
                     p.setObject(arg2);
                 }
-            } else if(expr instanceof E_GreaterThan){
-            	Expr left = ((E_GreaterThan) expr).getArg1();
-            	Expr right = ((E_GreaterThan) expr).getArg2();
-            	if(!left.isVariable() && right.isVariable()){
-            		p.setSubject(right.toString());
-                	p.setVerb("be less than");
-                	p.setObject(left.toString());
-            	} else {
-            		p.setSubject(left.toString());
-                	p.setVerb("be greater than");
-                	p.setObject(right.toString());
+            } else if(expr instanceof ExprFunction2){
+            	Expr left = ((ExprFunction2) expr).getArg1();
+            	if(left.isFunction()){
+            		ExprFunction function = left.getFunction();
+            		if(function.getArgs().size() == 1){
+            			left = function.getArg(1);
+            		}
             	}
-            } else if(expr instanceof E_GreaterThanOrEqual){
-            	Expr left = ((E_GreaterThanOrEqual) expr).getArg1();
-            	Expr right = ((E_GreaterThanOrEqual) expr).getArg2();
-            	if(!left.isVariable() && right.isVariable()){
-            		p.setSubject(right.toString());
-                	p.setVerb("be less than or equal to");
-                	p.setObject(left.toString());
-            	} else {
-            		p.setSubject(left.toString());
-                	p.setVerb("be greater than or equal to");
-                	p.setObject(right.toString());
+            	Expr right = ((ExprFunction2) expr).getArg2();
+            	if(right.isFunction()){
+            		ExprFunction function = right.getFunction();
+            		if(function.getArgs().size() == 1){
+            			right = function.getArg(1);
+            		}
             	}
-            } else if(expr instanceof E_LessThan){
-            	Expr left = ((E_LessThan) expr).getArg1();
-            	Expr right = ((E_LessThan) expr).getArg2();
-            	if(!left.isVariable() && right.isVariable()){
-            		p.setSubject(right.toString());
-                	p.setVerb("be greater than");
-                	p.setObject(left.toString());
-            	} else {
-            		p.setSubject(left.toString());
-                	p.setVerb("be less than");
-                	p.setObject(right.toString());
-            	}
-            } else if(expr instanceof E_LessThanOrEqual){
-            	Expr left = ((E_LessThanOrEqual) expr).getArg1();
-            	Expr right = ((E_LessThanOrEqual) expr).getArg2();
-            	if(!left.isVariable() && right.isVariable()){
-            		p.setSubject(right.toString());
-                	p.setVerb("be greater than or equal to");
-                	p.setObject(left.toString());
-            	} else {
-            		p.setSubject(left.toString());
-                	p.setVerb("be less than or equal to");
-                	p.setObject(right.toString());
-            	}
-            } //not equals
+            	if(expr instanceof E_GreaterThan){
+                	if(!left.isVariable() && right.isVariable()){
+                		p.setSubject(right.toString());
+                    	p.setVerb("be less than");
+                    	p.setObject(left.toString());
+                	} else {
+                		p.setSubject(left.toString());
+                    	p.setVerb("be greater than");
+                    	p.setObject(right.toString());
+                	}
+                } else if(expr instanceof E_GreaterThanOrEqual){
+                	if(!left.isVariable() && right.isVariable()){
+                		p.setSubject(right.toString());
+                    	p.setVerb("be less than or equal to");
+                    	p.setObject(left.toString());
+                	} else {
+                		p.setSubject(left.toString());
+                    	p.setVerb("be greater than or equal to");
+                    	p.setObject(right.toString());
+                	}
+                } else if(expr instanceof E_LessThan){
+                	if(!left.isVariable() && right.isVariable()){
+                		p.setSubject(right.toString());
+                    	p.setVerb("be greater than");
+                    	p.setObject(left.toString());
+                	} else {
+                		p.setSubject(left.toString());
+                    	p.setVerb("be less than");
+                    	p.setObject(right.toString());
+                	}
+                } else if(expr instanceof E_LessThanOrEqual){
+                	if(!left.isVariable() && right.isVariable()){
+                		p.setSubject(right.toString());
+                    	p.setVerb("be greater than or equal to");
+                    	p.setObject(left.toString());
+                	} else {
+                		p.setSubject(left.toString());
+                    	p.setVerb("be less than or equal to");
+                    	p.setObject(right.toString());
+                	}
+                }
+            }   //not equals
             else if (expr instanceof E_NotEquals) {
                 E_NotEquals expression;
                 expression = (E_NotEquals) expr;
