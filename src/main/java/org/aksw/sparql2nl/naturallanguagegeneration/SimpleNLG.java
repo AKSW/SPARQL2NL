@@ -35,6 +35,7 @@ import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.query.SortCondition;
 import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.sparql.core.TriplePath;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
@@ -55,6 +56,7 @@ import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
 import com.hp.hpl.jena.sparql.syntax.ElementUnion;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDFS;
+import com.hp.hpl.jena.vocabulary.RDF;
 
 /**
  *
@@ -219,6 +221,19 @@ public class SimpleNLG implements Sparql2NLConverter {
 
             sentences.add(nlgFactory.createSentence(phrase));
         }
+        if (query.hasOrderBy()) {
+            //return only top-n elements
+            if (query.hasLimit()) {
+
+            } //else simple order results
+            else {
+                List<SortCondition> sc = query.getOrderBy();
+                List<Expr> sortExpression = new ArrayList<Expr>();
+                for (int i = 0; i < sc.size(); i++) {
+                    sortExpression.add(sc.get(i).getExpression());
+                }
+            }
+        }
         DocumentElement result = nlgFactory.createParagraph(sentences);
         return result;
     }
@@ -275,7 +290,6 @@ public class SimpleNLG implements Sparql2NLConverter {
                 object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
             }
         }
-
         object.setPlural(plural);
         return object;
     }
@@ -286,6 +300,8 @@ public class SimpleNLG implements Sparql2NLConverter {
      * @return English label, null if none is found
      */
     private String getEnglishLabel(String resource) {
+        if(resource.equals(RDF.type))
+            return "type";
         try {
             String labelQuery = "SELECT ?label WHERE {<" + resource + "> "
                     + "<http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en')}";
@@ -474,7 +490,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             } else {
                 p.setObject(getNPPhrase(t.getObject().toString(), false));
             }
-        } else {
+        } else {            
             NLGElement subj;
             if (t.getSubject().isVariable()) {
                 subj = nlgFactory.createWord(t.getSubject().toString(), LexicalCategory.NOUN);
@@ -676,6 +692,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "}";
         String query3 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
+                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
                 + "PREFIX yago: <http://dbpedia.org/class/yago/> "
                 + "SELECT COUNT(DISTINCT ?uri) "
                 //+ "SELECT ?uri "
@@ -683,13 +700,15 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "FILTER regex(?govern,'monarchy') . "
                 //+ "FILTER (!BOUND(?date))"
                 + "}";
-        String query4 = "PREFIX foaf: <http://xmlns.com/foaf/0.1/> "
-                + "PREFIX dbo: <http://dbpedia.org/ontology/> "
-                + "PREFIX res: <http://dbpedia.org/resource/> "
-                + "SELECT DISTINCT ?date "
-                + "WHERE { res:Charmed dbo:starring ?actor . "
-                + "FILTER regex(?actor,'alan') . "
-                + "?actor dbo:birthDate ?date . } HAVING (?date > 1900)";
+        String query4 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
+                + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
+                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "                
+                + "SELECT DISTINCT ?uri ?string "
+                + "WHERE { ?cave rdf:type dbo:Cave . "
+                + "?cave dbo:location ?uri . "
+                + "?uri rdf:type dbo:Country . "
+                + "OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') } } "
+                + "HAVING (COUNT(?cave) > 2)";
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
             SimpleNLG snlg = new SimpleNLG(ep);
