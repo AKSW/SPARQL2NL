@@ -15,6 +15,9 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
+import com.hp.hpl.jena.sparql.expr.E_GreaterThanOrEqual;
+import com.hp.hpl.jena.sparql.expr.E_LessThan;
+import com.hp.hpl.jena.sparql.expr.E_LessThanOrEqual;
 import com.hp.hpl.jena.sparql.expr.E_Regex;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.syntax.Element;
@@ -398,8 +401,54 @@ public class SimpleNLG implements Sparql2NLConverter {
                     p.setObject(arg2);
                 }
             } else if(expr instanceof E_GreaterThan){
-            	
-            }
+            	Expr left = ((E_GreaterThan) expr).getArg1();
+            	Expr right = ((E_GreaterThan) expr).getArg2();
+            	if(!left.isVariable() && right.isVariable()){
+            		p.setSubject(right.toString());
+                	p.setVerb("be less than");
+                	p.setObject(left.toString());
+            	} else {
+            		p.setSubject(left.toString());
+                	p.setVerb("be greater than");
+                	p.setObject(right.toString());
+            	}
+            } else if(expr instanceof E_GreaterThanOrEqual){
+            	Expr left = ((E_GreaterThanOrEqual) expr).getArg1();
+            	Expr right = ((E_GreaterThanOrEqual) expr).getArg2();
+            	if(!left.isVariable() && right.isVariable()){
+            		p.setSubject(right.toString());
+                	p.setVerb("be less than or equal to");
+                	p.setObject(left.toString());
+            	} else {
+            		p.setSubject(left.toString());
+                	p.setVerb("be greater than or equal to");
+                	p.setObject(right.toString());
+            	}
+            } else if(expr instanceof E_LessThan){
+            	Expr left = ((E_LessThan) expr).getArg1();
+            	Expr right = ((E_LessThan) expr).getArg2();
+            	if(!left.isVariable() && right.isVariable()){
+            		p.setSubject(right.toString());
+                	p.setVerb("be greater than");
+                	p.setObject(left.toString());
+            	} else {
+            		p.setSubject(left.toString());
+                	p.setVerb("be less than");
+                	p.setObject(right.toString());
+            	}
+            } else if(expr instanceof E_LessThanOrEqual){
+            	Expr left = ((E_LessThanOrEqual) expr).getArg1();
+            	Expr right = ((E_LessThanOrEqual) expr).getArg2();
+            	if(!left.isVariable() && right.isVariable()){
+            		p.setSubject(right.toString());
+                	p.setVerb("be greater than or equal to");
+                	p.setObject(left.toString());
+            	} else {
+            		p.setSubject(left.toString());
+                	p.setVerb("be less than or equal to");
+                	p.setObject(right.toString());
+            	}
+            } 
             //process <
             return p;
         }
@@ -478,7 +527,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         String query2 = "PREFIX res: <http://dbpedia.org/resource/> "
                 + "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "SELECT DISTINCT ?height "
-                + "WHERE { res:Claudia_Schiffer dbo:height ?height . }";
+                + "WHERE { res:Claudia_Schiffer dbo:height ?height . FILTER(\"1.0e6\"^^<http://www.w3.org/2001/XMLSchema#double> <= ?height)}";
         
         String query = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
@@ -495,7 +544,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         String query3 = "PREFIX dbo: <http://dbpedia.org/ontology/> PREFIX yago: <http://dbpedia.org/class/yago/> SELECT COUNT(DISTINCT ?uri) WHERE { ?uri rdf:type yago:EuropeanCountries . ?uri dbo:governmentType ?govern . FILTER regex(?govern,'monarchy') . }";
         try {
             SimpleNLG snlg = new SimpleNLG(SparqlEndpoint.getEndpointDBpediaLiveAKSW());
-            Query sparqlQuery = QueryFactory.create(query, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query2, Syntax.syntaxARQ);
             System.out.println(query);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
