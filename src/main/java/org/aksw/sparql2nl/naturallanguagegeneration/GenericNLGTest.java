@@ -11,6 +11,9 @@ import com.hp.hpl.jena.sparql.syntax.ElementGroup;
 import com.hp.hpl.jena.sparql.syntax.ElementOptional;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.dllearner.kb.sparql.SparqlEndpoint;
+
 import simplenlg.framework.NLGElement;
 
 /**
@@ -34,7 +37,7 @@ public class GenericNLGTest {
 
         try {
             GenericNLG nlg = new GenericNLG();
-            SimpleNLG snlg = new SimpleNLG();
+            SimpleNLG snlg = new SimpleNLG(SparqlEndpoint.getEndpointDBpediaLiveAKSW());
             Query sparqlQuery = QueryFactory.create(query);
             System.out.println("Simple NLG: "+snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
