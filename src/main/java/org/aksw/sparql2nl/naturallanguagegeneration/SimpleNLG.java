@@ -151,10 +151,10 @@ public class SimpleNLG implements Sparql2NLConverter {
         //process head
         //we could create a lexicon from which we could read these
         head.setSubject("This query");
-        head.setVerb("retrieve");
-        head.setObject(processTypes(typeMap, whereVars, query.isDistinct(), query.isDistinct()));
-        Element e;
-
+        if(!tEx.isCount()) head.setVerb("retrieve"); 
+        else head.setVerb("retrieve the number of"); 
+        NLGElement e = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());
+        head.setObject(e);                       
         //now generate body
         if (!whereElements.isEmpty()) {
             body = getNLFromElements(whereElements);
@@ -192,8 +192,8 @@ public class SimpleNLG implements Sparql2NLConverter {
                     optionalPhrase.addComplement("if such exist");
                     sentences.add(nlgFactory.createSentence(optionalPhrase));
                     //this concludes the first sentence. 
-                } else {
-                    optionalHead.setFeature(Feature.CUE_PHRASE, "Additionally");
+                } else {                    
+                    optionalHead.addComplement("if such exist");
                     sentences.add(nlgFactory.createSentence(optionalHead));
                 }                                                
             }
@@ -297,8 +297,9 @@ public class SimpleNLG implements Sparql2NLConverter {
         //process the type information to create the object(s)    
         for (String s : typeMap.keySet()) {
             if (vars.contains(s)) {
-                // contains the objects to the sentence
-                NPPhraseSpec object = nlgFactory.createNounPhrase("?" + s);
+                // contains the objects to the sentence                
+                NPPhraseSpec object;
+                object = nlgFactory.createNounPhrase("?" + s);                
                 Set<String> types = typeMap.get(s);
                 for (String type : types) {
                     NPPhraseSpec np = getNPPhrase(type, true);
@@ -306,12 +307,13 @@ public class SimpleNLG implements Sparql2NLConverter {
                         np.addModifier("distinct");
                     }
                     object.addPreModifier(np);
-                }
+                }                
                 object.setFeature(Feature.CONJUNCTION, "or");
                 objects.add(object);
             }
         }
         if (objects.size() == 1) {
+            //if(count) objects.get(0).addPreModifier("the number of");
             return objects.get(0);
         } else {
             CoordinatedPhraseElement cpe = nlgFactory.createCoordinatedPhrase(objects.get(0), objects.get(1));
@@ -320,6 +322,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                     cpe.addCoordinate(objects.get(i));
                 }
             }
+            //if(count) cpe.addPreModifier("the number of");
             return cpe;
         }
     }
@@ -614,13 +617,13 @@ public class SimpleNLG implements Sparql2NLConverter {
                 //+ "SELECT ?uri "
                 + "WHERE { ?uri rdf:type yago:EuropeanCountries . ?uri dbo:governmentType ?govern . "
                 + "FILTER regex(?govern,'monarchy') . "
-                + "FILTER (dbo:integer(?govern) > 1000) . "
-                + "FILTER (!BOUND(?date))"
+                + "FILTER (?govern > 1000) . "
+                //+ "FILTER (!BOUND(?date))"
                 + "}";
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
             SimpleNLG snlg = new SimpleNLG(ep);
-            Query sparqlQuery = QueryFactory.create(query, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query3, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
