@@ -103,6 +103,10 @@ public class TypeExtractor extends ElementVisitorBase {
 		return var2TypesMap;
 	}
 	
+	public boolean isCount() {
+		return isCount;
+	}
+	
 	/**
 	 * Returns the generic type, i.e whether it is owl:Thing(entity) or rdfs:Literal(value)
 	 * @param var
