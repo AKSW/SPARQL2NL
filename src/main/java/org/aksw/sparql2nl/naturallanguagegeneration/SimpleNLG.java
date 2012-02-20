@@ -36,6 +36,7 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.Syntax;
+import com.hp.hpl.jena.sparql.core.TriplePath;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThanOrEqual;
@@ -153,10 +154,13 @@ public class SimpleNLG implements Sparql2NLConverter {
         //process head
         //we could create a lexicon from which we could read these
         head.setSubject("This query");
-        if(!tEx.isCount()) head.setVerb("retrieve"); 
-        else head.setVerb("retrieve the number of"); 
+        if (!tEx.isCount()) {
+            head.setVerb("retrieve");
+        } else {
+            head.setVerb("retrieve the number of");
+        }
         NLGElement e = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());
-        head.setObject(e);                       
+        head.setObject(e);
         //now generate body
         if (!whereElements.isEmpty()) {
             body = getNLFromElements(whereElements);
@@ -175,7 +179,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             //the optional clause exists
             //if no supplementary projection variables are used in the clause 
             if (optionalVars.isEmpty()) {
-                NLGElement optional = getNLFromElements(optionalElements);                
+                NLGElement optional = getNLFromElements(optionalElements);
                 sentences.add(nlgFactory.createSentence(optional));
             } //if supplementary projection variables are used in the clause 
             else {
@@ -194,10 +198,10 @@ public class SimpleNLG implements Sparql2NLConverter {
                     optionalPhrase.addComplement("if such exist");
                     sentences.add(nlgFactory.createSentence(optionalPhrase));
                     //this concludes the first sentence. 
-                } else {                    
+                } else {
                     optionalHead.addComplement("if such exist");
                     sentences.add(nlgFactory.createSentence(optionalHead));
-                }                                                
+                }
             }
         }
 
@@ -301,7 +305,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             if (vars.contains(s)) {
                 // contains the objects to the sentence                
                 NPPhraseSpec object;
-                object = nlgFactory.createNounPhrase("?" + s);                
+                object = nlgFactory.createNounPhrase("?" + s);
                 Set<String> types = typeMap.get(s);
                 for (String type : types) {
                     NPPhraseSpec np = getNPPhrase(type, true);
@@ -309,7 +313,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                         np.addModifier("distinct");
                     }
                     object.addPreModifier(np);
-                }                
+                }
                 object.setFeature(Feature.CONJUNCTION, "or");
                 objects.add(object);
             }
@@ -343,7 +347,6 @@ public class SimpleNLG implements Sparql2NLConverter {
      * @return Conjunctive natural representation of the list of elements.
      */
     public NLGElement getNLFromElements(List<Element> e) {
-
         if (e.isEmpty()) {
             return null;
         }
@@ -360,7 +363,38 @@ public class SimpleNLG implements Sparql2NLConverter {
         }
     }
 
+    public NLGElement getNLForTripleList(List<Triple> triples, String conjunction) {
+        if (triples.isEmpty()) {
+            return null;
+        }
+        if (triples.size() == 1) {
+            return getNLForTriple(triples.get(0));
+        } else {
+            CoordinatedPhraseElement cpe;
+            Triple t0 = triples.get(0);
+            Triple t1 = triples.get(1);
+            cpe = nlgFactory.createCoordinatedPhrase(getNLForTriple(t0), getNLForTriple(t1));
+            for (int i = 2; i < triples.size(); i++) {
+                cpe.addComplement(getNLForTriple(triples.get(i)));
+            }
+            cpe.setConjunction(conjunction);
+            return cpe;
+        }
+    }
+
     public NLGElement getNLFromSingleClause(Element e) {
+        if(e instanceof ElementPathBlock)
+        {
+            ElementPathBlock epb = (ElementPathBlock)e;
+            List<Triple> triples = new ArrayList<Triple>();
+
+            //get all triples. We assume that the depth of union is always 1
+            for (TriplePath tp : epb.getPattern().getList()) {                
+                    Triple t = tp.asTriple();
+                    triples.add(t);
+            }
+            return getNLForTripleList(triples, "and");
+        }
         // if clause is union clause then we generate or statements
         if (e instanceof ElementUnion) {
             CoordinatedPhraseElement cpe;
@@ -376,22 +410,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                     triples.add(t);
                 }
             }
-            //if empty
-            if (triples.isEmpty()) {
-                return null;
-            }
-            if (triples.size() == 1) {
-                return getNLForTriple(triples.get(0));
-            } else {
-                Triple t0 = triples.get(0);
-                Triple t1 = triples.get(1);
-                cpe = nlgFactory.createCoordinatedPhrase(getNLForTriple(t0), getNLForTriple(t1));
-                for (int i = 2; i < triples.size(); i++) {
-                    cpe.addComplement(getNLForTriple(triples.get(i)));
-                }
-                cpe.setConjunction("or");
-                return cpe;
-            }
+            return getNLForTripleList(triples, "or");
         } //case no union, i.e., just a path block
         else if (e instanceof ElementPathBlock) {
             ElementPathBlock epb = (ElementPathBlock) e;
@@ -437,63 +456,63 @@ public class SimpleNLG implements Sparql2NLConverter {
                     p.setVerb("equal");
                     p.setObject(arg2);
                 }
-            } else if(expr instanceof ExprFunction2){
-            	Expr left = ((ExprFunction2) expr).getArg1();
-            	if(left.isFunction()){
-            		ExprFunction function = left.getFunction();
-            		if(function.getArgs().size() == 1){
-            			left = function.getArg(1);
-            		}
-            	}
-            	Expr right = ((ExprFunction2) expr).getArg2();
-            	if(right.isFunction()){
-            		ExprFunction function = right.getFunction();
-            		if(function.getArgs().size() == 1){
-            			right = function.getArg(1);
-            		}
-            	}
-            	if(expr instanceof E_GreaterThan){
-                	if(!left.isVariable() && right.isVariable()){
-                		p.setSubject(right.toString());
-                    	p.setVerb("be less than");
-                    	p.setObject(left.toString());
-                	} else {
-                		p.setSubject(left.toString());
-                    	p.setVerb("be greater than");
-                    	p.setObject(right.toString());
-                	}
-                } else if(expr instanceof E_GreaterThanOrEqual){
-                	if(!left.isVariable() && right.isVariable()){
-                		p.setSubject(right.toString());
-                    	p.setVerb("be less than or equal to");
-                    	p.setObject(left.toString());
-                	} else {
-                		p.setSubject(left.toString());
-                    	p.setVerb("be greater than or equal to");
-                    	p.setObject(right.toString());
-                	}
-                } else if(expr instanceof E_LessThan){
-                	if(!left.isVariable() && right.isVariable()){
-                		p.setSubject(right.toString());
-                    	p.setVerb("be greater than");
-                    	p.setObject(left.toString());
-                	} else {
-                		p.setSubject(left.toString());
-                    	p.setVerb("be less than");
-                    	p.setObject(right.toString());
-                	}
-                } else if(expr instanceof E_LessThanOrEqual){
-                	if(!left.isVariable() && right.isVariable()){
-                		p.setSubject(right.toString());
-                    	p.setVerb("be greater than or equal to");
-                    	p.setObject(left.toString());
-                	} else {
-                		p.setSubject(left.toString());
-                    	p.setVerb("be less than or equal to");
-                    	p.setObject(right.toString());
-                	}
+            } else if (expr instanceof ExprFunction2) {
+                Expr left = ((ExprFunction2) expr).getArg1();
+                if (left.isFunction()) {
+                    ExprFunction function = left.getFunction();
+                    if (function.getArgs().size() == 1) {
+                        left = function.getArg(1);
+                    }
                 }
-            }   //not equals
+                Expr right = ((ExprFunction2) expr).getArg2();
+                if (right.isFunction()) {
+                    ExprFunction function = right.getFunction();
+                    if (function.getArgs().size() == 1) {
+                        right = function.getArg(1);
+                    }
+                }
+                if (expr instanceof E_GreaterThan) {
+                    if (!left.isVariable() && right.isVariable()) {
+                        p.setSubject(right.toString());
+                        p.setVerb("be less than");
+                        p.setObject(left.toString());
+                    } else {
+                        p.setSubject(left.toString());
+                        p.setVerb("be greater than");
+                        p.setObject(right.toString());
+                    }
+                } else if (expr instanceof E_GreaterThanOrEqual) {
+                    if (!left.isVariable() && right.isVariable()) {
+                        p.setSubject(right.toString());
+                        p.setVerb("be less than or equal to");
+                        p.setObject(left.toString());
+                    } else {
+                        p.setSubject(left.toString());
+                        p.setVerb("be greater than or equal to");
+                        p.setObject(right.toString());
+                    }
+                } else if (expr instanceof E_LessThan) {
+                    if (!left.isVariable() && right.isVariable()) {
+                        p.setSubject(right.toString());
+                        p.setVerb("be greater than");
+                        p.setObject(left.toString());
+                    } else {
+                        p.setSubject(left.toString());
+                        p.setVerb("be less than");
+                        p.setObject(right.toString());
+                    }
+                } else if (expr instanceof E_LessThanOrEqual) {
+                    if (!left.isVariable() && right.isVariable()) {
+                        p.setSubject(right.toString());
+                        p.setVerb("be greater than or equal to");
+                        p.setObject(left.toString());
+                    } else {
+                        p.setSubject(left.toString());
+                        p.setVerb("be less than or equal to");
+                        p.setObject(right.toString());
+                    }
+                }
+            } //not equals
             else if (expr instanceof E_NotEquals) {
                 E_NotEquals expression;
                 expression = (E_NotEquals) expr;
@@ -627,13 +646,19 @@ public class SimpleNLG implements Sparql2NLConverter {
                 //+ "SELECT ?uri "
                 + "WHERE { ?uri rdf:type yago:EuropeanCountries . ?uri dbo:governmentType ?govern . "
                 + "FILTER regex(?govern,'monarchy') . "
-                + "FILTER (?govern > 1000) . "
+                //+ "FILTER (?govern > 1000) . "
                 //+ "FILTER (!BOUND(?date))"
                 + "}";
+        String query4 = "PREFIX foaf: <http://xmlns.com/foaf/0.1/> "
+                + "PREFIX dbo: <http://dbpedia.org/ontology/> "
+                + "PREFIX res: <http://dbpedia.org/resource/> "
+                + "SELECT DISTINCT ?date "
+                + "WHERE { res:Charmed dbo:starring ?actor . "
+                + "?actor dbo:birthDate ?date . }";
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
             SimpleNLG snlg = new SimpleNLG(ep);
-            Query sparqlQuery = QueryFactory.create(query3, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query4, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
