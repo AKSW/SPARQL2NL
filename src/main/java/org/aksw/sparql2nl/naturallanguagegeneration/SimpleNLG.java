@@ -63,12 +63,11 @@ public class SimpleNLG implements Sparql2NLConverter {
     public static final String VALUE = "value";
     public static final String UNKNOWN = "valueOrEntity";
     public static String GRAPH = null;
-    
     private SparqlEndpoint endpoint;
 
     public SimpleNLG(SparqlEndpoint endpoint) {
-    	this.endpoint = endpoint;
-    	
+        this.endpoint = endpoint;
+
         lexicon = Lexicon.getDefaultLexicon();
         nlgFactory = new NLGFactory(lexicon);
         realiser = new Realiser(lexicon);
@@ -209,18 +208,18 @@ public class SimpleNLG implements Sparql2NLConverter {
     public NPPhraseSpec getNPPhrase(String className, boolean plural) {
         NPPhraseSpec object = null;
         if (className.equals(OWL.Thing.getURI())) {
-        	object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
-        } else if(className.equals(RDFS.Literal.getURI())){
-        	object = nlgFactory.createNounPhrase(GenericType.VALUE.getNlr());
+            object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
+        } else if (className.equals(RDFS.Literal.getURI())) {
+            object = nlgFactory.createNounPhrase(GenericType.VALUE.getNlr());
         } else {
-        	String label = getEnglishLabel(className);
+            String label = getEnglishLabel(className);
             if (label != null) {
                 object = nlgFactory.createNounPhrase(label);
             } else {
-            	object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
+                object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
             }
         }
-        
+
         object.setPlural(plural);
         return object;
     }
@@ -373,8 +372,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                 p.setSubject(var);
                 p.setVerb("match");
                 p.setObject(pattern);
-            } 
-            //process language filter
+            } //process language filter
             else if (expr instanceof E_Equals) {
                 E_Equals expression;
                 expression = (E_Equals) expr;
@@ -395,8 +393,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                     p.setVerb("equal");
                     p.setObject(arg2);
                 }
-            } 
-                    //not equals
+            } //not equals
             else if (expr instanceof E_NotEquals) {
                 E_NotEquals expression;
                 expression = (E_NotEquals) expr;
@@ -411,28 +408,27 @@ public class SimpleNLG implements Sparql2NLConverter {
                     p.setVerb("be in");
                     if (arg2.contains("en")) {
                         p.setObject("English");
-                    }                    
+                    }
                 } else {
                     p.setSubject(arg1);
-                    p.setVerb("equal");                    
-                    p.setObject(arg2);                    
+                    p.setVerb("equal");
+                    p.setObject(arg2);
                 }
                 p.setFeature(Feature.NEGATED, true);
-            } 
-                    //process >
+            } //process >
             else if (expr instanceof E_GreaterThan) {
-                String text = expr.toString().substring(2, expr.toString().length()-2);
-                String[] split = text.split(">");
+                String text = expr.toString().substring(2, expr.toString().length() - 2);
+                String[] split = text.split(" > ");
                 String arg1 = split[0].trim();
+                if(arg1.contains("("))
+                    arg1 = arg1.substring(arg1.lastIndexOf("(")+1, arg1.indexOf(")"));
                 String arg2 = split[1].trim();
                 p.setSubject(arg1);
                 p.setVerb("is larger than");
                 p.setObject(arg2);
-            }
-
-            //process <
+            } //process <
             else if (expr instanceof E_LessThan) {
-                String text = expr.toString().substring(2, expr.toString().length()-2);
+                String text = expr.toString().substring(2, expr.toString().length() - 2);
                 String[] split = text.split("<");
                 String arg1 = split[0].trim();
                 String arg2 = split[1].trim();
@@ -442,7 +438,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             }
 
             return p;
-    }
+        }
         return null;
     }
 
@@ -539,7 +535,8 @@ public class SimpleNLG implements Sparql2NLConverter {
                 //+ "SELECT ?uri "
                 + "WHERE { ?uri rdf:type yago:EuropeanCountries . ?uri dbo:governmentType ?govern . "
                 + "FILTER regex(?govern,'monarchy') . "
-                + "FILTER (?govern != 1000) . "
+                + "FILTER (dbo:integer(?govern) > 1000) . "
+                + "FILTER (!BOUND(?date))"
                 + "}";
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
