@@ -4,6 +4,7 @@ public enum GenericType {
 	
 	ENTITY("entity"),
 	VALUE("value"),
+	RELATION("property"),
 	UNKNOWN("UltimativeGenericEntity");
 	
 	private final String nlr;

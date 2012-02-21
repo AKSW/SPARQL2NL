@@ -285,6 +285,8 @@ public class SimpleNLG implements Sparql2NLConverter {
             object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
         } else if (className.equals(RDFS.Literal.getURI())) {
             object = nlgFactory.createNounPhrase(GenericType.VALUE.getNlr());
+        } else if(className.equals(RDF.Property.getURI())){
+        	object = nlgFactory.createNounPhrase(GenericType.RELATION.getNlr());
         } else {
             String label = getEnglishLabel(className);
             if (label != null) {
@@ -328,7 +330,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             }
             return label;
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace();System.out.println(resource);
         }
         return null;
     }
@@ -465,7 +467,7 @@ public class SimpleNLG implements Sparql2NLConverter {
 
         //process predicate
         if (t.getPredicate().isVariable()) {
-            p.setVerb("relate via " + t.getPredicate() + " to");
+            p.setVerb("be related via " + t.getPredicate().toString() + " to");
         } else {
             p.setVerb(getVerbFrom(t.getPredicate()));
         }
@@ -473,8 +475,10 @@ public class SimpleNLG implements Sparql2NLConverter {
         //process object
         if (t.getObject().isVariable()) {
             p.setObject(t.getObject().toString());
+        } else if(t.getObject().isLiteral()){
+           p.setObject(t.getObject().getLiteralLexicalForm());
         } else {
-            p.setObject(getNPPhrase(t.getObject().toString(), false));
+        	 p.setObject(getNPPhrase(t.getObject().toString(), false));
         }
 
         p.setFeature(Feature.TENSE, Tense.PRESENT);
@@ -490,7 +494,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             } else {
                 p.setSubject(getNPPhrase(t.getSubject().toString(), false));
             }
-            p.setVerb("be relate via \"" + getEnglishLabel(t.getPredicate().toString()) + "\" to");
+            p.setVerb("be related via " + t.getPredicate().toString() + " to");
             if (t.getObject().isVariable()) {
                 p.setObject(t.getObject().toString());
             } else {
@@ -733,6 +737,17 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') } }"
                 + " GROUP BY ?uri ?string "
                 + "HAVING (COUNT(?cave) > 2)";
+        String query5 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
+                + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
+                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "                
+                + "SELECT DISTINCT ?uri "
+                + "WHERE { ?cave rdf:type dbo:Cave . "
+                + "?cave dbo:location ?uri . "
+                + "?uri rdf:type dbo:Country . "
+                + "?uri dbo:writer ?y . "
+                + "?cave dbo:location ?x } ";
+        
+        String query6 = "PREFIX res: <http://dbpedia.org/resource/>  SELECT ?p {res:Abraham_Lincoln ?p res:Paris.}";
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
             SimpleNLG snlg = new SimpleNLG(ep);

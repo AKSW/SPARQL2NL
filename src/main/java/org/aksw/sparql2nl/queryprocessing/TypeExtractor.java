@@ -139,6 +139,8 @@ public class TypeExtractor extends ElementVisitorBase {
 						return RDFS.Literal.getURI();
 					}
 				}
+			} else {
+				return RDF.Property.getURI();
 			}
 		}
 		return OWL.Thing.getURI();
