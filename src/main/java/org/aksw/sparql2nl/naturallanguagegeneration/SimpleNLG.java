@@ -560,6 +560,7 @@ public class SimpleNLG implements Sparql2NLConverter {
 
     private NLGElement getNLFromSingleExpression(Expr expr) {
         SPhraseSpec p = nlgFactory.createClause();
+//        return new FilterExpressionConverter().convert(expr);
         //process REGEX
         if (expr instanceof E_Regex) {
             E_Regex expression;
