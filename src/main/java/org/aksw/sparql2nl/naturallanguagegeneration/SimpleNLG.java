@@ -609,7 +609,15 @@ public class SimpleNLG implements Sparql2NLConverter {
                     right = function.getArg(1);
                 }
             }
-            p.setObject(right.toString());
+            if(right.isVariable()){
+            	p.setObject(right.toString());
+            } else if(right.isConstant()){
+            	if(right.getConstant().isIRI()){
+            		p.setObject(getEnglishLabel(right.getConstant().getNode().getURI()));
+            	} else if(right.getConstant().isLiteral()){
+            		p.setObject(right.getConstant().asNode().getLiteralLexicalForm());
+            	}
+            }
             //handle verb resp. predicate
             String verb = null;
             if (expr instanceof E_GreaterThan) {
@@ -638,10 +646,13 @@ public class SimpleNLG implements Sparql2NLConverter {
                 }
             } else if(expr instanceof E_NotEquals){
                 if (left instanceof E_Lang) {
-                    p.setVerb("be in");
-                    p.setObject("English");
+                	verb = "be in";
+                	if(right.isConstant() && right.getConstant().asString().equals("en")){
+                		p.setObject("English");
+                	}
+                    
                 } else {
-                    p.setVerb("be equal to");
+                    verb = "be equal to";
                 }
                 p.setFeature(Feature.NEGATED, true);
             }
@@ -742,14 +753,17 @@ public class SimpleNLG implements Sparql2NLConverter {
         
         String query7 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"+
 "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"+
-"PREFIX foaf: <http://xmlns.com/foaf/0.1/>"+
+"PREFIX dbp: <http://dbpedia.org/property/>"+
 "PREFIX dbo: <http://dbpedia.org/ontology/>"+
 "PREFIX res: <http://dbpedia.org/resource/>"+
 "PREFIX yago: <http://dbpedia.org/class/yago/>"+
 "SELECT DISTINCT ?uri ?string "+
 "WHERE { "+
-"	?uri rdf:type yago:RussianCosmonauts."+
-"        ?uri rdf:type yago:FemaleAstronauts ."+
+"	?uri rdf:type dbo:Bridge ."+
+       " ?uri dbp:design ?design ."+
+        "res:Manhattan_Bridge dbp:design ?mdesign . "+
+        "FILTER (regex(?design, ?mdesign))."+
+        "FILTER (?uri != res:Manhattan_Bridge) ."+ 
 "OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') }"+
 "}";
         try {
