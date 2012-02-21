@@ -18,9 +18,11 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLG;
 import org.aksw.sparql2nl.queryprocessing.Similarity.SimilarityMeasure;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.log4j.Logger;
+import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -35,7 +37,8 @@ public class Evaluation {
 	private static final Logger logger = Logger.getLogger(Evaluation.class);
 	
 //	private static final String QUERIES_FILE = "resources/queries.txt";
-	private static final String QUERIES_FILE = "resources/GoodQALD.xml";
+//	private static final String QUERIES_FILE = "resources/GoodQALD.xml";
+	private static final String QUERIES_FILE = "resources/qald2-dbpedia-train.xml";
 	private static final int NR_OF_REPRESENTATIONS = 10;
 	
 	
@@ -121,7 +124,7 @@ public class Evaluation {
 		}
 		List<String> queries = new ArrayList<String>();
 		for(Entry<Integer, String> entry : id2Query.entrySet()){
-			QueryFactory.create(entry.getValue(), Syntax.syntaxARQ);
+//			QueryFactory.create(entry.getValue(), Syntax.syntaxARQ);
 			queries.add(entry.getValue());
 		}
 		logger.info("Done.");
@@ -309,12 +312,32 @@ public class Evaluation {
 //			if(entry.getKey() == 10)break;
 		}
 	}
+	
+	public void run2(){
+		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
+		readSPARQLQueriesFromXML(new File(QUERIES_FILE));
+		SimpleNLG nlg = new SimpleNLG(endpoint);
+		for(Entry<Integer, String> entry : id2Query.entrySet()){
+			String query = entry.getValue();
+//			logger.info("Evaluating query\n" + query);
+			String nlr = null;
+			try {
+				nlr = nlg.getNLR(QueryFactory.create(query, Syntax.syntaxARQ));
+			} catch (Exception e) {
+				if(!(e instanceof UnsupportedOperationException)){
+					e.printStackTrace();
+					System.err.println(query);
+				}
+			}
+			logger.info(nlr);
+		}
+	}
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		new Evaluation().run();
+		new Evaluation().run2();
 	}
 
 }

@@ -114,7 +114,7 @@ public class TypeExtractor extends ElementVisitorBase {
 	 */
 	private String inferGenericType(Var var){
 		Set<Triple> triples = var2Triples.get(var);
-		
+	
 		//if var is in subject position it should not be a literal, but an entity
 		for(Triple triple : triples){
 			if(triple.getSubject().sameValueAs(var)){
@@ -139,6 +139,8 @@ public class TypeExtractor extends ElementVisitorBase {
 						return RDFS.Literal.getURI();
 					}
 				}
+			} else {
+				return RDF.Property.getURI();
 			}
 		}
 		return OWL.Thing.getURI();
