@@ -38,17 +38,21 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.SortCondition;
 import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.sparql.core.TriplePath;
+import com.hp.hpl.jena.sparql.expr.E_Bound;
+import com.hp.hpl.jena.sparql.expr.E_Datatype;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThanOrEqual;
 import com.hp.hpl.jena.sparql.expr.E_Lang;
 import com.hp.hpl.jena.sparql.expr.E_LessThan;
 import com.hp.hpl.jena.sparql.expr.E_LessThanOrEqual;
+import com.hp.hpl.jena.sparql.expr.E_LogicalNot;
 import com.hp.hpl.jena.sparql.expr.E_NotEquals;
 import com.hp.hpl.jena.sparql.expr.E_Regex;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.ExprAggregator;
 import com.hp.hpl.jena.sparql.expr.ExprFunction;
+import com.hp.hpl.jena.sparql.expr.ExprFunction1;
 import com.hp.hpl.jena.sparql.expr.ExprFunction2;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggCountVar;
 import com.hp.hpl.jena.sparql.expr.aggregate.Aggregator;
@@ -567,7 +571,21 @@ public class SimpleNLG implements Sparql2NLConverter {
             p.setSubject(var);
             p.setVerb("match");
             p.setObject(pattern);
-        } //process language filter
+        } else if(expr instanceof ExprFunction1){
+        	boolean negated = false;
+        	if(expr instanceof E_LogicalNot){
+            	expr = ((E_LogicalNot) expr).getArg();
+            	negated = true;
+            }
+        	if(expr instanceof E_Bound){
+            	p.setSubject(((E_Bound) expr).getArg().toString());
+        		p.setVerb("exist");
+            } 
+        	if(negated){
+        		p.setFeature(Feature.NEGATED, true);
+        	}
+        } 
+        //process language filter
         else if (expr instanceof E_Equals) {
             E_Equals expression;
             expression = (E_Equals) expr;
@@ -759,7 +777,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "WHERE { ?cave rdf:type dbo:Cave . "
                 + "?cave dbo:location ?uri . "
                 + "?uri rdf:type dbo:Country . "
-                + "?uri dbo:writer ?y . "
+                + "?uri dbo:writer ?y . FILTER(!BOUND(?cave))"
                 + "?cave dbo:location ?x } ";
 
         String query6 = "PREFIX res: <http://dbpedia.org/resource/>  SELECT ?p {res:Abraham_Lincoln ?p res:Paris.}";
@@ -780,7 +798,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
             SimpleNLG snlg = new SimpleNLG(ep);
-            Query sparqlQuery = QueryFactory.create(query7, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query5, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
