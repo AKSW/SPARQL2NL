@@ -149,6 +149,10 @@ public class SimpleNLG implements Sparql2NLConverter {
         // first sort out variables
         Set<String> projectionVars = typeMap.keySet();
         Set<String> whereVars = getVars(whereElements, projectionVars);
+        // case we only have stuff such as rdf:type queries
+        if (whereVars.isEmpty()) {
+            whereVars = projectionVars;
+        }
         Set<String> optionalVars = getVars(optionalElements, projectionVars);
         //important. Remove variables that have already been declared in first
         //sentence from second sentence
@@ -185,8 +189,17 @@ public class SimpleNLG implements Sparql2NLConverter {
             //the optional clause exists
             //if no supplementary projection variables are used in the clause 
             if (optionalVars.isEmpty()) {
-                NLGElement optional = getNLFromElements(optionalElements);
-                sentences.add(nlgFactory.createSentence(optional));
+                SPhraseSpec optionalHead = nlgFactory.createClause();
+                optionalHead.setSubject("it");
+                optionalHead.setVerb("retrieve");
+                optionalHead.setObject("data");
+                optionalHead.setFeature(Feature.CUE_PHRASE, "Additionally, ");
+                NLGElement optionalBody = getNLFromElements(optionalElements);                
+                CoordinatedPhraseElement optionalPhrase = nlgFactory.createCoordinatedPhrase(optionalHead, optionalBody);
+                optionalPhrase.setConjunction("such that");
+                optionalPhrase.addComplement("if such exist");
+                sentences.add(nlgFactory.createSentence(optionalPhrase));
+                
             } //if supplementary projection variables are used in the clause 
             else {
                 SPhraseSpec optionalHead = nlgFactory.createClause();
@@ -228,7 +241,6 @@ public class SimpleNLG implements Sparql2NLConverter {
         if (query.hasOrderBy()) {
             //return only top-n elements
             if (query.hasLimit()) {
-
             } //else simple order results
             else {
                 List<SortCondition> sc = query.getOrderBy();
@@ -286,8 +298,8 @@ public class SimpleNLG implements Sparql2NLConverter {
             object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
         } else if (className.equals(RDFS.Literal.getURI())) {
             object = nlgFactory.createNounPhrase(GenericType.VALUE.getNlr());
-        } else if(className.equals(RDF.Property.getURI())){
-        	object = nlgFactory.createNounPhrase(GenericType.RELATION.getNlr());
+        } else if (className.equals(RDF.Property.getURI())) {
+            object = nlgFactory.createNounPhrase(GenericType.RELATION.getNlr());
         } else {
             String label = getEnglishLabel(className);
             if (label != null) {
@@ -306,10 +318,10 @@ public class SimpleNLG implements Sparql2NLConverter {
      * @return English label, null if none is found
      */
     private String getEnglishLabel(String resource) {
-        if(resource.equals(RDF.type.getURI())){
+        if (resource.equals(RDF.type.getURI())) {
             return "type";
-        } else if(resource.equals(RDFS.label.getURI())){
-        	return "label";
+        } else if (resource.equals(RDFS.label.getURI())) {
+            return "label";
         }
         try {
             String labelQuery = "SELECT ?label WHERE {<" + resource + "> "
@@ -331,7 +343,8 @@ public class SimpleNLG implements Sparql2NLConverter {
             }
             return label;
         } catch (Exception e) {
-            e.printStackTrace();System.out.println(resource);
+            e.printStackTrace();
+            System.out.println(resource);
         }
         return null;
     }
@@ -476,10 +489,10 @@ public class SimpleNLG implements Sparql2NLConverter {
         //process object
         if (t.getObject().isVariable()) {
             p.setObject(t.getObject().toString());
-        } else if(t.getObject().isLiteral()){
-           p.setObject(t.getObject().getLiteralLexicalForm());
+        } else if (t.getObject().isLiteral()) {
+            p.setObject(t.getObject().getLiteralLexicalForm());
         } else {
-        	 p.setObject(getNPPhrase(t.getObject().toString(), false));
+            p.setObject(getNPPhrase(t.getObject().toString(), false));
         }
 
         p.setFeature(Feature.TENSE, Tense.PRESENT);
@@ -501,7 +514,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             } else {
                 p.setObject(getNPPhrase(t.getObject().toString(), false));
             }
-        } else {            
+        } else {
             NLGElement subj;
             if (t.getSubject().isVariable()) {
                 subj = nlgFactory.createWord(t.getSubject().toString(), LexicalCategory.NOUN);
@@ -514,10 +527,10 @@ public class SimpleNLG implements Sparql2NLConverter {
             p.setVerb("be");
             if (t.getObject().isVariable()) {
                 p.setObject(t.getObject().toString());
-            } else if(t.getObject().isLiteral()){
-            	p.setObject(t.getObject().getLiteralLexicalForm());
+            } else if (t.getObject().isLiteral()) {
+                p.setObject(t.getObject().getLiteralLexicalForm());
             } else {
-            	p.setObject(getNPPhrase(t.getObject().toString(), false));
+                p.setObject(getNPPhrase(t.getObject().toString(), false));
             }
         }
         p.setFeature(Feature.TENSE, Tense.PRESENT);
@@ -578,28 +591,28 @@ public class SimpleNLG implements Sparql2NLConverter {
         } else if (expr instanceof ExprFunction2) {
             Expr left = ((ExprFunction2) expr).getArg1();
             Expr right = ((ExprFunction2) expr).getArg2();
-            
+
             //invert if right is variable or aggregation and left side not 
             boolean inverted = false;
-            if(!left.isVariable() && (right.isVariable() || right instanceof ExprAggregator)){
-            	Expr tmp = left;
-            	left = right;
-            	right = tmp;
-            	inverted = true;
+            if (!left.isVariable() && (right.isVariable() || right instanceof ExprAggregator)) {
+                Expr tmp = left;
+                left = right;
+                right = tmp;
+                inverted = true;
             }
-            
+
             //handle subject
             NLGElement subject = null;
-            if(left instanceof ExprAggregator){
-            	subject = getNLGFromAggregation((ExprAggregator) left);
+            if (left instanceof ExprAggregator) {
+                subject = getNLGFromAggregation((ExprAggregator) left);
             } else {
-            	if (left.isFunction()) {
+                if (left.isFunction()) {
                     ExprFunction function = left.getFunction();
                     if (function.getArgs().size() == 1) {
                         left = function.getArg(1);
                     }
                 }
-            	subject = nlgFactory.createNounPhrase(left.toString());
+                subject = nlgFactory.createNounPhrase(left.toString());
             }
             p.setSubject(subject);
             //handle object
@@ -628,7 +641,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                 }
             } else if (expr instanceof E_GreaterThanOrEqual) {
                 if (inverted) {
-                	verb = "be less than or equal to";
+                    verb = "be less than or equal to";
                 } else {
                     verb = "be greater than or equal to";
                 }
@@ -644,7 +657,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                 } else {
                     verb = "be less than or equal to";
                 }
-            } else if(expr instanceof E_NotEquals){
+            } else if (expr instanceof E_NotEquals) {
                 if (left instanceof E_Lang) {
                 	verb = "be in";
                 	if(right.isConstant() && right.getConstant().asString().equals("en")){
@@ -663,15 +676,15 @@ public class SimpleNLG implements Sparql2NLConverter {
         }
         return p;
     }
-    
-    private NLGElement getNLGFromAggregation(ExprAggregator aggregationExpr){
-    	SPhraseSpec p = nlgFactory.createClause();
-    	Aggregator aggregator = aggregationExpr.getAggregator();
-    	Expr expr = aggregator.getExpr();
-    	if(aggregator instanceof AggCountVar){
-    		p.setSubject("the number of " + expr);
-    	}
-    	return p.getSubject();
+
+    private NLGElement getNLGFromAggregation(ExprAggregator aggregationExpr) {
+        SPhraseSpec p = nlgFactory.createClause();
+        Aggregator aggregator = aggregationExpr.getAggregator();
+        Expr expr = aggregator.getExpr();
+        if (aggregator instanceof AggCountVar) {
+            p.setSubject("the number of " + expr);
+        }
+        return p.getSubject();
     }
 
     private NLGElement getNLFromExpressions(List<Expr> expressions) {
@@ -731,7 +744,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "}";
         String query4 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
-                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "                
+                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
                 + "SELECT DISTINCT ?uri ?string "
                 + "WHERE { ?cave rdf:type dbo:Cave . "
                 + "?cave dbo:location ?uri . "
@@ -741,31 +754,29 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "HAVING (COUNT(?cave) > 2)";
         String query5 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
-                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "                
+                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
                 + "SELECT DISTINCT ?uri "
                 + "WHERE { ?cave rdf:type dbo:Cave . "
                 + "?cave dbo:location ?uri . "
                 + "?uri rdf:type dbo:Country . "
                 + "?uri dbo:writer ?y . "
                 + "?cave dbo:location ?x } ";
-        
+
         String query6 = "PREFIX res: <http://dbpedia.org/resource/>  SELECT ?p {res:Abraham_Lincoln ?p res:Paris.}";
-        
-        String query7 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"+
-"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"+
-"PREFIX dbp: <http://dbpedia.org/property/>"+
-"PREFIX dbo: <http://dbpedia.org/ontology/>"+
-"PREFIX res: <http://dbpedia.org/resource/>"+
-"PREFIX yago: <http://dbpedia.org/class/yago/>"+
-"SELECT DISTINCT ?uri ?string "+
-"WHERE { "+
-"	?uri rdf:type dbo:Bridge ."+
-       " ?uri dbp:design ?design ."+
-        "res:Manhattan_Bridge dbp:design ?mdesign . "+
-        "FILTER (regex(?design, ?mdesign))."+
-        "FILTER (?uri != res:Manhattan_Bridge) ."+ 
-"OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') }"+
-"}";
+
+
+        String query7 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
+                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
+                + "PREFIX foaf: <http://xmlns.com/foaf/0.1/>"
+                + "PREFIX dbo: <http://dbpedia.org/ontology/>"
+                + "PREFIX res: <http://dbpedia.org/resource/>"
+                + "PREFIX yago: <http://dbpedia.org/class/yago/>"
+                + "SELECT DISTINCT ?uri ?string "
+                + "WHERE { "
+                + "	?uri rdf:type yago:RussianCosmonauts."
+                + "        ?uri rdf:type yago:FemaleAstronauts ."
+                + "OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') }"
+                + "}";
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
             SimpleNLG snlg = new SimpleNLG(ep);
