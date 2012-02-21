@@ -699,7 +699,8 @@ public class SimpleNLG implements Sparql2NLConverter {
         String query2 = "PREFIX res: <http://dbpedia.org/resource/> "
                 + "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "SELECT DISTINCT ?height "
-                + "WHERE { res:Claudia_Schiffer dbo:height ?height . FILTER(\"1.0e6\"^^<http://www.w3.org/2001/XMLSchema#double> <= ?height)}";
+                + "WHERE { res:Claudia_Schiffer dbo:height ?height . "
+                + "FILTER(\"1.0e6\"^^<http://www.w3.org/2001/XMLSchema#double> <= ?height)}";
 
         String query = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
