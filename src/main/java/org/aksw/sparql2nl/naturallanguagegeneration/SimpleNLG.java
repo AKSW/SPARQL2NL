@@ -133,11 +133,11 @@ public class SimpleNLG implements Sparql2NLConverter {
     public DocumentElement convertSelect(Query query) {
         // List of sentences for the output
         List<DocumentElement> sentences = new ArrayList<DocumentElement>();
-//        System.out.println("Input query = " + query);
+        System.out.println("Input query = " + query);
         // preprocess the query to get the relevant types
         TypeExtractor tEx = new TypeExtractor(endpoint);
         Map<String, Set<String>> typeMap = tEx.extractTypes(query);
-//        System.out.println("Processed query = " + query);
+        System.out.println("Processed query = " + query);
         // contains the beginning of the query, e.g., "this query returns"
         SPhraseSpec head = nlgFactory.createClause();
         String conjunction = "such that";
@@ -194,12 +194,12 @@ public class SimpleNLG implements Sparql2NLConverter {
                 optionalHead.setVerb("retrieve");
                 optionalHead.setObject("data");
                 optionalHead.setFeature(Feature.CUE_PHRASE, "Additionally, ");
-                NLGElement optionalBody = getNLFromElements(optionalElements);                
+                NLGElement optionalBody = getNLFromElements(optionalElements);
                 CoordinatedPhraseElement optionalPhrase = nlgFactory.createCoordinatedPhrase(optionalHead, optionalBody);
                 optionalPhrase.setConjunction("such that");
                 optionalPhrase.addComplement("if such exist");
                 sentences.add(nlgFactory.createSentence(optionalPhrase));
-                
+
             } //if supplementary projection variables are used in the clause 
             else {
                 SPhraseSpec optionalHead = nlgFactory.createClause();
@@ -426,7 +426,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             Triple t1 = triples.get(1);
             cpe = nlgFactory.createCoordinatedPhrase(getNLForTriple(t0), getNLForTriple(t1));
             for (int i = 2; i < triples.size(); i++) {
-                cpe.addComplement(getNLForTriple(triples.get(i)));
+                cpe.addCoordinate(getNLForTriple(triples.get(i)));
             }
             cpe.setConjunction(conjunction);
             return cpe;
@@ -748,10 +748,11 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "WHERE { ?cave rdf:type dbo:Cave . "
                 + "?cave dbo:location ?uri . "
                 + "?uri rdf:type dbo:Country . "
-                + "?uri dbo:writer ?y . "
+                //+ "?uri dbo:writer ?y . "
                 + "?cave dbo:location ?x } ";
 
-        String query6 = "PREFIX res: <http://dbpedia.org/resource/>  SELECT ?p {res:Abraham_Lincoln ?p res:Paris.}";
+        String query6 = "PREFIX res: <http://dbpedia.org/resource/>  "
+                + "SELECT ?p {res:Abraham_Lincoln ?p res:Paris.}";
 
         String query7 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
                 + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
@@ -768,7 +769,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
             SimpleNLG snlg = new SimpleNLG(ep);
-            Query sparqlQuery = QueryFactory.create(query7, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query5, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
