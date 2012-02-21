@@ -41,6 +41,7 @@ import com.hp.hpl.jena.sparql.core.TriplePath;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThanOrEqual;
+import com.hp.hpl.jena.sparql.expr.E_Lang;
 import com.hp.hpl.jena.sparql.expr.E_LessThan;
 import com.hp.hpl.jena.sparql.expr.E_LessThanOrEqual;
 import com.hp.hpl.jena.sparql.expr.E_NotEquals;
@@ -58,8 +59,8 @@ import com.hp.hpl.jena.sparql.syntax.ElementOptional;
 import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
 import com.hp.hpl.jena.sparql.syntax.ElementUnion;
 import com.hp.hpl.jena.vocabulary.OWL;
-import com.hp.hpl.jena.vocabulary.RDFS;
 import com.hp.hpl.jena.vocabulary.RDF;
+import com.hp.hpl.jena.vocabulary.RDFS;
 
 /**
  *
@@ -132,11 +133,11 @@ public class SimpleNLG implements Sparql2NLConverter {
     public DocumentElement convertSelect(Query query) {
         // List of sentences for the output
         List<DocumentElement> sentences = new ArrayList<DocumentElement>();
-        System.out.println("Input query = " + query);
+//        System.out.println("Input query = " + query);
         // preprocess the query to get the relevant types
         TypeExtractor tEx = new TypeExtractor(endpoint);
         Map<String, Set<String>> typeMap = tEx.extractTypes(query);
-        System.out.println("Processed query = " + query);
+//        System.out.println("Processed query = " + query);
         // contains the beginning of the query, e.g., "this query returns"
         SPhraseSpec head = nlgFactory.createClause();
         String conjunction = "such that";
@@ -513,8 +514,10 @@ public class SimpleNLG implements Sparql2NLConverter {
             p.setVerb("be");
             if (t.getObject().isVariable()) {
                 p.setObject(t.getObject().toString());
+            } else if(t.getObject().isLiteral()){
+            	p.setObject(t.getObject().getLiteralLexicalForm());
             } else {
-                p.setObject(getNPPhrase(t.getObject().toString(), false));
+            	p.setObject(getNPPhrase(t.getObject().toString(), false));
             }
         }
         p.setFeature(Feature.TENSE, Tense.PRESENT);
@@ -633,31 +636,18 @@ public class SimpleNLG implements Sparql2NLConverter {
                 } else {
                     verb = "be less than or equal to";
                 }
+            } else if(expr instanceof E_NotEquals){
+                if (left instanceof E_Lang) {
+                    p.setVerb("be in");
+                    p.setObject("English");
+                } else {
+                    p.setVerb("be equal to");
+                }
+                p.setFeature(Feature.NEGATED, true);
             }
             p.setVerb(verb);
         } //not equals
-        else if (expr instanceof E_NotEquals) {
-            E_NotEquals expression;
-            expression = (E_NotEquals) expr;
-            String text = expression.toString();
-            text = text.substring(1, text.length() - 1);
-            String[] split = text.split("!=");
-            String arg1 = split[0].trim();
-            String arg2 = split[1].trim();
-            if (arg1.startsWith("lang")) {
-                String var = arg1.substring(5, arg1.length() - 1);
-                p.setSubject(var);
-                p.setVerb("be in");
-                if (arg2.contains("en")) {
-                    p.setObject("English");
-                }
-            } else {
-                p.setSubject(arg1);
-                p.setVerb("equal");
-                p.setObject(arg2);
-            }
-            p.setFeature(Feature.NEGATED, true);
-        } else {
+        else {
             return null;
         }
         return p;
@@ -748,10 +738,23 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "?cave dbo:location ?x } ";
         
         String query6 = "PREFIX res: <http://dbpedia.org/resource/>  SELECT ?p {res:Abraham_Lincoln ?p res:Paris.}";
+        
+        String query7 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"+
+"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"+
+"PREFIX foaf: <http://xmlns.com/foaf/0.1/>"+
+"PREFIX dbo: <http://dbpedia.org/ontology/>"+
+"PREFIX res: <http://dbpedia.org/resource/>"+
+"PREFIX yago: <http://dbpedia.org/class/yago/>"+
+"SELECT DISTINCT ?uri ?string "+
+"WHERE { "+
+"	?uri rdf:type yago:RussianCosmonauts."+
+"        ?uri rdf:type yago:FemaleAstronauts ."+
+"OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') }"+
+"}";
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
             SimpleNLG snlg = new SimpleNLG(ep);
-            Query sparqlQuery = QueryFactory.create(query4, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query7, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {

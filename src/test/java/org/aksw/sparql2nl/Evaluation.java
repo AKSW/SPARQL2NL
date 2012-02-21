@@ -319,13 +319,15 @@ public class Evaluation {
 		SimpleNLG nlg = new SimpleNLG(endpoint);
 		for(Entry<Integer, String> entry : id2Query.entrySet()){
 			String query = entry.getValue();
-			logger.info("Evaluating query\n" + query);
+//			logger.info("Evaluating query\n" + query);
 			String nlr = null;
 			try {
 				nlr = nlg.getNLR(QueryFactory.create(query, Syntax.syntaxARQ));
 			} catch (Exception e) {
-				e.printStackTrace();
-				System.out.println(query);
+				if(!(e instanceof UnsupportedOperationException)){
+					e.printStackTrace();
+					System.err.println(query);
+				}
 			}
 			logger.info(nlr);
 		}
