@@ -111,10 +111,8 @@ public class SimpleNLG implements Sparql2NLConverter {
      */
     @Override
     public DocumentElement convert2NLE(Query query) {
-        if (query.isSelectType()) {
-            return convertSelect(query);
-        } else if (query.isAskType()) {
-            return convertAsk(query);
+        if (query.isSelectType() || query.isAskType()) {
+            return convertSelectAndAsk(query);
         } else if (query.isDescribeType()) {
             return convertDescribe(query);
         } else {
@@ -134,7 +132,7 @@ public class SimpleNLG implements Sparql2NLConverter {
      * @param query Input query
      * @return Natural Language Representation
      */
-    public DocumentElement convertSelect(Query query) {
+    public DocumentElement convertSelectAndAsk(Query query) {
         // List of sentences for the output
         List<DocumentElement> sentences = new ArrayList<DocumentElement>();
         System.out.println("Input query = " + query);
@@ -165,13 +163,24 @@ public class SimpleNLG implements Sparql2NLConverter {
                 optionalVars.remove(var);
             }
         }
-        //process head
-        //we could create a lexicon from which we could read these
-        head.setSubject("This query");
-        if (!tEx.isCount()) {
-            head.setVerb("retrieve");
-        } else {
-            head.setVerb("retrieve the number of");
+
+        //process SELECT queries
+        if (query.isSelectType()) {
+            //process head
+            //we could create a lexicon from which we could read these
+            head.setSubject("This query");
+            if (!tEx.isCount()) {
+                head.setVerb("retrieve");
+            } else {
+                head.setVerb("retrieve the number of");
+            }
+        } 
+        //process ASK queries
+        else {
+            //process head
+            //we could create a lexicon from which we could read these
+            head.setSubject("This query");
+            head.setVerb("ask for the existence of");
         }
         NLGElement e = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());
         head.setObject(e);
@@ -389,7 +398,9 @@ public class SimpleNLG implements Sparql2NLConverter {
                         cpe.addCoordinate(np);
                     }
                     cpe.setConjunction("as well as");
-                    if(distinct) cpe.addPreModifier("distinct");
+                    if (distinct) {
+                        cpe.addPreModifier("distinct");
+                    }
                     object.addPreModifier(cpe);
                 }
                 object.setFeature(Feature.CONJUNCTION, "or");
@@ -409,11 +420,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             //if(count) cpe.addPreModifier("the number of");
             return cpe;
         }
-    }
-
-    public DocumentElement convertAsk(Query query) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
+    }    
 
     public DocumentElement convertDescribe(Query query) {
         throw new UnsupportedOperationException("Not yet implemented");
@@ -803,9 +810,13 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "?uri dbo:writer ?y . FILTER(!BOUND(?cave))"
                 + "?cave dbo:location ?x } ";
 
-        String query6 = "PREFIX res: <http://dbpedia.org/resource/>  "
-                + "SELECT ?p {res:Abraham_Lincoln ?p res:Paris.}";
-
+        String query6 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
+                + "PREFIX res: <http://dbpedia.org/resource/> "
+                + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
+                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
+                + "ASK WHERE { res:Barack_Obama dbo:spouse ?spouse . "
+                + "?spouse rdfs:label ?name . "
+                + "FILTER(regex(?name,'Michelle')) }";
 
         String query7 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
                 + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
@@ -822,7 +833,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
             SimpleNLG snlg = new SimpleNLG(ep);
-            Query sparqlQuery = QueryFactory.create(query7, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query6, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
