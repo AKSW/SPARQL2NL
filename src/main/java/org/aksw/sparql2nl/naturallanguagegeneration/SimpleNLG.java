@@ -368,7 +368,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         }
         try {
             String labelQuery = "SELECT ?label WHERE {<" + resource + "> "
-                    + "<http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en')}";
+                    + "<http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}";
 
             // take care of graph issues. Only takes one graph. Seems like some sparql endpoint do
             // not like the FROM option.
@@ -386,6 +386,9 @@ public class SimpleNLG implements Sparql2NLConverter {
             }
             if(label == null){
             	label = dereferenceURI(resource);
+            }
+            if(label == null){
+            	label = resource;
             }
             return label;
         } catch (Exception e) {
@@ -800,6 +803,7 @@ public class SimpleNLG implements Sparql2NLConverter {
      * @return
      */
     private String dereferenceURI(String uri){
+    	//TODO add caching for vocabulary
     	String label = null;
     	try {
 			URLConnection conn = new URL(uri).openConnection();
@@ -899,7 +903,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "LIMIT 1";
 
         try {
-            SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
+            SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             SimpleNLG snlg = new SimpleNLG(ep);
             Query sparqlQuery = QueryFactory.create(query8, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
