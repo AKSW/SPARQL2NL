@@ -319,15 +319,16 @@ public class Evaluation {
 		SimpleNLG nlg = new SimpleNLG(endpoint);
 		for(Entry<Integer, String> entry : id2Query.entrySet()){
 			String query = entry.getValue();
+			if(query.contains("OUT OF SCOPE")){
+				continue;
+			}
 //			logger.info("Evaluating query\n" + query);
 			String nlr = null;
 			try {
 				nlr = nlg.getNLR(QueryFactory.create(query, Syntax.syntaxARQ));
 			} catch (Exception e) {
-				if(!(e instanceof UnsupportedOperationException)){
-					e.printStackTrace();
-					System.err.println(query);
-				}
+				logger.error(e);
+				System.err.println(query);
 			}
 			logger.info(nlr);
 		}

@@ -4,9 +4,15 @@
  */
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,6 +43,10 @@ import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.SortCondition;
 import com.hp.hpl.jena.query.Syntax;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.sparql.core.TriplePath;
 import com.hp.hpl.jena.sparql.expr.E_Bound;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
@@ -64,7 +74,6 @@ import com.hp.hpl.jena.sparql.syntax.ElementUnion;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
-import java.util.Iterator;
 
 /**
  *
@@ -362,6 +371,9 @@ public class SimpleNLG implements Sparql2NLConverter {
                 {
                     label = soln.getLiteral("label").getLexicalForm();
                 }
+            }
+            if(label == null){
+            	label = dereferenceURI(resource);
             }
             return label;
         } catch (Exception e) {
@@ -768,6 +780,30 @@ public class SimpleNLG implements Sparql2NLConverter {
             cpe.setConjunction("and");
             return cpe;
         }
+    }
+    
+    /**
+     * Returns the English label of the URI by dereferencing its URI and searching for rdfs:label entries.
+     * @param uri
+     * @return
+     */
+    private String dereferenceURI(String uri){
+    	String label = null;
+    	try {
+			URLConnection conn = new URL(uri).openConnection();
+			conn.setRequestProperty("Accept", "application/rdf+xml");
+			Model model = ModelFactory.createDefaultModel();
+			InputStream in = conn.getInputStream();
+			model.read(in, null);
+			for(Statement st : model.listStatements(model.getResource(uri), RDFS.label, (RDFNode)null).toList()){
+				label = st.getObject().asLiteral().getLexicalForm();
+			}
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+    	return label;
     }
 
     public static void main(String args[]) {
