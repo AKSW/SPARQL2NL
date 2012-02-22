@@ -174,12 +174,10 @@ public class SimpleNLG implements Sparql2NLConverter {
             } else {
                 head.setVerb("retrieve the number of");
             }
-        } 
-        //process ASK queries
+        } //process ASK queries
         else {
             //process factual queries (no variables at all)
-            if(typeMap.isEmpty())
-            {
+            if (typeMap.isEmpty()) {
                 head.setSubject("This query");
                 head.setVerb("ask whether");
                 head.setObject(getNLFromElements(whereElements));
@@ -257,21 +255,35 @@ public class SimpleNLG implements Sparql2NLConverter {
             List<Expr> expressions = query.getHavingExprs();
             CoordinatedPhraseElement phrase = nlgFactory.createCoordinatedPhrase(modifierHead, getNLFromExpressions(expressions));
             phrase.setConjunction("such that");
-
             sentences.add(nlgFactory.createSentence(phrase));
         }
         if (query.hasOrderBy()) {
-            //return only top-n elements
-            if (query.hasLimit()) {
-            } //else simple order results
-            else {
-                List<SortCondition> sc = query.getOrderBy();
-                List<Expr> sortExpression = new ArrayList<Expr>();
-                for (int i = 0; i < sc.size(); i++) {
-                    sortExpression.add(sc.get(i).getExpression());
-                }
+            List<SortCondition> sc = query.getOrderBy();
+            List<Expr> sortExpression = new ArrayList<Expr>();
+            for (int i = 0; i < sc.size(); i++) {
+                sortExpression.add(sc.get(i).getExpression());
             }
         }
+        if (query.hasLimit()) {
+            SPhraseSpec limitOffset = nlgFactory.createClause();
+            long limit = query.getLimit();
+            if (query.hasOffset()) {
+                long offset = query.getOffset();
+                limitOffset.setSubject("The query");
+                limitOffset.setVerb("return");
+                limitOffset.setObject("results between number " + limit + " and " + offset);
+            } else {
+                limitOffset.setSubject("The query");
+                limitOffset.setVerb("return");
+                if (limit > 1) {
+                    limitOffset.setObject("the first " + limit + " results");
+                } else {
+                    limitOffset.setObject("the first result");
+                }
+            }
+            sentences.add(nlgFactory.createSentence(limitOffset));
+        }
+
         DocumentElement result = nlgFactory.createParagraph(sentences);
         return result;
     }
@@ -429,7 +441,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             //if(count) cpe.addPreModifier("the number of");
             return cpe;
         }
-    }    
+    }
 
     public DocumentElement convertDescribe(Query query) {
         throw new UnsupportedOperationException("Not yet implemented");
@@ -820,9 +832,9 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "?cave dbo:location ?x } ";
 
         String query6 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
-                +"PREFIX res: <http://dbpedia.org/resource/> "
-                +"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
-                +"ASK WHERE { res:Proinsulin rdf:type dbo:Protein .}";
+                + "PREFIX res: <http://dbpedia.org/resource/> "
+                + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
+                + "ASK WHERE { res:Proinsulin rdf:type dbo:Protein .}";
 
         String query7 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
                 + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
@@ -836,10 +848,24 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "        ?uri rdf:type yago:FemaleAstronauts ."
                 + "OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') }"
                 + "}";
+
+        String query8 = "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
+                + "PREFIX  dbo:  <http://dbpedia.org/ontology/> "
+                + "PREFIX  dbp:  <http://dbpedia.org/property/> "
+                + "PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
+                + "SELECT DISTINCT  ?uri ?string "
+                + "WHERE { ?uri rdf:type dbo:Country . "
+                + "?uri dbp:officialLanguages ?language "
+                + "OPTIONAL { ?uri rdfs:label ?string "
+                + "FILTER ( lang(?string) = \'en\' )} } "
+                + "GROUP BY ?uri ?language ?string "
+                + "ORDER BY DESC(?language) "
+                + "LIMIT 1";
+
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
             SimpleNLG snlg = new SimpleNLG(ep);
-            Query sparqlQuery = QueryFactory.create(query6, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query8, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
