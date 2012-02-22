@@ -112,7 +112,7 @@ public class TypeExtractor extends ElementVisitorBase {
 	 * @param var
 	 * @return
 	 */
-	private String inferGenericType(Var var){
+	private String inferGenericType(Var var){System.out.println(var);
 		Set<Triple> triples = var2Triples.get(var);
 	
 		//if var is in subject position it should not be a literal, but an entity
@@ -247,9 +247,16 @@ public class TypeExtractor extends ElementVisitorBase {
 						if(object.isURI()){
 							addType(subjectVar.getName(), object.getURI());
 							return true;
+						} else if(object.isVariable()){
+							addType(subjectVar.getName(), OWL.Thing.getURI());
+							addType(object.getName(), RDF.type.getURI());
+							return true;
 						}
-						//TODO handle case where object is not a URI
+						
+					} else if(projectVar.equals(Var.alloc(object.getName()))){
+						addType(object.getName(), RDF.type.getURI());
 					}
+					//TODO handle case where object is not a URI
 					
 				}
 			}

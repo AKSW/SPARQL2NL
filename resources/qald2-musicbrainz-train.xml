@@ -477,7 +477,7 @@ ASK WHERE {
 	?band foaf:name 'Ramones' .
 	?artist foaf:name ?artistname .
 	?artist mo:member_of ?band .
-        FILTER (NOT regex(?artistname,"Ramone"))
+        FILTER (!regex(?artistname,"Ramone"))
 }
 ]]></query>
 </question>
@@ -965,6 +965,7 @@ Which bands were founded in 2010?
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX bio: <http://purl.org/vocab/bio/0.1/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 SELECT DISTINCT ?band ?bandname
 WHERE {
   ?band foaf:name ?bandname .
@@ -1295,6 +1296,7 @@ What is the longest song by John Cage?
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX tl: <http://purl.org/NET/c4dm/timeline.owl#>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
 SELECT ?song ?songtitle
 WHERE {
   ?song tl:duration ?duration .

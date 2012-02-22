@@ -358,6 +358,8 @@ public class SimpleNLG implements Sparql2NLConverter {
             object = nlgFactory.createNounPhrase(GenericType.VALUE.getNlr());
         } else if (className.equals(RDF.Property.getURI())) {
             object = nlgFactory.createNounPhrase(GenericType.RELATION.getNlr());
+        } else if (className.equals(RDF.type.getURI())) {
+            object = nlgFactory.createNounPhrase(GenericType.TYPE.getNlr());
         } else {
             String label = getEnglishLabel(className);
             if (label != null) {
@@ -913,14 +915,24 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "?uri dbp:officialLanguages ?language "
                 + "OPTIONAL { ?uri rdfs:label ?string "
                 + "FILTER ( lang(?string) = \'en\' )} } "
-                + "GROUP BY ?uri ?language ?string "
+                + "GROUP BY ?uri ?string "
                 + "ORDER BY DESC(?language) "
                 + "LIMIT 1";
+        
+        String query9 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "+
+"PREFIX foaf: <http://xmlns.com/foaf/0.1/> "+
+"PREFIX mo: <http://purl.org/ontology/mo/> "+
+"SELECT DISTINCT ?artisttype "+
+"WHERE {"+
+    "?artist foaf:name 'Liz Story'."+
+    "?artist rdf:type ?artisttype ."+
+    "FILTER (?artisttype != mo:MusicArtist)"+
+"}";
 
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             SimpleNLG snlg = new SimpleNLG(ep);
-            Query sparqlQuery = QueryFactory.create(query8, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query9, Syntax.syntaxSPARQL_11);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
