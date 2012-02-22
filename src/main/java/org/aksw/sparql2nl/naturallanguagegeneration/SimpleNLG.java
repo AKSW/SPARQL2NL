@@ -135,11 +135,11 @@ public class SimpleNLG implements Sparql2NLConverter {
     public DocumentElement convertSelectAndAsk(Query query) {
         // List of sentences for the output
         List<DocumentElement> sentences = new ArrayList<DocumentElement>();
-        System.out.println("Input query = " + query);
+//        System.out.println("Input query = " + query);
         // preprocess the query to get the relevant types
         TypeExtractor tEx = new TypeExtractor(endpoint);
         Map<String, Set<String>> typeMap = tEx.extractTypes(query);
-        System.out.println("Processed query = " + query);
+//        System.out.println("Processed query = " + query);
         // contains the beginning of the query, e.g., "this query returns"
         SPhraseSpec head = nlgFactory.createClause();
         String conjunction = "such that";
@@ -177,6 +177,15 @@ public class SimpleNLG implements Sparql2NLConverter {
         } 
         //process ASK queries
         else {
+            //process factual queries (no variables at all)
+            if(typeMap.isEmpty())
+            {
+                head.setSubject("This query");
+                head.setVerb("ask whether");
+                head.setObject(getNLFromElements(whereElements));
+                sentences.add(nlgFactory.createSentence(head));
+                return nlgFactory.createParagraph(sentences);
+            }
             //process head
             //we could create a lexicon from which we could read these
             head.setSubject("This query");
@@ -811,12 +820,9 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "?cave dbo:location ?x } ";
 
         String query6 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
-                + "PREFIX res: <http://dbpedia.org/resource/> "
-                + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
-                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
-                + "ASK WHERE { res:Barack_Obama dbo:spouse ?spouse . "
-                + "?spouse rdfs:label ?name . "
-                + "FILTER(regex(?name,'Michelle')) }";
+                +"PREFIX res: <http://dbpedia.org/resource/> "
+                +"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
+                +"ASK WHERE { res:Proinsulin rdf:type dbo:Protein .}";
 
         String query7 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
                 + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
