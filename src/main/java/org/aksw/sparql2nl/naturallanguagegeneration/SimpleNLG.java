@@ -53,6 +53,7 @@ import com.hp.hpl.jena.sparql.expr.ExprAggregator;
 import com.hp.hpl.jena.sparql.expr.ExprFunction;
 import com.hp.hpl.jena.sparql.expr.ExprFunction1;
 import com.hp.hpl.jena.sparql.expr.ExprFunction2;
+import com.hp.hpl.jena.sparql.expr.ExprVar;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggCountVar;
 import com.hp.hpl.jena.sparql.expr.aggregate.Aggregator;
 import com.hp.hpl.jena.sparql.syntax.Element;
@@ -258,11 +259,25 @@ public class SimpleNLG implements Sparql2NLConverter {
             sentences.add(nlgFactory.createSentence(phrase));
         }
         if (query.hasOrderBy()) {
-            List<SortCondition> sc = query.getOrderBy();
-            List<Expr> sortExpression = new ArrayList<Expr>();
-            for (int i = 0; i < sc.size(); i++) {
-                sortExpression.add(sc.get(i).getExpression());
+            SPhraseSpec order = nlgFactory.createClause();
+            order.setSubject("The results");
+            order.getSubject().setPlural(true);
+            order.setVerb("be ordered by");
+            List<SortCondition> sc = query.getOrderBy();            
+            if(sc.size()==1)
+            {                
+                Expr expr = sc.get(0).getExpression();                
+                if(expr instanceof ExprVar)
+                {
+                    ExprVar ev = (ExprVar)expr;
+                    order.setObject(ev.toString());
+                }
+                if(sc.get(0).direction < 0)
+                    order.addComplement("in descending order");
+                else
+                    order.addComplement("in ascending order");
             }
+            sentences.add(nlgFactory.createSentence(order));
         }
         if (query.hasLimit()) {
             SPhraseSpec limitOffset = nlgFactory.createClause();
