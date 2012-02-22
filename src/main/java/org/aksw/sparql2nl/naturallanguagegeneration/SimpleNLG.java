@@ -39,7 +39,6 @@ import com.hp.hpl.jena.query.SortCondition;
 import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.sparql.core.TriplePath;
 import com.hp.hpl.jena.sparql.expr.E_Bound;
-import com.hp.hpl.jena.sparql.expr.E_Datatype;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThanOrEqual;
@@ -65,6 +64,7 @@ import com.hp.hpl.jena.sparql.syntax.ElementUnion;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
+import java.util.Iterator;
 
 /**
  *
@@ -362,12 +362,35 @@ public class SimpleNLG implements Sparql2NLConverter {
                 NPPhraseSpec object;
                 object = nlgFactory.createNounPhrase("?" + s);
                 Set<String> types = typeMap.get(s);
-                for (String type : types) {
-                    NPPhraseSpec np = getNPPhrase(type, true);
+                if (types.size() == 1) {
+                    NPPhraseSpec np = getNPPhrase(types.iterator().next(), true);
                     if (distinct) {
                         np.addModifier("distinct");
                     }
                     object.addPreModifier(np);
+                } else {
+                    Iterator<String> typeIterator = types.iterator();
+                    String type0 = typeIterator.next();
+                    String type1 = typeIterator.next();
+                    NPPhraseSpec np0 = getNPPhrase(type0, true);
+//                        if (distinct) {
+//                            np0.addModifier("distinct");
+//                        }
+                    NPPhraseSpec np1 = getNPPhrase(type1, true);
+//                        if (distinct) {
+//                            np1.addModifier("distinct");
+//                        }
+                    CoordinatedPhraseElement cpe = nlgFactory.createCoordinatedPhrase(np0, np1);
+                    while (typeIterator.hasNext()) {
+                        NPPhraseSpec np = getNPPhrase(typeIterator.next(), true);
+//                        if (distinct) {
+//                            np.addModifier("distinct");
+//                        }
+                        cpe.addCoordinate(np);
+                    }
+                    cpe.setConjunction("as well as");
+                    if(distinct) cpe.addPreModifier("distinct");
+                    object.addPreModifier(cpe);
                 }
                 object.setFeature(Feature.CONJUNCTION, "or");
                 objects.add(object);
@@ -572,21 +595,20 @@ public class SimpleNLG implements Sparql2NLConverter {
             p.setSubject(var);
             p.setVerb("match");
             p.setObject(pattern);
-        } else if(expr instanceof ExprFunction1){
-        	boolean negated = false;
-        	if(expr instanceof E_LogicalNot){
-            	expr = ((E_LogicalNot) expr).getArg();
-            	negated = true;
+        } else if (expr instanceof ExprFunction1) {
+            boolean negated = false;
+            if (expr instanceof E_LogicalNot) {
+                expr = ((E_LogicalNot) expr).getArg();
+                negated = true;
             }
-        	if(expr instanceof E_Bound){
-            	p.setSubject(((E_Bound) expr).getArg().toString());
-        		p.setVerb("exist");
-            } 
-        	if(negated){
-        		p.setFeature(Feature.NEGATED, true);
-        	}
-        } 
-        //process language filter
+            if (expr instanceof E_Bound) {
+                p.setSubject(((E_Bound) expr).getArg().toString());
+                p.setVerb("exist");
+            }
+            if (negated) {
+                p.setFeature(Feature.NEGATED, true);
+            }
+        } //process language filter
         else if (expr instanceof E_Equals) {
             E_Equals expression;
             expression = (E_Equals) expr;
@@ -641,14 +663,14 @@ public class SimpleNLG implements Sparql2NLConverter {
                     right = function.getArg(1);
                 }
             }
-            if(right.isVariable()){
-            	p.setObject(right.toString());
-            } else if(right.isConstant()){
-            	if(right.getConstant().isIRI()){
-            		p.setObject(getEnglishLabel(right.getConstant().getNode().getURI()));
-            	} else if(right.getConstant().isLiteral()){
-            		p.setObject(right.getConstant().asNode().getLiteralLexicalForm());
-            	}
+            if (right.isVariable()) {
+                p.setObject(right.toString());
+            } else if (right.isConstant()) {
+                if (right.getConstant().isIRI()) {
+                    p.setObject(getEnglishLabel(right.getConstant().getNode().getURI()));
+                } else if (right.getConstant().isLiteral()) {
+                    p.setObject(right.getConstant().asNode().getLiteralLexicalForm());
+                }
             }
             //handle verb resp. predicate
             String verb = null;
@@ -678,11 +700,11 @@ public class SimpleNLG implements Sparql2NLConverter {
                 }
             } else if (expr instanceof E_NotEquals) {
                 if (left instanceof E_Lang) {
-                	verb = "be in";
-                	if(right.isConstant() && right.getConstant().asString().equals("en")){
-                		p.setObject("English");
-                	}
-                    
+                    verb = "be in";
+                    if (right.isConstant() && right.getConstant().asString().equals("en")) {
+                        p.setObject("English");
+                    }
+
                 } else {
                     verb = "be equal to";
                 }
@@ -800,7 +822,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
             SimpleNLG snlg = new SimpleNLG(ep);
-            Query sparqlQuery = QueryFactory.create(query5, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query7, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
