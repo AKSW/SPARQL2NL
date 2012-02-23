@@ -186,11 +186,12 @@ public class SimpleNLG implements Sparql2NLConverter {
             }
         } //process ASK queries
         else {
-            //process factual queries (no variables at all)
+            //process factual ask queries (no variables at all)
             if (typeMap.isEmpty()) {
                 head.setSubject("This query");
                 head.setVerb("ask whether");
                 head.setObject(getNLFromElements(whereElements));
+                head.setFeature(Feature.SUPRESSED_COMPLEMENTISER, true);
                 sentences.add(nlgFactory.createSentence(head));
                 return nlgFactory.createParagraph(sentences);
             }
@@ -882,10 +883,11 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "?uri dbo:writer ?y . FILTER(!BOUND(?cave))"
                 + "?cave dbo:location ?x } ";
 
-        String query6 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
-                + "PREFIX res: <http://dbpedia.org/resource/> "
-                + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
-                + "ASK WHERE { res:Proinsulin rdf:type dbo:Protein .}";
+        String query6 = "PREFIX dbo: <http://dbpedia.org/ontology/> "+
+                "PREFIX dbp: <http://dbpedia.org/property/> "+
+                "PREFIX res: <http://dbpedia.org/resource/> "+
+                "ASK WHERE { { res:Batman_Begins dbo:starring res:Christian_Bale . } "
+                + "UNION { res:Batman_Begins dbp:starring res:Christian_Bale . } }";
 
         String query7 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
                 + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
@@ -903,20 +905,39 @@ public class SimpleNLG implements Sparql2NLConverter {
         String query8 = "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
                 + "PREFIX  dbo:  <http://dbpedia.org/ontology/> "
                 + "PREFIX  dbp:  <http://dbpedia.org/property/> "
+                + "PREFIX  dbp:  <http://dbpedia.org/ontology/> "
                 + "PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
                 + "SELECT DISTINCT  ?uri ?string "
                 + "WHERE { ?uri rdf:type dbo:Country . "
-                + "?uri dbp:officialLanguages ?language "
+                + "{?uri dbp:birthPlace ?language} UNION {?union dbo:birthPlace ?language} "
                 + "OPTIONAL { ?uri rdfs:label ?string "
                 + "FILTER ( lang(?string) = \'en\' )} } "
                 + "GROUP BY ?uri ?language ?string "
                 + "ORDER BY DESC(?language) "
                 + "LIMIT 1";
 
+        
+        String query10 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"+
+         "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"+
+          "PREFIX yago: <http://dbpedia.org/class/yago/>"+
+          "PREFIX dbo: <http://dbpedia.org/ontology/>"+
+          "PREFIX dbp: <http://dbpedia.org/property/>"+
+          "PREFIX res: <http://dbpedia.org/resource/>"+
+          "SELECT DISTINCT ?uri ?string " +
+          "WHERE {"+
+                  "?uri rdf:type dbo:Person ."+
+                  "{ ?uri rdf:type yago:PresidentsOfTheUnitedStates. } "+
+                  "UNION "+
+                  "{ ?uri rdf:type dbo:President."+
+                    "?uri dbp:title res:President_of_the_United_States. }"+
+                  "?uri rdfs:label ?string." +
+                  "FILTER (lang(?string) = 'en' && !regex(?string,'Presidency','i') && !regex(?string,'and the')) ."+
+          "}";
+
         try {
             SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
             SimpleNLG snlg = new SimpleNLG(ep);
-            Query sparqlQuery = QueryFactory.create(query8, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query10, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
