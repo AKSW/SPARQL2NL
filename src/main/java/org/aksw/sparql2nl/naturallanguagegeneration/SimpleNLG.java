@@ -295,7 +295,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                 long offset = query.getOffset();
                 limitOffset.setSubject("The query");
                 limitOffset.setVerb("return");
-                limitOffset.setObject("results between number " + limit + " and " + (offset+limit);
+                limitOffset.setObject("results between number " + limit + " and " + (offset+limit));
             } else {
                 limitOffset.setSubject("The query");
                 limitOffset.setVerb("return");
