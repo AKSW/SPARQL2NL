@@ -247,9 +247,16 @@ public class TypeExtractor extends ElementVisitorBase {
 						if(object.isURI()){
 							addType(subjectVar.getName(), object.getURI());
 							return true;
+						} else if(object.isVariable()){
+							addType(subjectVar.getName(), OWL.Thing.getURI());
+							addType(object.getName(), RDF.type.getURI());
+							return true;
 						}
-						//TODO handle case where object is not a URI
+						
+					} else if(object.isVariable() && projectVar.equals(Var.alloc(object.getName()))){
+						addType(object.getName(), RDF.type.getURI());
 					}
+					//TODO handle case where object is not a URI
 					
 				}
 			}

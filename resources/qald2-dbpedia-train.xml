@@ -1040,6 +1040,7 @@ WHERE {
         ?film dbo:producer ?uri .
         OPTIONAL { ?uri rdfs:label ?string . FILTER (lang(?string) = 'en') }
 } 
+GROUP BY ?uri ?string
 ORDER BY DESC(COUNT(?film)) LIMIT 1
 ]]></query>
 </question>
@@ -1465,6 +1466,7 @@ SELECT DISTINCT ?uri ?string WHERE
         ?uri dbp:officialLanguages ?language .
 	OPTIONAL { ?uri rdfs:label ?string . FILTER (lang(?string) = 'en') }		     
 } 
+GROUP BY ?uri ?string
 ORDER BY DESC(COUNT(?language)) LIMIT 1
 ]]></query>
 </question>
