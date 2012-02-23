@@ -643,9 +643,9 @@ public class SimpleNLG implements Sparql2NLConverter {
 
     private NLGElement getNLFromSingleExpression(Expr expr) {
         SPhraseSpec p = nlgFactory.createClause();
-//        return new FilterExpressionConverter().convert(expr);
+        return new FilterExpressionConverter().convert(expr);
         //process REGEX
-        if (expr instanceof E_Regex) {
+        /*if (expr instanceof E_Regex) {
             E_Regex expression;
             expression = (E_Regex) expr;
             String text = expression.toString();
@@ -775,7 +775,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         else {
             return null;
         }
-        return p;
+        return p;*/
     }
 
     private NLGElement getNLGFromAggregation(ExprAggregator aggregationExpr) {
@@ -928,11 +928,28 @@ public class SimpleNLG implements Sparql2NLConverter {
     "?artist rdf:type ?artisttype ."+
     "FILTER (?artisttype != mo:MusicArtist)"+
 "}";
+        
+        String query10 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"+
+        	"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"+
+        		"PREFIX yago: <http://dbpedia.org/class/yago/>"+
+        		"PREFIX dbo: <http://dbpedia.org/ontology/>"+
+        		"PREFIX dbp: <http://dbpedia.org/property/>"+
+        		"PREFIX res: <http://dbpedia.org/resource/>"+
+        		"SELECT DISTINCT ?uri ?string " +
+        		"WHERE {"+
+        		        "?uri rdf:type dbo:Person ."+
+        		        "{ ?uri rdf:type yago:PresidentsOfTheUnitedStates. } "+
+        		        "UNION "+
+        		        "{ ?uri rdf:type dbo:President."+
+        		          "?uri dbp:title res:President_of_the_United_States. }"+
+        		        "?uri rdfs:label ?string." +
+        		        "FILTER (lang(?string) = 'en' && !regex(?string,'Presidency','i') && !regex(?string,'and the')) ."+
+        		"}";
 
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             SimpleNLG snlg = new SimpleNLG(ep);
-            Query sparqlQuery = QueryFactory.create(query9, Syntax.syntaxSPARQL_11);
+            Query sparqlQuery = QueryFactory.create(query10, Syntax.syntaxSPARQL_11);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {

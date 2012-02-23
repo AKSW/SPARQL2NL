@@ -38,8 +38,8 @@ public class Evaluation {
 	
 //	private static final String QUERIES_FILE = "resources/queries.txt";
 //	private static final String QUERIES_FILE = "resources/GoodQALD.xml";
-//	private static final String QUERIES_FILE = "resources/qald2-dbpedia-train.xml";
-	private static final String QUERIES_FILE = "resources/qald2-musicbrainz-train.xml";
+	private static final String QUERIES_FILE = "resources/qald2-dbpedia-train.xml";
+//	private static final String QUERIES_FILE = "resources/qald2-musicbrainz-train.xml";
 	private static final int NR_OF_REPRESENTATIONS = 10;
 	
 	
@@ -328,7 +328,7 @@ public class Evaluation {
 			try {
 				nlr = nlg.getNLR(QueryFactory.create(query, Syntax.syntaxARQ));
 			} catch (Exception e) {
-				logger.error(e);
+				logger.error(e,e);
 				System.err.println(query);
 			}
 			logger.info(nlr);
