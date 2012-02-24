@@ -926,7 +926,7 @@ SELECT DISTINCT ?uri ?string
 WHERE {
 	{ ?uri rdf:type dbo:President . }
 	UNION
-	{ ?uri rdf:type yago:President. }
+	{ ?uri rdf:type yago:Presidents. }
         ?uri dbo:birthDate ?date .
 	FILTER regex(?date, '^1945') .
         OPTIONAL { ?uri rdfs:label ?string . FILTER (lang(?string) = 'en') }
