@@ -862,6 +862,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "PREFIX dbo: <http://dbpedia.org/ontology/>"
                 + "PREFIX dbp: <http://dbpedia.org/property/>"
                 + "PREFIX res: <http://dbpedia.org/resource/>"
+                + "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>"
                 + "SELECT DISTINCT ?uri ?string "
                 + "WHERE {"
                 + "?uri rdf:type dbo:Person ."
@@ -870,14 +871,14 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "{ ?uri rdf:type dbo:President."
                 + "?uri dbp:title res:President_of_the_United_States. }"
                 + "?uri rdfs:label ?string."
-                + "FILTER (lang(?string) = 'en' && !regex(?string,'Presidency','i') && !regex(?string,'and the')) ."
+                + "FILTER (?string >\"1970-01-01\"^^xsd:date && lang(?string) = 'en' && !regex(?string,'Presidency','i') && !regex(?string,'and the')) ."
                 + "}";
 
 
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             SimpleNLG snlg = new SimpleNLG(ep);
-            Query sparqlQuery = QueryFactory.create(query8, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query2, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {

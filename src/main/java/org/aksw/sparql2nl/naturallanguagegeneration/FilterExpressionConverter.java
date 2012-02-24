@@ -2,7 +2,6 @@ package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.util.Stack;
 
-import simplenlg.aggregation.ForwardConjunctionReductionRule;
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.NLGElement;
@@ -11,6 +10,8 @@ import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
+import com.hp.hpl.jena.datatypes.RDFDatatype;
+import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.sparql.expr.E_Bound;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
@@ -64,9 +65,6 @@ public class FilterExpressionConverter implements ExprVisitor{
 		startVisit();
 		expr.visit(this);
 		NLGElement element = stack.pop();
-//		if(negated){
-//			element.setFeature(Feature.NEGATED, true);
-//		}
 		finishVisit();
 		return element;
 	}
@@ -125,7 +123,16 @@ public class FilterExpressionConverter implements ExprVisitor{
             Expr tmp = left;
             left = right;
             right = tmp;
-            inverted = true;
+            if (func instanceof E_GreaterThan) {
+            	func = new E_LessThan(left, right);
+            } else if (func instanceof E_GreaterThanOrEqual) {
+            	func = new E_LessThanOrEqual(left, right);
+            } else if (func instanceof E_LessThan) {
+            	func = new E_GreaterThan(left, right);
+            } else if (func instanceof E_LessThanOrEqual) {
+            	func = new E_GreaterThanOrEqual(left, right);
+            }
+//            inverted = true;
         }
 
         //handle left side
@@ -143,8 +150,6 @@ public class FilterExpressionConverter implements ExprVisitor{
         	if (func instanceof E_LogicalOr){
             	c.setConjunction("or");
             }
-        	ForwardConjunctionReductionRule r = new ForwardConjunctionReductionRule();
-        	System.out.println(realiser.realise(r.apply(c)).getRealisation());
         	stack.push(c);
         } else {
         	SPhraseSpec phrase = nlgFactory.createClause();
@@ -154,7 +159,14 @@ public class FilterExpressionConverter implements ExprVisitor{
                 if (inverted) {
                     verb = "be less than";
                 } else {
-                    verb = "be greater than";
+                	verb = "be greater than";
+                	if(right.isConstant()){
+                		System.out.println(right.getConstant().getNode());
+                		System.out.println(right.getConstant().getNode().getLiteralDatatype());
+                		if(right.getConstant().getNode().getLiteralDatatype().getURI().equals(XSDDatatype.XSDdate.getURI())){
+                			verb = "be later than";
+                		}
+                	}
                 }
             } else if (func instanceof E_GreaterThanOrEqual) {
                 if (inverted) {
@@ -246,7 +258,12 @@ public class FilterExpressionConverter implements ExprVisitor{
 		} else if(nv.isIRI()){
 			label = uriConverter.convert(nv.asNode().getURI());
 		} else if(nv.isLiteral()){
-			label = nv.asNode().getLiteralLexicalForm();
+			RDFDatatype datatype = nv.asNode().getLiteralDatatype();
+			if(datatype != null){
+				label = nv.asNode().getLiteralLexicalForm();
+			} else {
+				label = nv.toString();
+			}
 		}
 		NLGElement element = nlgFactory.createNounPhrase(label);
 		stack.push(element);
