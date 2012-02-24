@@ -169,11 +169,12 @@ public class SimpleNLG implements Sparql2NLConverter {
             }
         } //process ASK queries
         else {
-            //process factual queries (no variables at all)
+            //process factual ask queries (no variables at all)
             if (typeMap.isEmpty()) {
                 head.setSubject("This query");
                 head.setVerb("ask whether");
                 head.setObject(getNLFromElements(whereElements));
+                head.setFeature(Feature.SUPRESSED_COMPLEMENTISER, true);
                 sentences.add(nlgFactory.createSentence(head));
                 return nlgFactory.createParagraph(sentences);
             }
@@ -255,19 +256,18 @@ public class SimpleNLG implements Sparql2NLConverter {
             order.setSubject("The results");
             order.getSubject().setPlural(true);
             order.setVerb("be ordered by");
-            List<SortCondition> sc = query.getOrderBy();            
-            if(sc.size()==1)
-            {                
-                Expr expr = sc.get(0).getExpression();                
-                if(expr instanceof ExprVar)
-                {
-                    ExprVar ev = (ExprVar)expr;
+            List<SortCondition> sc = query.getOrderBy();
+            if (sc.size() == 1) {
+                Expr expr = sc.get(0).getExpression();
+                if (expr instanceof ExprVar) {
+                    ExprVar ev = (ExprVar) expr;
                     order.setObject(ev.toString());
                 }
-                if(sc.get(0).direction < 0)
+                if (sc.get(0).direction < 0) {
                     order.addComplement("in descending order");
-                else
+                } else {
                     order.addComplement("in ascending order");
+                }
             }
             sentences.add(nlgFactory.createSentence(order));
         }
@@ -278,14 +278,22 @@ public class SimpleNLG implements Sparql2NLConverter {
                 long offset = query.getOffset();
                 limitOffset.setSubject("The query");
                 limitOffset.setVerb("return");
-                limitOffset.setObject("results between number " + limit + " and " + offset);
+                limitOffset.setObject("results between number " + limit + " and " + (offset+limit));
             } else {
                 limitOffset.setSubject("The query");
                 limitOffset.setVerb("return");
                 if (limit > 1) {
-                    limitOffset.setObject("the first " + limit + " results");
+                    if (query.hasOrderBy()) {
+                        limitOffset.setObject("at most the first " + limit + " results");
+                    } else {
+                        limitOffset.setObject("at most " + limit + " results");
+                    }
                 } else {
-                    limitOffset.setObject("the first result");
+                    if (query.hasOrderBy()) {
+                        limitOffset.setObject("at most the first result");
+                    } else {
+                        limitOffset.setObject("at most one result");
+                    }
                 }
             }
             sentences.add(nlgFactory.createSentence(limitOffset));
@@ -354,6 +362,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         object.setPlural(plural);
         return object;
     }
+
 
     private NLGElement processTypes(Map<String, Set<String>> typeMap, Set<String> vars, boolean count, boolean distinct) {
         List<NPPhraseSpec> objects = new ArrayList<NPPhraseSpec>();
@@ -586,134 +595,134 @@ public class SimpleNLG implements Sparql2NLConverter {
         return expressionConverter.convert(expr);
         //process REGEX
         /*if (expr instanceof E_Regex) {
-            E_Regex expression;
-            expression = (E_Regex) expr;
-            String text = expression.toString();
-            text = text.substring(6, text.length() - 1);
-            String var = text.substring(0, text.indexOf(","));
-            String pattern = text.substring(text.indexOf(",") + 1);
-            p.setSubject(var);
-            p.setVerb("match");
-            p.setObject(pattern);
+        E_Regex expression;
+        expression = (E_Regex) expr;
+        String text = expression.toString();
+        text = text.substring(6, text.length() - 1);
+        String var = text.substring(0, text.indexOf(","));
+        String pattern = text.substring(text.indexOf(",") + 1);
+        p.setSubject(var);
+        p.setVerb("match");
+        p.setObject(pattern);
         } else if (expr instanceof ExprFunction1) {
-            boolean negated = false;
-            if (expr instanceof E_LogicalNot) {
-                expr = ((E_LogicalNot) expr).getArg();
-                negated = true;
-            }
-            if (expr instanceof E_Bound) {
-                p.setSubject(((E_Bound) expr).getArg().toString());
-                p.setVerb("exist");
-            }
-            if (negated) {
-                p.setFeature(Feature.NEGATED, true);
-            }
+        boolean negated = false;
+        if (expr instanceof E_LogicalNot) {
+        expr = ((E_LogicalNot) expr).getArg();
+        negated = true;
+        }
+        if (expr instanceof E_Bound) {
+        p.setSubject(((E_Bound) expr).getArg().toString());
+        p.setVerb("exist");
+        }
+        if (negated) {
+        p.setFeature(Feature.NEGATED, true);
+        }
         } //process language filter
         else if (expr instanceof E_Equals) {
-            E_Equals expression;
-            expression = (E_Equals) expr;
-            String text = expression.toString();
-            text = text.substring(1, text.length() - 1);
-            String[] split = text.split("=");
-            String arg1 = split[0].trim();
-            String arg2 = split[1].trim();
-            if (arg1.startsWith("lang")) {
-                String var = arg1.substring(5, arg1.length() - 1);
-                p.setSubject(var);
-                p.setVerb("be in");
-                if (arg2.contains("en")) {
-                    p.setObject("English");
-                }
-            } else {
-                p.setSubject(arg1);
-                p.setVerb("equal");
-                p.setObject(arg2);
-            }
+        E_Equals expression;
+        expression = (E_Equals) expr;
+        String text = expression.toString();
+        text = text.substring(1, text.length() - 1);
+        String[] split = text.split("=");
+        String arg1 = split[0].trim();
+        String arg2 = split[1].trim();
+        if (arg1.startsWith("lang")) {
+        String var = arg1.substring(5, arg1.length() - 1);
+        p.setSubject(var);
+        p.setVerb("be in");
+        if (arg2.contains("en")) {
+        p.setObject("English");
+        }
+        } else {
+        p.setSubject(arg1);
+        p.setVerb("equal");
+        p.setObject(arg2);
+        }
         } else if (expr instanceof ExprFunction2) {
-            Expr left = ((ExprFunction2) expr).getArg1();
-            Expr right = ((ExprFunction2) expr).getArg2();
-
-            //invert if right is variable or aggregation and left side not 
-            boolean inverted = false;
-            if (!left.isVariable() && (right.isVariable() || right instanceof ExprAggregator)) {
-                Expr tmp = left;
-                left = right;
-                right = tmp;
-                inverted = true;
-            }
-
-            //handle subject
-            NLGElement subject = null;
-            if (left instanceof ExprAggregator) {
-                subject = getNLGFromAggregation((ExprAggregator) left);
-            } else {
-                if (left.isFunction()) {
-                    ExprFunction function = left.getFunction();
-                    if (function.getArgs().size() == 1) {
-                        left = function.getArg(1);
-                    }
-                }
-                subject = nlgFactory.createNounPhrase(left.toString());
-            }
-            p.setSubject(subject);
-            //handle object
-            if (right.isFunction()) {
-                ExprFunction function = right.getFunction();
-                if (function.getArgs().size() == 1) {
-                    right = function.getArg(1);
-                }
-            }
-            if (right.isVariable()) {
-                p.setObject(right.toString());
-            } else if (right.isConstant()) {
-                if (right.getConstant().isIRI()) {
-                    p.setObject(getEnglishLabel(right.getConstant().getNode().getURI()));
-                } else if (right.getConstant().isLiteral()) {
-                    p.setObject(right.getConstant().asNode().getLiteralLexicalForm());
-                }
-            }
-            //handle verb resp. predicate
-            String verb = null;
-            if (expr instanceof E_GreaterThan) {
-                if (inverted) {
-                    verb = "be less than";
-                } else {
-                    verb = "be greater than";
-                }
-            } else if (expr instanceof E_GreaterThanOrEqual) {
-                if (inverted) {
-                    verb = "be less than or equal to";
-                } else {
-                    verb = "be greater than or equal to";
-                }
-            } else if (expr instanceof E_LessThan) {
-                if (inverted) {
-                    verb = "be greater than";
-                } else {
-                    verb = "be less than";
-                }
-            } else if (expr instanceof E_LessThanOrEqual) {
-                if (inverted) {
-                    verb = "be greater than or equal to";
-                } else {
-                    verb = "be less than or equal to";
-                }
-            } else if (expr instanceof E_NotEquals) {
-                if (left instanceof E_Lang) {
-                    verb = "be in";
-                    if (right.isConstant() && right.getConstant().asString().equals("en")) {
-                        p.setObject("English");
-                    }
-
-                } else {
-                    verb = "be equal to";
-                }
-                p.setFeature(Feature.NEGATED, true);
-            }
-            p.setVerb(verb);
+        Expr left = ((ExprFunction2) expr).getArg1();
+        Expr right = ((ExprFunction2) expr).getArg2();
+        
+        //invert if right is variable or aggregation and left side not 
+        boolean inverted = false;
+        if (!left.isVariable() && (right.isVariable() || right instanceof ExprAggregator)) {
+        Expr tmp = left;
+        left = right;
+        right = tmp;
+        inverted = true;
+        }
+        
+        //handle subject
+        NLGElement subject = null;
+        if (left instanceof ExprAggregator) {
+        subject = getNLGFromAggregation((ExprAggregator) left);
+        } else {
+        if (left.isFunction()) {
+        ExprFunction function = left.getFunction();
+        if (function.getArgs().size() == 1) {
+        left = function.getArg(1);
+        }
+        }
+        subject = nlgFactory.createNounPhrase(left.toString());
+        }
+        p.setSubject(subject);
+        //handle object
+        if (right.isFunction()) {
+        ExprFunction function = right.getFunction();
+        if (function.getArgs().size() == 1) {
+        right = function.getArg(1);
+        }
+        }
+        if (right.isVariable()) {
+        p.setObject(right.toString());
+        } else if (right.isConstant()) {
+        if (right.getConstant().isIRI()) {
+        p.setObject(getEnglishLabel(right.getConstant().getNode().getURI()));
+        } else if (right.getConstant().isLiteral()) {
+        p.setObject(right.getConstant().asNode().getLiteralLexicalForm());
+        }
+        }
+        //handle verb resp. predicate
+        String verb = null;
+        if (expr instanceof E_GreaterThan) {
+        if (inverted) {
+        verb = "be less than";
+        } else {
+        verb = "be greater than";
+        }
+        } else if (expr instanceof E_GreaterThanOrEqual) {
+        if (inverted) {
+        verb = "be less than or equal to";
+        } else {
+        verb = "be greater than or equal to";
+        }
+        } else if (expr instanceof E_LessThan) {
+        if (inverted) {
+        verb = "be greater than";
+        } else {
+        verb = "be less than";
+        }
+        } else if (expr instanceof E_LessThanOrEqual) {
+        if (inverted) {
+        verb = "be greater than or equal to";
+        } else {
+        verb = "be less than or equal to";
+        }
+        } else if (expr instanceof E_NotEquals) {
+        if (left instanceof E_Lang) {
+        verb = "be in";
+        if (right.isConstant() && right.getConstant().asString().equals("en")) {
+        p.setObject("English");
+        }
+        
+        } else {
+        verb = "be equal to";
+        }
+        p.setFeature(Feature.NEGATED, true);
+        }
+        p.setVerb(verb);
         } //not equals
         else {
-            return null;
+        return null;
         }
         return p;*/
     }
@@ -753,8 +762,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             return cpe;
         }
     }
-    
-   
+
 
     public static void main(String args[]) {
         String query2 = "PREFIX res: <http://dbpedia.org/resource/> "
@@ -806,9 +814,10 @@ public class SimpleNLG implements Sparql2NLConverter {
                 + "?cave dbo:location ?x } ";
 
         String query6 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
+                + "PREFIX dbp: <http://dbpedia.org/property/> "
                 + "PREFIX res: <http://dbpedia.org/resource/> "
-                + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
-                + "ASK WHERE { res:Proinsulin rdf:type dbo:Protein .}";
+                + "ASK WHERE { { res:Batman_Begins dbo:starring res:Christian_Bale . } "
+                + "UNION { res:Batman_Begins dbp:starring res:Christian_Bale . } }";
 
         String query7 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
                 + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
@@ -826,47 +835,49 @@ public class SimpleNLG implements Sparql2NLConverter {
         String query8 = "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
                 + "PREFIX  dbo:  <http://dbpedia.org/ontology/> "
                 + "PREFIX  dbp:  <http://dbpedia.org/property/> "
+                + "PREFIX  dbp:  <http://dbpedia.org/ontology/> "
                 + "PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
                 + "SELECT DISTINCT  ?uri ?string "
                 + "WHERE { ?uri rdf:type dbo:Country . "
-                + "?uri dbp:officialLanguages ?language "
+                + "{?uri dbp:birthPlace ?language} UNION {?union dbo:birthPlace ?language} "
                 + "OPTIONAL { ?uri rdfs:label ?string "
                 + "FILTER ( lang(?string) = \'en\' )} } "
                 + "GROUP BY ?uri ?string "
                 + "ORDER BY DESC(?language) "
-                + "LIMIT 1";
-        
-        String query9 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "+
-"PREFIX foaf: <http://xmlns.com/foaf/0.1/> "+
-"PREFIX mo: <http://purl.org/ontology/mo/> "+
-"SELECT DISTINCT ?artisttype "+
-"WHERE {"+
-    "?artist foaf:name 'Liz Story'."+
-    "?artist rdf:type ?artisttype ."+
-    "FILTER (?artisttype != mo:MusicArtist)"+
-"}";
-        
-        String query10 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"+
-        	"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"+
-        		"PREFIX yago: <http://dbpedia.org/class/yago/>"+
-        		"PREFIX dbo: <http://dbpedia.org/ontology/>"+
-        		"PREFIX dbp: <http://dbpedia.org/property/>"+
-        		"PREFIX res: <http://dbpedia.org/resource/>"+
-        		"SELECT DISTINCT ?uri ?string " +
-        		"WHERE {"+
-        		        "?uri rdf:type dbo:Person ."+
-        		        "{ ?uri rdf:type yago:PresidentsOfTheUnitedStates. } "+
-        		        "UNION "+
-        		        "{ ?uri rdf:type dbo:President."+
-        		          "?uri dbp:title res:President_of_the_United_States. }"+
-        		        "?uri rdfs:label ?string." +
-        		        "FILTER (!regex(?string,'Presidency','i') && !regex(?string,'and the') && lang(?string) = 'en') ."+
-        		"}";
+                + "LIMIT 10 OFFSET 20";
+
+        String query9 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
+                + "PREFIX foaf: <http://xmlns.com/foaf/0.1/> "
+                + "PREFIX mo: <http://purl.org/ontology/mo/> "
+                + "SELECT DISTINCT ?artisttype "
+                + "WHERE {"
+                + "?artist foaf:name 'Liz Story'."
+                + "?artist rdf:type ?artisttype ."
+                + "FILTER (?artisttype != mo:MusicArtist)"
+                + "}";
+
+        String query10 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
+                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
+                + "PREFIX yago: <http://dbpedia.org/class/yago/>"
+                + "PREFIX dbo: <http://dbpedia.org/ontology/>"
+                + "PREFIX dbp: <http://dbpedia.org/property/>"
+                + "PREFIX res: <http://dbpedia.org/resource/>"
+                + "SELECT DISTINCT ?uri ?string "
+                + "WHERE {"
+                + "?uri rdf:type dbo:Person ."
+                + "{ ?uri rdf:type yago:PresidentsOfTheUnitedStates. } "
+                + "UNION "
+                + "{ ?uri rdf:type dbo:President."
+                + "?uri dbp:title res:President_of_the_United_States. }"
+                + "?uri rdfs:label ?string."
+                + "FILTER (lang(?string) = 'en' && !regex(?string,'Presidency','i') && !regex(?string,'and the')) ."
+                + "}";
+
 
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             SimpleNLG snlg = new SimpleNLG(ep);
-            Query sparqlQuery = QueryFactory.create(query10, Syntax.syntaxSPARQL_11);
+            Query sparqlQuery = QueryFactory.create(query8, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
