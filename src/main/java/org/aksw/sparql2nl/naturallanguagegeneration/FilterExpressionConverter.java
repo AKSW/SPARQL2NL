@@ -2,6 +2,7 @@ package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.util.Stack;
 
+import simplenlg.aggregation.ForwardConjunctionReductionRule;
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.NLGElement;
@@ -45,11 +46,15 @@ public class FilterExpressionConverter implements ExprVisitor{
 	private NLGFactory nlgFactory;
 	private Realiser realiser;
 	
-	private boolean negated = false;
-	
 	private Stack<NLGElement> stack;
 	
-	public FilterExpressionConverter() {
+	private URIConverter uriConverter;
+	
+	private boolean simplifyLanguageFilterConstructs = true;
+	
+	public FilterExpressionConverter(URIConverter uriConverter) {
+		this.uriConverter = uriConverter;
+		
 		Lexicon lexicon = Lexicon.getDefaultLexicon();
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
@@ -84,7 +89,6 @@ public class FilterExpressionConverter implements ExprVisitor{
 		
 		NLGElement element;
 		if(func instanceof E_LogicalNot){
-			negated = true;
 			subject.setFeature(Feature.NEGATED, true);
 			stack.push(subject);
 		} else {
@@ -95,7 +99,13 @@ public class FilterExpressionConverter implements ExprVisitor{
 			} else if(func instanceof E_Str){
 				element = nlgFactory.createNounPhrase("the string of " + realiser.realise(subject).getRealisation());
 			} else if(func instanceof E_Lang){
-				element = nlgFactory.createNounPhrase("the language of " + realiser.realise(subject).getRealisation());
+				String s = null;
+				if(simplifyLanguageFilterConstructs){
+					s = realiser.realise(subject).getRealisation();
+				} else {
+					s = "the language of " + realiser.realise(subject).getRealisation();
+				}
+				element = nlgFactory.createNounPhrase(s);
 			} else {
 				throw new UnsupportedOperationException(func + " is not implemented yet.");
 			}
@@ -133,6 +143,8 @@ public class FilterExpressionConverter implements ExprVisitor{
         	if (func instanceof E_LogicalOr){
             	c.setConjunction("or");
             }
+        	ForwardConjunctionReductionRule r = new ForwardConjunctionReductionRule();
+        	System.out.println(realiser.realise(r.apply(c)).getRealisation());
         	stack.push(c);
         } else {
         	SPhraseSpec phrase = nlgFactory.createClause();
@@ -163,9 +175,19 @@ public class FilterExpressionConverter implements ExprVisitor{
                     verb = "be less than or equal to";
                 }
             } else if(func instanceof E_Equals){
-            	verb = "be equal to";
+            	if(left instanceof E_Lang && simplifyLanguageFilterConstructs){
+            		verb = "be in";
+            		rightElement = nlgFactory.createNounPhrase(getLanguageForAbbreviation(realiser.realise(rightElement).getRealisation()));
+            	} else {
+            		verb = "be equal to";
+            	}
             } else if (func instanceof E_NotEquals) {
-            	verb = "be equal to";
+            	if(left instanceof E_Lang && simplifyLanguageFilterConstructs){
+            		verb = "be in";
+            		rightElement = nlgFactory.createNounPhrase(getLanguageForAbbreviation(realiser.realise(rightElement).getRealisation()));
+            	} else {
+            		verb = "be equal to";
+            	}
                 phrase.setFeature(Feature.NEGATED, true);
             } 
             phrase.setSubject(leftElement);
@@ -218,7 +240,15 @@ public class FilterExpressionConverter implements ExprVisitor{
 
 	@Override
 	public void visit(NodeValue nv) {
-		NLGElement element = nlgFactory.createNounPhrase(nv.toString());
+		String label = null;
+		if(nv.isVariable()){
+			label = nv.toString();
+		} else if(nv.isIRI()){
+			label = uriConverter.convert(nv.asNode().getURI());
+		} else if(nv.isLiteral()){
+			label = nv.asNode().getLiteralLexicalForm();
+		}
+		NLGElement element = nlgFactory.createNounPhrase(label);
 		stack.push(element);
 	}
 
@@ -254,11 +284,14 @@ public class FilterExpressionConverter implements ExprVisitor{
 		// TODO Auto-generated method stub
 		
 	}
-
-	public static void main(String[] args) {
-		NLGFactory nlgFactory = new NLGFactory(Lexicon.getDefaultLexicon());
-		SPhraseSpec s = nlgFactory.createClause("the book", "be better than", "the computer");
-		Realiser r = new Realiser(Lexicon.getDefaultLexicon());
-		System.out.println(r.realise(s));
+	
+	private String getLanguageForAbbreviation(String abbreviation){
+		if(abbreviation.equals("\"en\"")){
+			return "English";
+		} else if(abbreviation.equals("\"de\"")){
+			return "German";
+		}
+		return null;
 	}
+
 }
