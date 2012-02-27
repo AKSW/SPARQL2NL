@@ -1,5 +1,6 @@
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
+import com.hp.hpl.jena.query.QuerySolution;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,6 +20,8 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 
 import edu.stanford.nlp.util.StringUtils;
+import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.dllearner.kb.sparql.SparqlQuery;
 
 
 public class NaturalLanguageGenerator {
@@ -134,13 +137,12 @@ public class NaturalLanguageGenerator {
 	 */
 	private String queryDBpediaForLabel(String variable) {
 
-		String query = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT ?label { " + variable + " rdfs:label ?label . Filter(lang(?label) = 'en') } ";
+            	String query = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> SELECT ?label { " + variable + " rdfs:label ?label . Filter(lang(?label) = 'en') } ";
 		QueryEngineHTTP qexec = new QueryEngineHTTP("http://live.dbpedia.org/sparql/", query);
 		qexec.addDefaultGraph("http://dbpedia.org");
 		ResultSet results = qexec.execSelect();
 		
-		while ( results.hasNext() ) {
-			
+		while ( results.hasNext() ) {			
 			String label = results.next().get("?label").toString();
 			return label.substring(0, label.indexOf("@"));
 		}
