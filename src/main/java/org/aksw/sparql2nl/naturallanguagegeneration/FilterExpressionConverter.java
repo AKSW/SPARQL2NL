@@ -10,6 +10,8 @@ import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
+import com.hp.hpl.jena.datatypes.RDFDatatype;
+import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.sparql.expr.E_Bound;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
@@ -45,11 +47,15 @@ public class FilterExpressionConverter implements ExprVisitor{
 	private NLGFactory nlgFactory;
 	private Realiser realiser;
 	
-	private boolean negated = false;
-	
 	private Stack<NLGElement> stack;
 	
-	public FilterExpressionConverter() {
+	private URIConverter uriConverter;
+	
+	private boolean simplifyLanguageFilterConstructs = true;
+	
+	public FilterExpressionConverter(URIConverter uriConverter) {
+		this.uriConverter = uriConverter;
+		
 		Lexicon lexicon = Lexicon.getDefaultLexicon();
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
@@ -59,9 +65,6 @@ public class FilterExpressionConverter implements ExprVisitor{
 		startVisit();
 		expr.visit(this);
 		NLGElement element = stack.pop();
-//		if(negated){
-//			element.setFeature(Feature.NEGATED, true);
-//		}
 		finishVisit();
 		return element;
 	}
@@ -84,7 +87,6 @@ public class FilterExpressionConverter implements ExprVisitor{
 		
 		NLGElement element;
 		if(func instanceof E_LogicalNot){
-			negated = true;
 			subject.setFeature(Feature.NEGATED, true);
 			stack.push(subject);
 		} else {
@@ -95,7 +97,13 @@ public class FilterExpressionConverter implements ExprVisitor{
 			} else if(func instanceof E_Str){
 				element = nlgFactory.createNounPhrase("the string of " + realiser.realise(subject).getRealisation());
 			} else if(func instanceof E_Lang){
-				element = nlgFactory.createNounPhrase("the language of " + realiser.realise(subject).getRealisation());
+				String s = null;
+				if(simplifyLanguageFilterConstructs){
+					s = realiser.realise(subject).getRealisation();
+				} else {
+					s = "the language of " + realiser.realise(subject).getRealisation();
+				}
+				element = nlgFactory.createNounPhrase(s);
 			} else {
 				throw new UnsupportedOperationException(func + " is not implemented yet.");
 			}
@@ -115,7 +123,16 @@ public class FilterExpressionConverter implements ExprVisitor{
             Expr tmp = left;
             left = right;
             right = tmp;
-            inverted = true;
+            if (func instanceof E_GreaterThan) {
+            	func = new E_LessThan(left, right);
+            } else if (func instanceof E_GreaterThanOrEqual) {
+            	func = new E_LessThanOrEqual(left, right);
+            } else if (func instanceof E_LessThan) {
+            	func = new E_GreaterThan(left, right);
+            } else if (func instanceof E_LessThanOrEqual) {
+            	func = new E_GreaterThanOrEqual(left, right);
+            }
+//            inverted = true;
         }
 
         //handle left side
@@ -142,7 +159,14 @@ public class FilterExpressionConverter implements ExprVisitor{
                 if (inverted) {
                     verb = "be less than";
                 } else {
-                    verb = "be greater than";
+                	verb = "be greater than";
+                	if(right.isConstant()){
+                		System.out.println(right.getConstant().getNode());
+                		System.out.println(right.getConstant().getNode().getLiteralDatatype());
+                		if(right.getConstant().getNode().getLiteralDatatype().getURI().equals(XSDDatatype.XSDdate.getURI())){
+                			verb = "be later than";
+                		}
+                	}
                 }
             } else if (func instanceof E_GreaterThanOrEqual) {
                 if (inverted) {
@@ -163,9 +187,19 @@ public class FilterExpressionConverter implements ExprVisitor{
                     verb = "be less than or equal to";
                 }
             } else if(func instanceof E_Equals){
-            	verb = "be equal to";
+            	if(left instanceof E_Lang && simplifyLanguageFilterConstructs){
+            		verb = "be in";
+            		rightElement = nlgFactory.createNounPhrase(getLanguageForAbbreviation(realiser.realise(rightElement).getRealisation()));
+            	} else {
+            		verb = "be equal to";
+            	}
             } else if (func instanceof E_NotEquals) {
-            	verb = "be equal to";
+            	if(left instanceof E_Lang && simplifyLanguageFilterConstructs){
+            		verb = "be in";
+            		rightElement = nlgFactory.createNounPhrase(getLanguageForAbbreviation(realiser.realise(rightElement).getRealisation()));
+            	} else {
+            		verb = "be equal to";
+            	}
                 phrase.setFeature(Feature.NEGATED, true);
             } 
             phrase.setSubject(leftElement);
@@ -218,7 +252,20 @@ public class FilterExpressionConverter implements ExprVisitor{
 
 	@Override
 	public void visit(NodeValue nv) {
-		NLGElement element = nlgFactory.createNounPhrase(nv.toString());
+		String label = null;
+		if(nv.isVariable()){
+			label = nv.toString();
+		} else if(nv.isIRI()){
+			label = uriConverter.convert(nv.asNode().getURI());
+		} else if(nv.isLiteral()){
+			RDFDatatype datatype = nv.asNode().getLiteralDatatype();
+			if(datatype != null){
+				label = nv.asNode().getLiteralLexicalForm();
+			} else {
+				label = nv.toString();
+			}
+		}
+		NLGElement element = nlgFactory.createNounPhrase(label);
 		stack.push(element);
 	}
 
@@ -254,11 +301,14 @@ public class FilterExpressionConverter implements ExprVisitor{
 		// TODO Auto-generated method stub
 		
 	}
-
-	public static void main(String[] args) {
-		NLGFactory nlgFactory = new NLGFactory(Lexicon.getDefaultLexicon());
-		SPhraseSpec s = nlgFactory.createClause("the book", "be better than", "the computer");
-		Realiser r = new Realiser(Lexicon.getDefaultLexicon());
-		System.out.println(r.realise(s));
+	
+	private String getLanguageForAbbreviation(String abbreviation){
+		if(abbreviation.equals("\"en\"")){
+			return "English";
+		} else if(abbreviation.equals("\"de\"")){
+			return "German";
+		}
+		return null;
 	}
+
 }

@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import simplenlg.framework.DocumentElement;
 
 import simplenlg.framework.NLGElement;
 
@@ -39,6 +40,10 @@ public class GenericNLGTest {
             GenericNLG nlg = new GenericNLG();
             SimpleNLG snlg = new SimpleNLG(SparqlEndpoint.getEndpointDBpediaLiveAKSW());
             Query sparqlQuery = QueryFactory.create(query);
+            DocumentElement de = snlg.convert2NLE(sparqlQuery);
+            for (NLGElement nlge : de.getComponents()) {
+                System.out.println("<-------------------\n" + nlge.toString() + "\n--------------------->");
+            }
             System.out.println("Simple NLG: "+snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
             e.printStackTrace();
