@@ -1,0 +1,15 @@
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Place> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Mountain> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Mountain> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en')}
