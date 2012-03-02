@@ -1,7 +1,4 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.net.URL;
@@ -37,6 +34,7 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.SortCondition;
 import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.sparql.core.TriplePath;
+import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.ExprAggregator;
 import com.hp.hpl.jena.sparql.expr.ExprVar;
@@ -56,13 +54,14 @@ import com.hp.hpl.jena.vocabulary.RDFS;
  *
  * @author ngonga
  */
-public class SimpleNLG implements Sparql2NLConverter {
+public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
     Lexicon lexicon;
     NLGFactory nlgFactory;
     Realiser realiser;
     private URIConverter uriConverter;
     private FilterExpressionConverter expressionConverter;
+    Postprocessor post;
     
     public static final String ENTITY = "owl#thing";
     public static final String VALUE = "value";
@@ -70,12 +69,14 @@ public class SimpleNLG implements Sparql2NLConverter {
     
     private SparqlEndpoint endpoint;
 
-    public SimpleNLG(SparqlEndpoint endpoint) {
+    public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint) {
         this.endpoint = endpoint;
 
         lexicon = Lexicon.getDefaultLexicon();
         nlgFactory = new NLGFactory(lexicon);
         realiser = new Realiser(lexicon);
+        
+        post = new Postprocessor();
         
         uriConverter = new URIConverter(endpoint);
         expressionConverter = new FilterExpressionConverter(uriConverter);
@@ -89,11 +90,16 @@ public class SimpleNLG implements Sparql2NLConverter {
      */
     @Override
     public String getNLR(Query query) {
+        
         String output = realiser.realiseSentence(convert2NLE(query));
         output = output.replaceAll(Pattern.quote("\n"), "");
         if (!output.endsWith(".")) {
             output = output + ".";
         }
+        
+        post.print();
+        post.flush();
+        
         return output;
     }
 
@@ -154,6 +160,18 @@ public class SimpleNLG implements Sparql2NLConverter {
         for (String var : whereVars) {
             if (optionalVars.contains(var)) {
                 optionalVars.remove(var);
+            }
+        }
+        
+        // collect primary and secondary variables for postprocessor
+        post.primaries = typeMap.keySet();
+        List<String> nonoptionalVars = new ArrayList<String>();
+        for (Element e : whereElements) {
+            for (Var var : e.varsMentioned()) {
+                String v = var.toString().replace("?","");
+                if (!optionalVars.contains(v) && !typeMap.containsKey(v)) {
+                    post.addSecondary(v);
+                }
             }
         }
 
@@ -456,12 +474,29 @@ public class SimpleNLG implements Sparql2NLConverter {
             return null;
         }
         if (triples.size() == 1) {
-            return getNLForTriple(triples.get(0));
-        } else {
+            SPhraseSpec p = getNLForTriple(triples.get(0));
+            if (conjunction.equals("or")) {
+                Set<SPhraseSpec> union = new HashSet<SPhraseSpec>();
+                union.add(p);
+                post.addUnion(union);
+            } 
+            else post.addSentence(p);
+            return p;
+        } else { // the following code is a bit redundant TODO make more elegant! ;)
+            // feed the postprocessor
+            Set<SPhraseSpec> union = new HashSet<SPhraseSpec>();
+            SPhraseSpec p;
+            for (int i = 0; i < triples.size(); i++) {
+                p = getNLForTriple(triples.get(i));
+                if (conjunction.equals("or")) union.add(p); 
+                else post.addSentence(p);
+            }
+            if (conjunction.equals("or")) post.addUnion(union);
+            // do simplenlg
             CoordinatedPhraseElement cpe;
             Triple t0 = triples.get(0);
             Triple t1 = triples.get(1);
-            cpe = nlgFactory.createCoordinatedPhrase(getNLForTriple(t0), getNLForTriple(t1));
+            cpe = nlgFactory.createCoordinatedPhrase(getNLForTriple(t0),getNLForTriple(t1));
             for (int i = 2; i < triples.size(); i++) {
                 cpe.addCoordinate(getNLForTriple(triples.get(i)));
             }
@@ -533,6 +568,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         }
 
         p.setFeature(Feature.TENSE, Tense.PRESENT);
+
         return p;
     }
 
@@ -571,6 +607,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             }
         }
         p.setFeature(Feature.TENSE, Tense.PRESENT);
+        
         return p;
     }
 
@@ -878,7 +915,7 @@ public class SimpleNLG implements Sparql2NLConverter {
 
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
-            SimpleNLG snlg = new SimpleNLG(ep);
+            SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(ep);
             Query sparqlQuery = QueryFactory.create(query2, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
