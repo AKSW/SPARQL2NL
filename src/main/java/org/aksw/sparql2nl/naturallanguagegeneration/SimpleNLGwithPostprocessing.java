@@ -66,6 +66,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     public static final String ENTITY = "owl#thing";
     public static final String VALUE = "value";
     public static final String UNKNOWN = "valueOrEntity";
+    public boolean VERBOSE = true;
+    public boolean POSTPROCESSING = true;
     
     private SparqlEndpoint endpoint;
 
@@ -97,7 +99,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             output = output + ".";
         }
         
-        post.print();
+        if (VERBOSE) post.print();
+        NLGElement ppoutput = post.postprocess();
+        System.out.println("Body after postprocessing: " + realiser.realiseSentence(ppoutput));
+        // TODO reassemble everything with new body
         post.flush();
         
         return output;
@@ -596,7 +601,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             }
             //        subj.setFeature(Feature.POSSESSIVE, true);            
             //        PhraseElement np = nlgFactory.createNounPhrase(subj, getEnglishLabel(t.getPredicate().toString()));
-            p.setSubject(realiser.realise(subj) + "\'s " + uriConverter.convert(t.getPredicate().toString()));
+            String realisedsubj = realiser.realise(subj).getRealisation();
+            if (realisedsubj.endsWith("s")) realisedsubj += "\' ";
+            else realisedsubj += "\'s ";
+            p.setSubject(realisedsubj + uriConverter.convert(t.getPredicate().toString()));
             p.setVerb("be");
             if (t.getObject().isVariable()) {
                 p.setObject(t.getObject().toString());
