@@ -51,6 +51,18 @@ public class SPARQL2NLTest {
                 + "FILTER regex(?govern,'monarchy') . "
                 //+ "FILTER (!BOUND(?date))"
                 + "}";
+        String query3b = "PREFIX dbo: <http://dbpedia.org/ontology/> "
+                + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
+                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
+                + "PREFIX yago: <http://dbpedia.org/class/yago/> "
+                + "SELECT COUNT(DISTINCT ?uri) "
+                //+ "SELECT ?uri "
+                + "WHERE { ?uri rdf:type yago:EuropeanCountries . "
+                + "?uri dbo:governmentType ?govern . "
+                + "FILTER regex(?govern,'monarchy') . "
+                + "?govern rdf:type dbo:Film . " 
+                //+ "FILTER (!BOUND(?date))"
+                + "}";
         String query4 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
                 + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
@@ -169,7 +181,7 @@ public class SPARQL2NLTest {
                 + "{res:Batman_Begins dbo:starring ?x.} UNION {res:Batman_Begins dbp:starring ?x.}"
                 + "?uri rdfs:label ?string .}";
         
-        String[] queries = {query,query2,query3,query4,query5,query6,query7,query8,query9,query10,query11};
+        String[] queries = {query,query2,query3,query3b,query4,query5,query6,query7,query8,query9,query10,query11};
 //      String[] queries = {query11,query12,query13};
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));

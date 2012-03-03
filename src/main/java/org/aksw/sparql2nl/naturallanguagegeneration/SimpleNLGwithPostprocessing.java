@@ -71,6 +71,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     public boolean POSTPROCESSING;
     public boolean SWITCH;
     
+    private NLGElement select;
     private SparqlEndpoint endpoint;
 
     public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint) {
@@ -158,7 +159,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 //        System.out.println("Input query = " + query);
         // preprocess the query to get the relevant types
         TypeExtractor tEx = new TypeExtractor(endpoint);
-        Map<String, Set<String>> typeMap = tEx.extractTypes(query);
+        Map<String,Set<String>> typeMap = tEx.extractTypes(query);
 //        System.out.println("Processed query = " + query);
         // contains the beginning of the query, e.g., "this query returns"
         SPhraseSpec head = nlgFactory.createClause();
@@ -224,8 +225,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             head.setSubject("This query");
             head.setVerb("ask for the existence of");
         }
-        NLGElement e = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());
-        head.setObject(e);
+        if (!POSTPROCESSING) { 
+            select = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());
+        }
+        head.setObject(select);
         //now generate body
         if (!whereElements.isEmpty()) {
             if (POSTPROCESSING) body = post.output;
@@ -268,7 +271,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 SPhraseSpec optionalHead = nlgFactory.createClause();
                 optionalHead.setSubject("it");
                 optionalHead.setVerb("retrieve");
-                optionalHead.setObject(processTypes(typeMap, optionalVars, query.isDistinct(), query.isDistinct()));
+                if (POSTPROCESSING) optionalHead.setObject(select);
+                else optionalHead.setObject(processTypes(typeMap, optionalVars, query.isDistinct(), query.isDistinct()));
                 optionalHead.setFeature(Feature.CUE_PHRASE, "Additionally, ");
                 if (!optionalElements.isEmpty()) {
                     NLGElement optionalBody;
@@ -471,7 +475,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             }
             //if(count) cpe.addPreModifier("the number of");
             return cpe;
-        }
+        } 
     }
 
     public DocumentElement convertDescribe(Query query) {

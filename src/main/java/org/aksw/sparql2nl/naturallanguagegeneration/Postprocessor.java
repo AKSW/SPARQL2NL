@@ -32,6 +32,7 @@ public class Postprocessor {
     Set<Set<SPhraseSpec>> optionalunions;
     NLGElement optionaloutput;
     Set<NLGElement> filter;
+    Set<SPhraseSpec> currentlystored;
     
     public Postprocessor() {
         lexicon = Lexicon.getDefaultLexicon();
@@ -46,6 +47,7 @@ public class Postprocessor {
         optionalunions = new HashSet<Set<SPhraseSpec>>();
         optionaloutput = null;    
         filter = new HashSet<NLGElement>();
+        currentlystored = new HashSet<SPhraseSpec>();
     }
     
     public void flush() {
@@ -58,6 +60,7 @@ public class Postprocessor {
         optionalunions = new HashSet<Set<SPhraseSpec>>();
         optionaloutput = null;
         filter = new HashSet<NLGElement>();
+        currentlystored = new HashSet<SPhraseSpec>();
     }
     
     public void addPrimary(String s) {
@@ -76,6 +79,8 @@ public class Postprocessor {
             body.addCoordinate(verbalise(sentences,new HashSet<SPhraseSpec>(),unions));           
         }
         else { // otherwise
+          for (String var : primaries)   aggregateTypeAndLabelInformation("?"+var);
+          for (String var : secondaries) aggregateTypeAndLabelInformation("?"+var);
           while (!primaries.isEmpty() || !secondaries.isEmpty()) {
               body.addCoordinate(talkAboutMostImportant());
           }
@@ -105,8 +110,6 @@ public class Postprocessor {
          
         if (current == null) return null;
         else {
-            aggregateTypeAndLabelInformation("?"+current);
-            
             Set<SPhraseSpec> activeStore = new HashSet<SPhraseSpec>();
             Set<SPhraseSpec> passiveStore = new HashSet<SPhraseSpec>();
             Set<Set<SPhraseSpec>> unionStore = new HashSet<Set<SPhraseSpec>>();
@@ -131,6 +134,9 @@ public class Postprocessor {
         for (SPhraseSpec s : passiveStore) {
             sentences.add(s);
         }
+        currentlystored.addAll(sentences);
+        for (Set<SPhraseSpec> u : unionStore) currentlystored.addAll(u);
+        
         CoordinatedPhraseElement coord = nlg.createCoordinatedPhrase();
         coord.setConjunction("and");
         Set<SPhraseSpec> fusedsentences = fuseSubjects(fuseObjects(sentences,"and"),"and");
@@ -381,7 +387,7 @@ public class Postprocessor {
                 String sstring = realiser.realiseSentence(label);
                 String lang = checkLanguage(label.getObject().getFeatureAsString("head"));
                 if (lang != null) noun += lang + " ";
-                noun += "label " + sstring.replace(var+"\'s label is ",""); 
+                noun += "label " + sstring.replace(var+"\'s label is ","").replaceAll("\\.",""); 
                 already = true; 
                 if (optionalMap.get(sstring)) { optionalsentences.remove(label); opt = true; }
                 else sentences.remove(label);
@@ -391,7 +397,7 @@ public class Postprocessor {
                 String sstring = realiser.realiseSentence(name);
                 String lang = checkLanguage(name.getObject().getFeatureAsString("head"));
                 if (lang != null) noun += lang + " ";
-                noun += "name " + sstring.replace(var+"\'s name is ","");
+                noun += "name " + sstring.replace(var+"\'s name is ","").replaceAll("\\.","");
                 if (optionalMap.get(sstring)) { optionalsentences.remove(name); opt = true; }
                 else sentences.remove(name);
                 already = true;
@@ -402,9 +408,9 @@ public class Postprocessor {
         if (type != null) {
             String sstring = realiser.realiseSentence(type);
             newsentence.setVerb("be");
-            String classstring = sstring.replace(var+"\'s type is ","");
+            String classstring = sstring.replace(var+"\'s type is ","").replaceAll("\\.","");
             objnp = nlg.createNounPhrase("a",classstring);
-            if (np != null) objnp.addPostModifier("with " + realiser.realise(np));
+            if (np != null) objnp.addPostModifier(("with " + realiser.realise(np)).replaceAll("\\.",""));
             newsentence.setObject(objnp);
             // removal:
             if (optionalMap.get(sstring)) { optionalsentences.remove(type); opt = true; }
@@ -416,7 +422,7 @@ public class Postprocessor {
         }
         
         if (opt) newsentence.addPostModifier("(if such exist)");
-        sentences.add(newsentence);
+        filter.add(newsentence); // TODO or add to sentences
         }
     }
     private String checkLanguage(String var) {
@@ -427,7 +433,7 @@ public class Postprocessor {
          for (NLGElement f : filter) {
             String fstring = realiser.realiseSentence(f);
             if (fstring.startsWith(var+" is in ")) {
-                out = fstring.replace(var+" is in ","").replace("\\.","");
+                out = fstring.replace(var+" is in ","").replaceAll("\\.","");
                 usedfilter = f;
                 break;
             }
@@ -449,7 +455,7 @@ public class Postprocessor {
             for (SPhraseSpec lang : language) {
                 String subj = lang.getSubject().getFeatureAsString("head");
                 if (subj.equals(var)) {
-                    out = realiser.realiseSentence(lang).replace(var+" is in ","").replace("\\.","");
+                    out = realiser.realiseSentence(lang).replace(var+" is in ","").replaceAll("\\.","");
                     usedlanguage.add(lang);
                     break;
                 }
@@ -460,19 +466,6 @@ public class Postprocessor {
             return out;
          
     }
-    
-    private void addTypeAndLabelInformation(SPhraseSpec sentence) {
-        
-    }
-//    private boolean occursOtherwiseIn(String var,List<SPhraseSpec> sentences) {
-//        
-//        for (SPhraseSpec s : sentences) {
-//            String sent = realiser.realiseSentence(s);
-//            if (sent.contains(var) && !sent.startsWith(var +"\'s label is")
-//                    && !sent.startsWith(var +"\'s type is")) return true;
-//        }
-//        return false;
-//    }
     
     private void addFilterInformation(SPhraseSpec sentence) {
         
@@ -486,12 +479,24 @@ public class Postprocessor {
             for (NLGElement f : filter) {
                 String fstring = realiser.realiseSentence(f);
                 if (fstring.startsWith(var + " matches ")) {
-                    String match = fstring.replace(var+" matches ","").replace("\\.","");
-                    newhead = obj.replace(m.group(1),m.group(1) + " matching " + match);
+                    String match = fstring.replace(var+" matches ","").replaceAll("\\.","");
+                    if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")
+                            && !occursAnyWhereElse(obj,sentence)) {
+                        sentence.setVerb("match");
+                        newhead = match;
+                    } 
+                    else newhead = obj.replace(m.group(1),m.group(1) + " matching " + match);
                     usedFilters.add(f);
                 }
                 else if (fstring.split(" ")[0].equals(obj)) {
-                    // TODO if subject of filter equals object of sentence, coordinate
+                    if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")
+                            && fstring.startsWith(obj+ " is ")
+                            && !occursAnyWhereElse(obj,sentence)) {
+                        // ... is ?x . ?x is ... -> ... is ...
+                        newhead = fstring.replace(obj+" is ","");
+                    }
+                    else newhead += " which " + fstring.replace(obj,"").trim().replaceAll("\\.","");
+                    usedFilters.add(f);
                 }
                 else {
                     String[] comparison = {" is greater than or equal to ",
@@ -500,7 +505,7 @@ public class Postprocessor {
                                            " is less than or equal to "};
                     for (String comp : comparison) {
                         if (fstring.startsWith(var + comp)) {
-                            String match = fstring.replace(var+comp,"").replace("\\.","");
+                            String match = fstring.replace(var+comp,"").replaceAll("\\.","");
                             newhead = obj.replace(m.group(1),m.group(1) + comp.replace(" is ","") + match);
                             usedFilters.add(f);
                             break;
@@ -511,6 +516,16 @@ public class Postprocessor {
             filter.removeAll(usedFilters);
             sentence.getObject().setFeature("head",newhead);
         }
+    }
+    
+    private boolean occursAnyWhereElse(String var,SPhraseSpec sent) { 
+        // anywhere else than in sent, that is
+        if (numberOfOccurrences(var.replace("?","")) > 1) return true; // > 1 because it does also occur in filter
+        for (SPhraseSpec s : currentlystored) {
+            if (!s.equals(sent) && realiser.realiseSentence(s).contains("?"+var)) 
+                return true;
+        }
+        return false;
     }
     
     private int numberOfOccurrences(String var) {
