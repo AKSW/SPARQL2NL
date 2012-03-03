@@ -49,6 +49,7 @@ import com.hp.hpl.jena.sparql.syntax.ElementUnion;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
+import simplenlg.framework.*;
 
 /**
  *
@@ -66,8 +67,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     public static final String ENTITY = "owl#thing";
     public static final String VALUE = "value";
     public static final String UNKNOWN = "valueOrEntity";
-    public boolean VERBOSE = true;
-    public boolean POSTPROCESSING = true;
+    public boolean VERBOSE = false;
+    public boolean POSTPROCESSING;
+    public boolean SWITCH;
     
     private SparqlEndpoint endpoint;
 
@@ -93,17 +95,31 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     @Override
     public String getNLR(Query query) {
         
-        String output = realiser.realiseSentence(convert2NLE(query));
+        String output;
+        
+        // 1. run convert2NLE and in parallel assemble postprocessor
+        POSTPROCESSING = false;
+        SWITCH = false;
+        output = realiser.realiseSentence(convert2NLE(query));
+        
+        System.out.println("SimpleNLG:\n" + output);
+        
+        if (VERBOSE) post.print();
+        
+        // 2. run postprocessor
+        post.postprocess();
+        POSTPROCESSING = true;
+        // 3. run convert2NLE again, but this time use body generations from postprocessor
+        output = realiser.realiseSentence(convert2NLE(query));
+        
+        System.out.println("After postprocessing:\n" + output);
+        
+        post.flush();
+        
         output = output.replaceAll(Pattern.quote("\n"), "");
         if (!output.endsWith(".")) {
             output = output + ".";
         }
-        
-        if (VERBOSE) post.print();
-        NLGElement ppoutput = post.postprocess();
-        System.out.println("Body after postprocessing: " + realiser.realiseSentence(ppoutput));
-        // TODO reassemble everything with new body
-        post.flush();
         
         return output;
     }
@@ -169,6 +185,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         }
         
         // collect primary and secondary variables for postprocessor
+        if (!POSTPROCESSING) {
         post.primaries = typeMap.keySet();
         List<String> nonoptionalVars = new ArrayList<String>();
         for (Element e : whereElements) {
@@ -178,7 +195,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     post.addSecondary(v);
                 }
             }
-        }
+        }}
 
         //process SELECT queries
         if (query.isSelectType()) {
@@ -196,7 +213,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             if (typeMap.isEmpty()) {
                 head.setSubject("This query");
                 head.setVerb("ask whether");
-                head.setObject(getNLFromElements(whereElements));
+                if (POSTPROCESSING) head.setObject(post.output);
+                else head.setObject(getNLFromElements(whereElements));
                 head.setFeature(Feature.SUPRESSED_COMPLEMENTISER, true);
                 sentences.add(nlgFactory.createSentence(head));
                 return nlgFactory.createParagraph(sentences);
@@ -210,7 +228,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         head.setObject(e);
         //now generate body
         if (!whereElements.isEmpty()) {
-            body = getNLFromElements(whereElements);
+            if (POSTPROCESSING) body = post.output;
+            else body = getNLFromElements(whereElements);
             //now add conjunction
             CoordinatedPhraseElement phrase1 = nlgFactory.createCoordinatedPhrase(head, body);
             phrase1.setConjunction("such that");
@@ -222,7 +241,12 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         }
 
         // The second sentence deals with the optional clause (if it exists)
-        if (optionalElements != null && !optionalElements.isEmpty()) {
+        boolean optionalexists; 
+        if (POSTPROCESSING) optionalexists = !post.optionalsentences.isEmpty() || !post.optionalunions.isEmpty();
+        else optionalexists = optionalElements != null && !optionalElements.isEmpty();
+        
+        if (optionalexists) {
+            SWITCH = true;
             //the optional clause exists
             //if no supplementary projection variables are used in the clause 
             if (optionalVars.isEmpty()) {
@@ -231,7 +255,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 optionalHead.setVerb("retrieve");
                 optionalHead.setObject("data");
                 optionalHead.setFeature(Feature.CUE_PHRASE, "Additionally, ");
-                NLGElement optionalBody = getNLFromElements(optionalElements);
+                NLGElement optionalBody;
+                if (POSTPROCESSING) optionalBody = post.optionaloutput;
+                else optionalBody = getNLFromElements(optionalElements);
                 CoordinatedPhraseElement optionalPhrase = nlgFactory.createCoordinatedPhrase(optionalHead, optionalBody);
                 optionalPhrase.setConjunction("such that");
                 optionalPhrase.addComplement("if such exist");
@@ -246,7 +272,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 optionalHead.setFeature(Feature.CUE_PHRASE, "Additionally, ");
                 if (!optionalElements.isEmpty()) {
                     NLGElement optionalBody;
-                    optionalBody = getNLFromElements(optionalElements);
+                    if (POSTPROCESSING) optionalBody = post.optionaloutput;
+                    else optionalBody = getNLFromElements(optionalElements);
                     //now add conjunction
                     CoordinatedPhraseElement optionalPhrase = nlgFactory.createCoordinatedPhrase(optionalHead, optionalBody);
                     optionalPhrase.setConjunction("such that");
@@ -483,9 +510,13 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             if (conjunction.equals("or")) {
                 Set<SPhraseSpec> union = new HashSet<SPhraseSpec>();
                 union.add(p);
-                post.addUnion(union);
+                if (SWITCH) post.optionalunions.add(union);
+                else post.unions.add(union);
             } 
-            else post.addSentence(p);
+            else {
+                if (SWITCH) post.optionalsentences.add(p);
+                else post.sentences.add(p);
+            }
             return p;
         } else { // the following code is a bit redundant TODO make more elegant! ;)
             // feed the postprocessor
@@ -493,10 +524,16 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             SPhraseSpec p;
             for (int i = 0; i < triples.size(); i++) {
                 p = getNLForTriple(triples.get(i));
-                if (conjunction.equals("or")) union.add(p); 
-                else post.addSentence(p);
+                if (conjunction.equals("or")) union.add(p);
+                else {
+                    if (SWITCH) post.optionalsentences.add(p);
+                    else post.sentences.add(p);
+                }
             }
-            if (conjunction.equals("or")) post.addUnion(union);
+            if (conjunction.equals("or")) {
+                if (SWITCH) post.optionalunions.add(union);
+                else post.unions.add(union);
+            }
             // do simplenlg
             CoordinatedPhraseElement cpe;
             Triple t0 = triples.get(0);
@@ -542,7 +579,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             SPhraseSpec p = nlgFactory.createClause();
             ElementFilter filter = (ElementFilter) e;
             Expr expr = filter.getExpr();
-            return getNLFromSingleExpression(expr);
+            NLGElement el = getNLFromSingleExpression(expr);
+            if (!POSTPROCESSING) post.filter.add(el);
+            return el;
         }
         return null;
     }

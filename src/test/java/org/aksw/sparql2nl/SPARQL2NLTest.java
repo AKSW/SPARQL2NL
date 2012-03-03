@@ -36,8 +36,8 @@ public class SPARQL2NLTest {
                 + "{res:Abraham_Lincoln dbo:deathPlace ?uri} "
                 + "UNION {res:Abraham_Lincoln dbo:birthPlace ?uri} . "
                 + "?uri rdf:type dbo:Place. "
-                + "FILTER regex(?uri, \"France\").  "
-                + "FILTER (lang(?uri) = 'en')"
+                + "FILTER regex(?x, \"France\").  "
+                + "FILTER (lang(?x) = 'en')"
                 + "OPTIONAL { ?uri dbo:Name ?x }. "
                 + "}";
         String query3 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
@@ -46,7 +46,8 @@ public class SPARQL2NLTest {
                 + "PREFIX yago: <http://dbpedia.org/class/yago/> "
                 + "SELECT COUNT(DISTINCT ?uri) "
                 //+ "SELECT ?uri "
-                + "WHERE { ?uri rdf:type yago:EuropeanCountries . ?uri dbo:governmentType ?govern . "
+                + "WHERE { ?uri rdf:type yago:EuropeanCountries . "
+                + "?uri dbo:governmentType ?govern . "
                 + "FILTER regex(?govern,'monarchy') . "
                 //+ "FILTER (!BOUND(?date))"
                 + "}";
@@ -85,7 +86,7 @@ public class SPARQL2NLTest {
                 + "SELECT DISTINCT ?uri ?string "
                 + "WHERE { "
                 + "	?uri rdf:type yago:RussianCosmonauts."
-                + "        ?uri rdf:type yago:FemaleAstronauts ."
+                + "     ?uri rdf:type yago:FemaleAstronauts ."
                 + "OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') }"
                 + "}";
 
@@ -97,6 +98,7 @@ public class SPARQL2NLTest {
                 + "SELECT DISTINCT  ?uri ?string "
                 + "WHERE { ?uri rdf:type dbo:Country . "
                 + "{?uri dbp:birthPlace ?language} UNION {?union dbo:birthPlace ?language} "
+                + "?language rdf:type dbo:Language ."
                 + "OPTIONAL { ?uri rdfs:label ?string "
                 + "FILTER ( lang(?string) = \'en\' )} } "
                 + "GROUP BY ?uri ?string "
@@ -131,8 +133,44 @@ public class SPARQL2NLTest {
                 + "FILTER (?string >\"1970-01-01\"^^xsd:date && lang(?string) = 'en' && !regex(?string,'Presidency','i') && !regex(?string,'and the')) ."
                 + "}";
         
-        String[] queries = {query,query2,query3,query4,query5,query6,query7,query8,query9,query10};
-
+        String query11 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
+                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
+                + "PREFIX dbo: <http://dbpedia.org/ontology/> "
+                + "PREFIX dbp: <http://dbpedia.org/property/> "
+                + "PREFIX res: <http://dbpedia.org/resource/> "
+                + "SELECT ?uri ?string WHERE { "
+                + "?uri rdf:type dbo:Film ."
+                + "?uri dbo:starring ?x ."
+                + "?x rdf:type dbo:Person ."
+                + "?x rdfs:label 'Christian Bale'."
+                + "?uri rdfs:label ?string .}";
+        String query12 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
+                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
+                + "PREFIX dbo: <http://dbpedia.org/ontology/> "
+                + "PREFIX dbp: <http://dbpedia.org/property/> "
+                + "PREFIX res: <http://dbpedia.org/resource/> "
+                + "SELECT ?uri ?string WHERE { "
+                + "?uri rdf:type dbo:Film ."
+                + "?uri dbo:starring ?x ."
+                + "?x rdf:type dbo:Person ."
+                + "?x rdfs:label 'Christian Bale'."
+                + "res:Batman_Begins dbo:starring ?x ."
+                + "?uri rdfs:label ?string .}";
+        String query13 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
+                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
+                + "PREFIX dbo: <http://dbpedia.org/ontology/> "
+                + "PREFIX dbp: <http://dbpedia.org/property/> "
+                + "PREFIX res: <http://dbpedia.org/resource/> "
+                + "SELECT ?uri ?string WHERE { "
+                + "?uri rdf:type dbo:Film ."
+                + "?uri dbo:starring ?x ."
+                + "?x rdf:type dbo:Person ."
+                + "?x rdfs:label 'Christian Bale'."
+                + "{res:Batman_Begins dbo:starring ?x.} UNION {res:Batman_Begins dbp:starring ?x.}"
+                + "?uri rdfs:label ?string .}";
+        
+        String[] queries = {query,query2,query3,query4,query5,query6,query7,query8,query9,query10,query11};
+//      String[] queries = {query11,query12,query13};
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             Lexicon lexicon = Lexicon.getDefaultLexicon();
@@ -142,8 +180,7 @@ public class SPARQL2NLTest {
             for (String q : queries) {
                 System.out.println("\n----------------------------------------------------------------");
                 Query sparqlQuery = QueryFactory.create(q, Syntax.syntaxARQ);
-                System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
-                System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
+                snlg.getNLR(sparqlQuery);
             }
         } catch (Exception e) {
             e.printStackTrace();
