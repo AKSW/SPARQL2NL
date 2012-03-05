@@ -1,7 +1,4 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.net.URL;
@@ -37,6 +34,7 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.SortCondition;
 import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.sparql.core.TriplePath;
+import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.ExprAggregator;
 import com.hp.hpl.jena.sparql.expr.ExprVar;
@@ -51,31 +49,39 @@ import com.hp.hpl.jena.sparql.syntax.ElementUnion;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
+import simplenlg.framework.*;
 
 /**
  *
  * @author ngonga
  */
-public class SimpleNLG implements Sparql2NLConverter {
+public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
     Lexicon lexicon;
     NLGFactory nlgFactory;
     Realiser realiser;
     private URIConverter uriConverter;
     private FilterExpressionConverter expressionConverter;
+    Postprocessor post;
     
     public static final String ENTITY = "owl#thing";
     public static final String VALUE = "value";
     public static final String UNKNOWN = "valueOrEntity";
+    public boolean VERBOSE = false;
+    public boolean POSTPROCESSING;
+    public boolean SWITCH;
     
+    private NLGElement select;
     private SparqlEndpoint endpoint;
 
-    public SimpleNLG(SparqlEndpoint endpoint) {
+    public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint) {
         this.endpoint = endpoint;
 
         lexicon = Lexicon.getDefaultLexicon();
         nlgFactory = new NLGFactory(lexicon);
         realiser = new Realiser(lexicon);
+        
+        post = new Postprocessor();
         
         uriConverter = new URIConverter(endpoint);
         expressionConverter = new FilterExpressionConverter(uriConverter);
@@ -89,11 +95,33 @@ public class SimpleNLG implements Sparql2NLConverter {
      */
     @Override
     public String getNLR(Query query) {
-        String output = realiser.realiseSentence(convert2NLE(query));
+        
+        String output;
+        
+        // 1. run convert2NLE and in parallel assemble postprocessor
+        POSTPROCESSING = false;
+        SWITCH = false;
+        output = realiser.realiseSentence(convert2NLE(query));
+        
+        System.out.println("SimpleNLG:\n" + output);
+        
+        if (VERBOSE) post.print();
+        
+        // 2. run postprocessor
+        post.postprocess();
+        POSTPROCESSING = true;
+        // 3. run convert2NLE again, but this time use body generations from postprocessor
+        output = realiser.realiseSentence(convert2NLE(query));
+        
+        System.out.println("After postprocessing:\n" + output);
+        
+        post.flush();
+        
         output = output.replaceAll(Pattern.quote("\n"), "");
         if (!output.endsWith(".")) {
             output = output + ".";
         }
+        
         return output;
     }
 
@@ -131,7 +159,7 @@ public class SimpleNLG implements Sparql2NLConverter {
 //        System.out.println("Input query = " + query);
         // preprocess the query to get the relevant types
         TypeExtractor tEx = new TypeExtractor(endpoint);
-        Map<String, Set<String>> typeMap = tEx.extractTypes(query);
+        Map<String,Set<String>> typeMap = tEx.extractTypes(query);
 //        System.out.println("Processed query = " + query);
         // contains the beginning of the query, e.g., "this query returns"
         SPhraseSpec head = nlgFactory.createClause();
@@ -156,6 +184,19 @@ public class SimpleNLG implements Sparql2NLConverter {
                 optionalVars.remove(var);
             }
         }
+        
+        // collect primary and secondary variables for postprocessor
+        if (!POSTPROCESSING) {
+        post.primaries = typeMap.keySet();
+        List<String> nonoptionalVars = new ArrayList<String>();
+        for (Element e : whereElements) {
+            for (Var var : e.varsMentioned()) {
+                String v = var.toString().replace("?","");
+                if (!optionalVars.contains(v) && !typeMap.containsKey(v)) {
+                    post.addSecondary(v);
+                }
+            }
+        }}
 
         //process SELECT queries
         if (query.isSelectType()) {
@@ -173,7 +214,8 @@ public class SimpleNLG implements Sparql2NLConverter {
             if (typeMap.isEmpty()) {
                 head.setSubject("This query");
                 head.setVerb("ask whether");
-                head.setObject(getNLFromElements(whereElements));
+                if (POSTPROCESSING) head.setObject(post.output);
+                else head.setObject(getNLFromElements(whereElements));
                 head.setFeature(Feature.SUPRESSED_COMPLEMENTISER, true);
                 sentences.add(nlgFactory.createSentence(head));
                 return nlgFactory.createParagraph(sentences);
@@ -183,11 +225,14 @@ public class SimpleNLG implements Sparql2NLConverter {
             head.setSubject("This query");
             head.setVerb("ask for the existence of");
         }
-        NLGElement e = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());
-        head.setObject(e);
+        if (!POSTPROCESSING) { 
+            select = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());
+        }
+        head.setObject(select);
         //now generate body
         if (!whereElements.isEmpty()) {
-            body = getNLFromElements(whereElements);
+            if (POSTPROCESSING) body = post.output;
+            else body = getNLFromElements(whereElements);
             //now add conjunction
             CoordinatedPhraseElement phrase1 = nlgFactory.createCoordinatedPhrase(head, body);
             phrase1.setConjunction("such that");
@@ -199,7 +244,12 @@ public class SimpleNLG implements Sparql2NLConverter {
         }
 
         // The second sentence deals with the optional clause (if it exists)
-        if (optionalElements != null && !optionalElements.isEmpty()) {
+        boolean optionalexists; 
+        if (POSTPROCESSING) optionalexists = !post.optionalsentences.isEmpty() || !post.optionalunions.isEmpty();
+        else optionalexists = optionalElements != null && !optionalElements.isEmpty();
+        
+        if (optionalexists) {
+            SWITCH = true;
             //the optional clause exists
             //if no supplementary projection variables are used in the clause 
             if (optionalVars.isEmpty()) {
@@ -208,7 +258,9 @@ public class SimpleNLG implements Sparql2NLConverter {
                 optionalHead.setVerb("retrieve");
                 optionalHead.setObject("data");
                 optionalHead.setFeature(Feature.CUE_PHRASE, "Additionally, ");
-                NLGElement optionalBody = getNLFromElements(optionalElements);
+                NLGElement optionalBody;
+                if (POSTPROCESSING) optionalBody = post.optionaloutput;
+                else optionalBody = getNLFromElements(optionalElements);
                 CoordinatedPhraseElement optionalPhrase = nlgFactory.createCoordinatedPhrase(optionalHead, optionalBody);
                 optionalPhrase.setConjunction("such that");
                 optionalPhrase.addComplement("if such exist");
@@ -219,11 +271,13 @@ public class SimpleNLG implements Sparql2NLConverter {
                 SPhraseSpec optionalHead = nlgFactory.createClause();
                 optionalHead.setSubject("it");
                 optionalHead.setVerb("retrieve");
-                optionalHead.setObject(processTypes(typeMap, optionalVars, query.isDistinct(), query.isDistinct()));
+                if (POSTPROCESSING) optionalHead.setObject(select);
+                else optionalHead.setObject(processTypes(typeMap, optionalVars, query.isDistinct(), query.isDistinct()));
                 optionalHead.setFeature(Feature.CUE_PHRASE, "Additionally, ");
                 if (!optionalElements.isEmpty()) {
                     NLGElement optionalBody;
-                    optionalBody = getNLFromElements(optionalElements);
+                    if (POSTPROCESSING) optionalBody = post.optionaloutput;
+                    else optionalBody = getNLFromElements(optionalElements);
                     //now add conjunction
                     CoordinatedPhraseElement optionalPhrase = nlgFactory.createCoordinatedPhrase(optionalHead, optionalBody);
                     optionalPhrase.setConjunction("such that");
@@ -421,7 +475,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             }
             //if(count) cpe.addPreModifier("the number of");
             return cpe;
-        }
+        } 
     }
 
     public DocumentElement convertDescribe(Query query) {
@@ -456,12 +510,39 @@ public class SimpleNLG implements Sparql2NLConverter {
             return null;
         }
         if (triples.size() == 1) {
-            return getNLForTriple(triples.get(0));
-        } else {
+            SPhraseSpec p = getNLForTriple(triples.get(0));
+            if (conjunction.equals("or")) {
+                Set<SPhraseSpec> union = new HashSet<SPhraseSpec>();
+                union.add(p);
+                if (SWITCH) post.optionalunions.add(union);
+                else post.unions.add(union);
+            } 
+            else {
+                if (SWITCH) post.optionalsentences.add(p);
+                else post.sentences.add(p);
+            }
+            return p;
+        } else { // the following code is a bit redundant TODO make more elegant! ;)
+            // feed the postprocessor
+            Set<SPhraseSpec> union = new HashSet<SPhraseSpec>();
+            SPhraseSpec p;
+            for (int i = 0; i < triples.size(); i++) {
+                p = getNLForTriple(triples.get(i));
+                if (conjunction.equals("or")) union.add(p);
+                else {
+                    if (SWITCH) post.optionalsentences.add(p);
+                    else post.sentences.add(p);
+                }
+            }
+            if (conjunction.equals("or")) {
+                if (SWITCH) post.optionalunions.add(union);
+                else post.unions.add(union);
+            }
+            // do simplenlg
             CoordinatedPhraseElement cpe;
             Triple t0 = triples.get(0);
             Triple t1 = triples.get(1);
-            cpe = nlgFactory.createCoordinatedPhrase(getNLForTriple(t0), getNLForTriple(t1));
+            cpe = nlgFactory.createCoordinatedPhrase(getNLForTriple(t0),getNLForTriple(t1));
             for (int i = 2; i < triples.size(); i++) {
                 cpe.addCoordinate(getNLForTriple(triples.get(i)));
             }
@@ -502,7 +583,9 @@ public class SimpleNLG implements Sparql2NLConverter {
             SPhraseSpec p = nlgFactory.createClause();
             ElementFilter filter = (ElementFilter) e;
             Expr expr = filter.getExpr();
-            return getNLFromSingleExpression(expr);
+            NLGElement el = getNLFromSingleExpression(expr);
+            if (!POSTPROCESSING) post.filter.add(el);
+            return el;
         }
         return null;
     }
@@ -533,6 +616,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         }
 
         p.setFeature(Feature.TENSE, Tense.PRESENT);
+
         return p;
     }
 
@@ -560,7 +644,10 @@ public class SimpleNLG implements Sparql2NLConverter {
             }
             //        subj.setFeature(Feature.POSSESSIVE, true);            
             //        PhraseElement np = nlgFactory.createNounPhrase(subj, getEnglishLabel(t.getPredicate().toString()));
-            p.setSubject(realiser.realise(subj) + "\'s " + uriConverter.convert(t.getPredicate().toString()));
+            String realisedsubj = realiser.realise(subj).getRealisation();
+            if (realisedsubj.endsWith("s")) realisedsubj += "\' ";
+            else realisedsubj += "\'s ";
+            p.setSubject(realisedsubj + uriConverter.convert(t.getPredicate().toString()));
             p.setVerb("be");
             if (t.getObject().isVariable()) {
                 p.setObject(t.getObject().toString());
@@ -571,6 +658,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             }
         }
         p.setFeature(Feature.TENSE, Tense.PRESENT);
+        
         return p;
     }
 
@@ -878,7 +966,7 @@ public class SimpleNLG implements Sparql2NLConverter {
 
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
-            SimpleNLG snlg = new SimpleNLG(ep);
+            SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(ep);
             Query sparqlQuery = QueryFactory.create(query2, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
