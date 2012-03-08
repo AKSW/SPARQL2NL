@@ -67,7 +67,7 @@ public class SimpleNLG implements Sparql2NLConverter {
     public static final String ENTITY = "owl#thing";
     public static final String VALUE = "value";
     public static final String UNKNOWN = "valueOrEntity";
-    
+    public List<NLGElement> phrases;
     private SparqlEndpoint endpoint;
 
     public SimpleNLG(SparqlEndpoint endpoint) {
@@ -104,6 +104,7 @@ public class SimpleNLG implements Sparql2NLConverter {
      */
     @Override
     public DocumentElement convert2NLE(Query query) {
+        phrases = new ArrayList<NLGElement>();
         if (query.isSelectType() || query.isAskType()) {
             return convertSelectAndAsk(query);
         } else if (query.isDescribeType()) {
@@ -175,6 +176,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                 head.setVerb("ask whether");
                 head.setObject(getNLFromElements(whereElements));
                 head.setFeature(Feature.SUPRESSED_COMPLEMENTISER, true);
+                phrases.add(head);
                 sentences.add(nlgFactory.createSentence(head));
                 return nlgFactory.createParagraph(sentences);
             }
@@ -193,9 +195,11 @@ public class SimpleNLG implements Sparql2NLConverter {
             phrase1.setConjunction("such that");
             // add as first sentence
             sentences.add(nlgFactory.createSentence(phrase1));
+            phrases.add(phrase1);
             //this concludes the first sentence. 
         } else {
             sentences.add(nlgFactory.createSentence(head));
+            phrases.add(head);
         }
 
         // The second sentence deals with the optional clause (if it exists)
@@ -230,10 +234,12 @@ public class SimpleNLG implements Sparql2NLConverter {
                     // add as second sentence
                     optionalPhrase.addComplement("if such exist");
                     sentences.add(nlgFactory.createSentence(optionalPhrase));
+                    phrases.add(optionalPhrase);
                     //this concludes the second sentence. 
                 } else {
                     optionalHead.addComplement("if such exist");
                     sentences.add(nlgFactory.createSentence(optionalHead));
+                    phrases.add(optionalHead);
                 }
             }
         }
@@ -269,6 +275,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                     order.addComplement("in ascending order");
                 }
             }
+            phrases.add(order);
             sentences.add(nlgFactory.createSentence(order));
         }
         if (query.hasLimit()) {
@@ -296,6 +303,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                     }
                 }
             }
+            phrases.add(limitOffset);
             sentences.add(nlgFactory.createSentence(limitOffset));
         }
 
@@ -880,7 +888,8 @@ public class SimpleNLG implements Sparql2NLConverter {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             SimpleNLG snlg = new SimpleNLG(ep);
             Query sparqlQuery = QueryFactory.create(query2, Syntax.syntaxARQ);
-            System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
+            DocumentElement elt = snlg.convert2NLE(sparqlQuery);            
+            System.out.println("Simple NLG: " + elt);
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
             e.printStackTrace();
