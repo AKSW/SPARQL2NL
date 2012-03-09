@@ -24,6 +24,17 @@
 			<name>University Leipzig, AKSW Maven2 Repository</name>
 			<url>http://maven.aksw.org/archiva/repository/snapshots</url>
 		</repository>
+
+		<repository>
+			<id>apache-repo-snapshots</id>
+			<url>https://repository.apache.org/content/repositories/snapshots/</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
 	</repositories>
 
 	<dependencies>
@@ -36,36 +47,76 @@
 					<artifactId>nif</artifactId>
 					<groupId>org.nlp2rdf</groupId>
 				</exclusion>
+				<exclusion>
+					<artifactId>org.aksw.commons</artifactId>
+					<groupId>sparql</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>com.hp.hpl.jena</artifactId>
+					<groupId>arq</groupId>
+				</exclusion>
+
+				<exclusion>
+					<artifactId>jena-arq</artifactId>
+					<groupId>org.apache.jena</groupId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
-            <groupId>uk.ac.shef.wit</groupId>
-            <artifactId>simmetrics</artifactId>
-            <version>1.6.2</version>
-            <type>jar</type>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>ifi.uzh</groupId>
-            <artifactId>simpack</artifactId>
-            <version>0.9.1</version>
-            <type>jar</type>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>simplenlg</groupId>
-            <artifactId>simplenlg</artifactId>
-            <version>4.3</version>
-            <type>jar</type>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-        	<groupId>org.apache.commons</groupId>
-        	<artifactId>commons-lang3</artifactId>
-        	<version>3.1</version>
-        </dependency>
-	</dependencies>
+			<groupId>uk.ac.shef.wit</groupId>
+			<artifactId>simmetrics</artifactId>
+			<version>1.6.2</version>
+			<type>jar</type>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>ifi.uzh</groupId>
+			<artifactId>simpack</artifactId>
+			<version>0.9.1</version>
+			<type>jar</type>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>simplenlg</groupId>
+			<artifactId>simplenlg</artifactId>
+			<version>4.3</version>
+			<type>jar</type>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.jena</groupId>
+			<artifactId>jena-arq</artifactId>
+			<version>2.9.1-incubating-SNAPSHOT</version>
+			<exclusions>
+				<exclusion>
+					<groupId>xerces</groupId>
+					<artifactId>xercesImpl</artifactId>
+				</exclusion>
+			</exclusions>
 
+		</dependency>
+
+	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.0.2</version>
+				<configuration>
+					<!--We use 1.6 -->
+					<source>${compiler.version}</source>
+					<target>${compiler.version}</target>
+					<encoding>${project.build.sourceEncoding}</encoding>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>
 
 

@@ -161,8 +161,8 @@ public class FilterExpressionConverter implements ExprVisitor{
                 } else {
                 	verb = "be greater than";
                 	if(right.isConstant()){
-                		System.out.println(right.getConstant().getNode());
-                		System.out.println(right.getConstant().getNode().getLiteralDatatype());
+//                		System.out.println(right.getConstant().getNode());
+//                		System.out.println(right.getConstant().getNode().getLiteralDatatype());
                 		if(right.getConstant().getNode().getLiteralDatatype().getURI().equals(XSDDatatype.XSDdate.getURI())){
                 			verb = "be later than";
                 		}

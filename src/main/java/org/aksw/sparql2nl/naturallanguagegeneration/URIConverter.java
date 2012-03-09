@@ -59,7 +59,6 @@ public class URIConverter {
             return label;
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println(uri);
         }
         return null;
 	}
@@ -69,7 +68,7 @@ public class URIConverter {
      * @param uri
      * @return
      */
-    private String dereferenceURI(String uri){
+    private String dereferenceURI(String uri){System.out.println(uri);
     	//TODO add caching for vocabulary
     	String label = null;
     	try {

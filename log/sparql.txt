@@ -2,14 +2,1359 @@
 New Query:
 wget -S -O - '
 http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
-SELECT ?label WHERE {<http://dbpedia.org/ontology/Place> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en')}
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/FemaleAstronauts> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
 ***********
 New Query:
 wget -S -O - '
 http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
-SELECT ?label WHERE {<http://dbpedia.org/ontology/Mountain> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en')}
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/RussianCosmonauts> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
 ***********
 New Query:
 wget -S -O - '
 http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
-SELECT ?label WHERE {<http://dbpedia.org/ontology/Mountain> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en')}
+SELECT ?label WHERE {<http://dbpedia.org/resource/Charmed> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/birthDate> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Bill_Clinton> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/child> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/spouse> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Brooklyn_Bridge> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/crosses> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/EuropeanCountries> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/governmentType> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Abraham_Lincoln> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/deathPlace> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Barack_Obama> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/spouse> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/StatesOfGermany> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/rulingParty> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/rulingParty> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Social_Democratic_Party_of_Germany> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/StatesOfTheUnitedStates> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/mineral> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Nile> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/sourceCountry> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Country> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Cave> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/location> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Proinsulin> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Protein> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Millipede> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/classis> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Claudia_Schiffer> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/height> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Goofy> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/creator> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/AfricanCountries> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/capital> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/City> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/isPartOf> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/New_Jersey> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/populationTotal> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/The_Scream> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/museum> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Egypt> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/largestCity> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Egypt> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/capital> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/IBM> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/numberOfEmployees> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Illinois> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/borderingstates> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Limerick_Lake> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/country> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/TelevisionShow> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/creator> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Walt_Disney> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Mountain> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Annapurna> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/elevation> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/elevation> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Film> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Julia_Roberts> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/director> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Garry_Marshall> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Bridge> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/design> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Manhattan_Bridge> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/design> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Manhattan_Bridge> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Andrew_Jackson> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/battle> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/EuropeanCountries> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/governmentType> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Constitutional_monarchy> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/WikiLeaks> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/awards> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/StatesOfTheUnitedStates> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/densityrank> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Czech_Republic> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/currency> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/EuropeanUnionMemberStates> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/currency> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Euro> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/currencyCode> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/currencyCode> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Berlin> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/areaCode> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Country> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/officialLanguage> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Universal_Studios> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/owner> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Yenisei_River> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/country> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Finland> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/accessioneudate> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/MonarchsOfTheUnitedKingdom> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/spouse> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/spouse> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/birthPlace> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Germany> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Battle_of_Gettysburg> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/date> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Mountain> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/locatedInArea> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Australia> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/elevation> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/SoccerClub> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/ground> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Spain> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/ground> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Philippines> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/officialLanguage> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/New_York_City> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/leaderName> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Brooklyn_Bridge> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/designer> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Organisation> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/industry> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Telecommunications> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/industry> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/location> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Belgium> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/location> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Belgium> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/locationCountry> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Frank_Herbert> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/deathDate> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Karakoram> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/highestPlace> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Forbes> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://xmlns.com/foaf/0.1/homepage> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Company> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/industry> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Bruce_Carver> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/deathCause> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/SchoolTypes> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/Presidents> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/President> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/birthDate> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Person> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/PresidentsOfTheUnitedStates> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/President> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/title> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/President_of_the_United_States> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Abraham_Lincoln> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/spouse> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/World_of_Warcraft> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/developer> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Tom_Cruise> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://xmlns.com/foaf/0.1/homepage> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/series> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/The_Sopranos> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/seasonNumber> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Film> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/producer> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://xmlns.com/foaf/0.1/Person> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://xmlns.com/foaf/0.1/givenName> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/VideoGame> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Mountain> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Nanga_Parbat> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/elevationM> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/elevationM> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Wikipedia> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/author> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Batman_Begins> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Batman_Begins> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Software> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Organisation> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/foundationPlace> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/California> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/developer> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Company> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/industry> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Aerospace> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/industry> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Nuclear_reactor_technology> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Batman_Begins> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Christian_Bale> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Batman_Begins> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Christian_Bale> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Company> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/numEmployees> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://xmlns.com/foaf/0.1/homepage> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Actor> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/birthPlace> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Germany> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/birthPlace> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Cave> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/numberOfEntrances> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Film> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/producer> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Hal_Roach> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/VideoGame> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/publisher> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/publisher> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Mean_Hamster_Software> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Estonia> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/language> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/spokenIn> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Estonia> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Organisation> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/keyPerson> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/HostCitiesOfTheSummerOlympicGames> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/CapitalsInEurope> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/orderInOffice> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/producer> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Hal_Roach> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/album> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://xmlns.com/foaf/0.1/name> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Book> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/author> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Danielle_Steel> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Airport> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/location> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/California> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/RecordLabel> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/genre> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Grunge> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/country> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Canada> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Country> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/officialLanguages> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/GIMP> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/programmingLanguage> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Film> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Natalie_Portman> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Natalie_Portman> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/producer> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Film> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Tom_Cruise> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Tom_Cruise> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Film> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Julia_Roberts> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Julia_Roberts> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Richard_Gere> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Richard_Gere> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/class/yago/FemaleHeadsOfGovernment> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/office> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Chancellor_of_Germany> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/The_Pillars_of_the_Earth> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/author> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Film> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Leonardo_DiCaprio> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/starring> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Leonardo_DiCaprio> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/league> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Premier_League> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Capcom> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/foundation> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Organisation> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/property/foundation> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/formationYear> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/Mountain> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/elevation> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/Natalie_Portman> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/birthPlace> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/ontology/country> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
+***********
+New Query:
+wget -S -O - '
+http://dbpedia.org/sparql?default-graph-uri=http://dbpedia.org&query=
+SELECT ?label WHERE {<http://dbpedia.org/resource/United_States> <http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}
