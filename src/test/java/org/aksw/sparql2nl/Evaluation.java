@@ -315,7 +315,7 @@ public class Evaluation {
 	}
 	
 	public void run2(){
-		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
+		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpediaLiveAKSW();//getEndpointDBpedia();
 		readSPARQLQueriesFromXML(new File(QUERIES_FILE));
 		SimpleNLG nlg = new SimpleNLG(endpoint);
 		for(Entry<Integer, String> entry : id2Query.entrySet()){

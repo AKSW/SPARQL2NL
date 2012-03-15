@@ -6,7 +6,9 @@ import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import org.aksw.sparql2nl.naturallanguagegeneration.BoaPatternSelector;
+
+import org.aksw.sparql2nl.naturallanguagegeneration.boa.BoaPatternSelector;
+
 import simplenlg.aggregation.ClauseCoordinationRule;
 import simplenlg.features.Feature;
 import simplenlg.features.NumberAgreement;
