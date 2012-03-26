@@ -76,12 +76,12 @@ public class NLConstructor {
                 
                 SPhraseSpec s = nlg.createClause(); 
                 s.setFeature(Feature.NUMBER,NumberAgreement.PLURAL);
-                List<String> boapatterns = boa.getNaturalLanguageRepresentation(m[i][1],1);
-                if (!boapatterns.isEmpty()) {
-                    s.setVerb(boapatterns.get(0));
-                } else {
+//                List<String> boapatterns = boa.getNaturalLanguageRepresentation(m[i][1],1);
+//                if (!boapatterns.isEmpty()) {
+//                    s.setVerb(boapatterns.get(0));
+//                } else {
                     s.setVerb(queryDBpediaForLabel(m[i][1]));
-                }
+//                }
                 if (m[i][0].replace("?","").equals(e.var)) { // then primary is subject => active sentence       
                     s.setSubject("");
                     s.setObject(buildNP(e,m[i][2],0));
