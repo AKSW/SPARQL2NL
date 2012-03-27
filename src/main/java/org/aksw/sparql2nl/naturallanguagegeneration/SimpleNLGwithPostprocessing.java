@@ -103,14 +103,14 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         SWITCH = false;
         output = realiser.realiseSentence(convert2NLE(query));
         
-        System.out.println("SimpleNLG:\n" + output);
-        
+        System.out.println("SimpleNLG:\n" + output);        
         if (VERBOSE) post.print();
         
         // 2. run postprocessor
-        post.postprocess();
-        POSTPROCESSING = true;
+        post.postprocess();       
+        
         // 3. run convert2NLE again, but this time use body generations from postprocessor
+        POSTPROCESSING = true;
         output = realiser.realiseSentence(convert2NLE(query));
         
         System.out.println("After postprocessing:\n" + output);
@@ -203,11 +203,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             //process head
             //we could create a lexicon from which we could read these
             head.setSubject("This query");
-            if (!tEx.isCount()) {
-                head.setVerb("retrieve");
-            } else {
-                head.setVerb("retrieve the number of");
-            }
+            head.setVerb("retrieve");
         } //process ASK queries
         else {
             //process factual ask queries (no variables at all)
@@ -226,11 +222,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             head.setVerb("ask for the existence of");
         }
         if (!POSTPROCESSING) { 
-            select = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());
+            select = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());  // if tEx.isCount(), this gives "number of" + select
         }
         head.setObject(select);
         //now generate body
-        if (!whereElements.isEmpty()) {
+        if (!whereElements.isEmpty() || post.output != null) {
             if (POSTPROCESSING) body = post.output;
             else body = getNLFromElements(whereElements);
             //now add conjunction
@@ -245,7 +241,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
         // The second sentence deals with the optional clause (if it exists)
         boolean optionalexists; 
-        if (POSTPROCESSING) optionalexists = !post.optionalsentences.isEmpty() || !post.optionalunions.isEmpty();
+        if (POSTPROCESSING) optionalexists = post.optionaloutput != null; // !post.optionalsentences.isEmpty() || !post.optionalunions.isEmpty();
         else optionalexists = optionalElements != null && !optionalElements.isEmpty();
         
         if (optionalexists) {
@@ -290,6 +286,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     sentences.add(nlgFactory.createSentence(optionalHead));
                 }
             }
+            SWITCH = false;
         }
 
         //The last sentence deals with the result modifiers
@@ -429,9 +426,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 Set<String> types = typeMap.get(s);
                 if (types.size() == 1) {
                     NPPhraseSpec np = getNPPhrase(types.iterator().next(), true);
-                    if (distinct) {
-                        np.addModifier("distinct");
-                    }
+                    if (count) np.addPreModifier("the number of");
+                    if (distinct) np.addModifier("distinct");
                     object.addPreModifier(np);
                 } else {
                     Iterator<String> typeIterator = types.iterator();
@@ -514,15 +510,15 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             if (conjunction.equals("or")) {
                 Set<SPhraseSpec> union = new HashSet<SPhraseSpec>();
                 union.add(p);
-                if (SWITCH) post.optionalunions.add(union);
+                if (SWITCH) { System.out.println(" Adding something to optionalunions!"); post.optionalunions.add(union); }
                 else post.unions.add(union);
             } 
             else {
-                if (SWITCH) post.optionalsentences.add(p);
+                if (SWITCH) { System.out.println(" Adding something to optionalsentences!"); post.optionalsentences.add(p); }
                 else post.sentences.add(p);
             }
             return p;
-        } else { // the following code is a bit redundant TODO make more elegant! ;)
+        } else { // the following code is a bit redundant...
             // feed the postprocessor
             Set<SPhraseSpec> union = new HashSet<SPhraseSpec>();
             SPhraseSpec p;
@@ -580,7 +576,6 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             return getNLForTripleList(triples, "or");
         } // if it's a filter
         else if (e instanceof ElementFilter) {
-            SPhraseSpec p = nlgFactory.createClause();
             ElementFilter filter = (ElementFilter) e;
             Expr expr = filter.getExpr();
             NLGElement el = getNLFromSingleExpression(expr);

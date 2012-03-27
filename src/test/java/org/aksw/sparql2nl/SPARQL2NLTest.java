@@ -60,7 +60,7 @@ public class SPARQL2NLTest {
                 + "WHERE { ?uri rdf:type yago:EuropeanCountries . "
                 + "?uri dbo:governmentType ?govern . "
                 + "FILTER regex(?govern,'monarchy') . "
-                + "?govern rdf:type dbo:Film . " 
+                + "OPTIONAL { ?govern rdf:type dbo:Film . } " 
                 //+ "FILTER (!BOUND(?date))"
                 + "}";
         String query4 = "PREFIX dbo: <http://dbpedia.org/ontology/> "

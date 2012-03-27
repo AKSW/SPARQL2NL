@@ -42,7 +42,7 @@ public class Postprocessor {
         secondaries = new HashSet<String>();
         sentences = new HashSet<SPhraseSpec>();
         unions = new HashSet<Set<SPhraseSpec>>();
-        output = null;sentences = new HashSet<SPhraseSpec>();
+        output = null;
         optionalsentences = new HashSet<SPhraseSpec>();
         optionalunions = new HashSet<Set<SPhraseSpec>>();
         optionaloutput = null;    
@@ -72,31 +72,43 @@ public class Postprocessor {
     
     public void postprocess() {
       
+        // 1. compose body
         // if it's an ASK query without variables, simply verbalise all sentences and unions
         CoordinatedPhraseElement body = nlg.createCoordinatedPhrase();
         body.setConjunction("and");
         if (primaries.isEmpty() && secondaries.isEmpty()) {
             body.addCoordinate(verbalise(sentences,new HashSet<SPhraseSpec>(),unions));           
         }
-        else { // otherwise
+        // otherwise verbalise properties of primaries and secondaries in order importance (i.e. of number of occurrences)
+        else { 
           for (String var : primaries)   aggregateTypeAndLabelInformation("?"+var);
           for (String var : secondaries) aggregateTypeAndLabelInformation("?"+var);
           while (!primaries.isEmpty() || !secondaries.isEmpty()) {
               body.addCoordinate(talkAboutMostImportant());
           }
         }
-        // add filter to body
-        for (NLGElement f : filter) {
-            body.addCoordinate(new StringElement(realiser.realiseSentence(f)));
-        }
-        output = coordinate(body);  
-        // verbalise optionals (if there are any)  
+        
+        // 2. verbalise optionals if there are any (is added to final output in SimpleNLG)
+        System.out.println(" ! |optionalsentences| = " + optionalsentences.size()); // DEBUG
         if (!optionalsentences.isEmpty() || !optionalunions.isEmpty()) {
              optionaloutput = verbalise(optionalsentences,new HashSet<SPhraseSpec>(),optionalunions);
         }
+        System.out.println(" ! optionaloutput: " + realiser.realiseSentence(optionaloutput)); // DEBUG
+        
+        // 3. add filters (or what remains of them) to body
+        for (NLGElement f : filter) {            
+            String fstring = realiser.realiseSentence(f);
+            if (fstring.endsWith(".")) fstring = fstring.substring(0,fstring.length()-1);
+            body.addCoordinate(new StringElement(fstring));
+        }
+        
+        // 4. put it all together
+        output = coordinate(body);  
+        
     }
     
-    private NLGElement talkAboutMostImportant() { // most important means primary (or, if there are no primaries, secondary) with most occurrences 
+    private NLGElement talkAboutMostImportant() { 
+        // most important means primary (or, if there are no primaries, secondary) with highest number of occurrences 
         
         String current = null;
         if (!primaries.isEmpty()) {
@@ -407,22 +419,22 @@ public class Postprocessor {
         
         if (type != null) {
             String sstring = realiser.realiseSentence(type);
-            newsentence.setVerb("be");
             String classstring = sstring.replace(var+"\'s type is ","").replaceAll("\\.","");
             objnp = nlg.createNounPhrase("a",classstring);
             if (np != null) objnp.addPostModifier(("with " + realiser.realise(np)).replaceAll("\\.",""));
+            newsentence.setVerb("be");
             newsentence.setObject(objnp);
             // removal:
             if (optionalMap.get(sstring)) { optionalsentences.remove(type); opt = true; }
-            else sentences.remove(type);           
+            else sentences.remove(type);  
         }
         else {
-            newsentence.setVerb("has");
+            newsentence.setVerb("have");
             newsentence.setObject(np);
         }
+        if (opt) newsentence.setFeature("modal","may");
         
-        if (opt) newsentence.addPostModifier("(if such exist)");
-        filter.add(newsentence); // TODO or add to sentences
+        sentences.add(newsentence); 
         }
     }
     private String checkLanguage(String var) {
@@ -470,9 +482,9 @@ public class Postprocessor {
     private void addFilterInformation(SPhraseSpec sentence) {
         
         String obj  = sentence.getObject().getFeatureAsString("head");
-        Pattern p = Pattern.compile("(\\?([\\w]*))(\\s|\\z)");
+        Pattern p = Pattern.compile(".*(\\?([\\w]*))(\\s|\\z)");
         Matcher m = p.matcher(obj);
-        if (m.find()) {
+        if (m.find()) { // i.e. if the object is a variable at the end of the phrase
             String var = m.group(1);
             String newhead = obj;
             Set<NLGElement> usedFilters = new HashSet<NLGElement>();
