@@ -212,7 +212,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 head.setVerb("ask whether");
                 if (POSTPROCESSING) head.setObject(post.output);
                 else head.setObject(getNLFromElements(whereElements));
-                head.setFeature(Feature.SUPRESSED_COMPLEMENTISER, true);
+                head.getObject().setFeature(Feature.SUPRESSED_COMPLEMENTISER,true);
                 sentences.add(nlgFactory.createSentence(head));
                 return nlgFactory.createParagraph(sentences);
             }
@@ -510,11 +510,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             if (conjunction.equals("or")) {
                 Set<SPhraseSpec> union = new HashSet<SPhraseSpec>();
                 union.add(p);
-                if (SWITCH) { System.out.println(" Adding something to optionalunions!"); post.optionalunions.add(union); }
+                if (SWITCH) post.optionalunions.add(union);
                 else post.unions.add(union);
             } 
             else {
-                if (SWITCH) { System.out.println(" Adding something to optionalsentences!"); post.optionalsentences.add(p); }
+                if (SWITCH) post.optionalsentences.add(p);
                 else post.sentences.add(p);
             }
             return p;

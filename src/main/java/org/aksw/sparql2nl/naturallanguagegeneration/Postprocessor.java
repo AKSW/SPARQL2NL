@@ -89,14 +89,13 @@ public class Postprocessor {
         }
         
         // 2. verbalise optionals if there are any (is added to final output in SimpleNLG)
-        System.out.println(" ! |optionalsentences| = " + optionalsentences.size()); // DEBUG
         if (!optionalsentences.isEmpty() || !optionalunions.isEmpty()) {
              optionaloutput = verbalise(optionalsentences,new HashSet<SPhraseSpec>(),optionalunions);
         }
-        System.out.println(" ! optionaloutput: " + realiser.realiseSentence(optionaloutput)); // DEBUG
         
         // 3. add filters (or what remains of them) to body
         for (NLGElement f : filter) {            
+            // TODO fuse filters
             String fstring = realiser.realiseSentence(f);
             if (fstring.endsWith(".")) fstring = fstring.substring(0,fstring.length()-1);
             body.addCoordinate(new StringElement(fstring));
@@ -361,13 +360,13 @@ public class Postprocessor {
         // collect the above SPhraseSpecs
         for (SPhraseSpec s : sentences) {
             String sstring = realiser.realiseSentence(s);
-            if (sstring.startsWith(var+"\'s type is ")) {
+            if (sstring.startsWith(var+"\'s type is ") && !sstring.startsWith(var+"\'s type is ?")) {
                 type = s; optionalMap.put(sstring,false);
             }
-            else if (sstring.startsWith(var+"\'s label is ")) {
+            else if (sstring.startsWith(var+"\'s label is ") && !sstring.startsWith(var+"\'s label is ")) {
                 label = s; optionalMap.put(sstring,false);
             }
-            else if (sstring.startsWith(var+"\'s name is ")) {
+            else if (sstring.startsWith(var+"\'s name is ") && sstring.startsWith(var+"\'s name is ")) {
                 name = s; optionalMap.put(sstring,false);
             }
         } 
