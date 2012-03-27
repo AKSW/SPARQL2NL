@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.aksw.sparql2nl.naturallanguagegeneration.boa.BoaPatternSelector;
+import org.aksw.sparql2nl.naturallanguagegeneration.boa.Pattern;
 
 import simplenlg.aggregation.ClauseCoordinationRule;
 import simplenlg.features.Feature;
@@ -76,7 +77,7 @@ public class NLConstructor {
                 
                 SPhraseSpec s = nlg.createClause(); 
                 s.setFeature(Feature.NUMBER,NumberAgreement.PLURAL);
-                List<String> boapatterns = boa.getNaturalLanguageRepresentation(m[i][1],1);
+                List<Pattern> boapatterns = BoaPatternSelector.getNaturalLanguageRepresentation(m[i][1],1);
                 if (!boapatterns.isEmpty()) {
                     s.setVerb(boapatterns.get(0));
                 } else {

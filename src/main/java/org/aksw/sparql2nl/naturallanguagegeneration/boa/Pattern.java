@@ -6,7 +6,7 @@ import java.util.Map;
 /**
  * Only used inside this class to encapsulate the Solr query results.
  */
-class Pattern {
+public class Pattern {
     
     public Map<String,Double> features = new HashMap<String,Double>();
     public String naturalLanguageRepresentationWithoutVariables = "";
