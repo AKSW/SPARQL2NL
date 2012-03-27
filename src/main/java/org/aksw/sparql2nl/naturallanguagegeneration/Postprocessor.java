@@ -483,15 +483,19 @@ public class Postprocessor {
         
         String obj  = sentence.getObject().getFeatureAsString("head");
         Pattern p = Pattern.compile(".*(\\?([\\w]*))(\\s|\\z)");
+        
+        Set<NLGElement> usedFilters = new HashSet<NLGElement>();
+        
+        // attach filter information to object
         Matcher m = p.matcher(obj);
         if (m.find()) { // i.e. if the object is a variable at the end of the phrase
             String var = m.group(1);
             String newhead = obj;
-            Set<NLGElement> usedFilters = new HashSet<NLGElement>();
             for (NLGElement f : filter) {
                 String fstring = realiser.realiseSentence(f);
+                if (fstring.trim().endsWith(".")) fstring = fstring.substring(0,fstring.length()-1);
                 if (fstring.startsWith(var + " matches ")) {
-                    String match = fstring.replace(var+" matches ","").replaceAll("\\.","");
+                    String match = fstring.replace(var+" matches ","");
                     if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")
                             && !occursAnyWhereElse(obj,sentence)) {
                         sentence.setVerb("match");
@@ -507,7 +511,7 @@ public class Postprocessor {
                         // ... is ?x . ?x is ... -> ... is ...
                         newhead = fstring.replace(obj+" is ","");
                     }
-                    else newhead += " which " + fstring.replace(obj,"").trim().replaceAll("\\.","");
+                    else newhead += " which " + fstring.replace(obj,"");
                     usedFilters.add(f);
                 }
                 else {
@@ -517,7 +521,7 @@ public class Postprocessor {
                                            " is less than or equal to "};
                     for (String comp : comparison) {
                         if (fstring.startsWith(var + comp)) {
-                            String match = fstring.replace(var+comp,"").replaceAll("\\.","");
+                            String match = fstring.replace(var+comp,"");
                             newhead = obj.replace(m.group(1),m.group(1) + comp.replace(" is ","") + match);
                             usedFilters.add(f);
                             break;
@@ -525,9 +529,28 @@ public class Postprocessor {
                     }
                 }
             }
-            filter.removeAll(usedFilters);
             sentence.getObject().setFeature("head",newhead);
         }
+        
+        // attach filter information to subject
+        String subj = sentence.getSubject().getFeatureAsString("head");
+        p = Pattern.compile("(^|\\A)(\\?([\\w]*))");
+        m = p.matcher(subj);
+        if (m.find()) { // i.e. if the subject is a variable at the end of the phrase
+            String var = m.group(2);
+            String newhead = subj;
+            for (NLGElement f : filter) {
+                String fstring = realiser.realiseSentence(f);
+                if (fstring.endsWith(".")) fstring = fstring.substring(0,fstring.length()-1);
+                if (fstring.startsWith(var)) {
+                    sentence.addComplement("and " + fstring.replace(var,"").trim());
+                    usedFilters.add(f);
+                    break;
+                }
+            }
+        }
+        
+        filter.removeAll(usedFilters);
     }
     
     private boolean occursAnyWhereElse(String var,SPhraseSpec sent) { 
