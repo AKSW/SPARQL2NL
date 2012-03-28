@@ -80,8 +80,9 @@ public class SPARQL2NLTest {
                 + "WHERE { ?cave rdf:type dbo:Cave . "
                 + "?cave dbo:location ?uri . "
                 + "?uri rdf:type dbo:Country . "
-                + "?uri dbo:writer ?y . FILTER(!BOUND(?cave))"
-                + "?cave dbo:location ?x } ";
+                + "?uri dbo:writer ?y . "
+                + "FILTER(!BOUND(?y)) . "
+                + "FILTER(!BOUND(?uri)) }";
 
         String query6 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX dbp: <http://dbpedia.org/property/> "

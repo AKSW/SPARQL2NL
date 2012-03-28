@@ -94,9 +94,19 @@ public class Postprocessor {
         }
         
         // 3. add filters (or what remains of them) to body
-        for (NLGElement f : filter) {            
-            // TODO fuse filters
-            String fstring = realiser.realiseSentence(f);
+        // fuse
+        List<NLGElement> filters = new ArrayList(filter);
+        NLGElement currentf = null;
+        for (int i = 0; i < filters.size(); i++) {            
+            if (i == 0) currentf = filters.get(i);
+            else {
+                if (i < filters.size()-1) currentf = fuse(currentf,filters.get(i),",");
+                else currentf = fuse(currentf,filters.get(i),"and");
+            }
+        }
+        // add to body 
+        if (currentf != null) {
+            String fstring = realiser.realiseSentence(currentf);
             if (fstring.endsWith(".")) fstring = fstring.substring(0,fstring.length()-1);
             body.addCoordinate(new StringElement(fstring));
         }
@@ -255,7 +265,7 @@ public class Postprocessor {
         if (e1.getCategory().equals(PhraseCategory.NOUN_PHRASE)) {
             String[] real1 = e1.getFeatureAsString("head").split(" ");
             String[] real2 = e2.getFeatureAsString("head").split(" ");
-            
+                        
             // forwards
                 String prefix = "";
                 int lf = 0;
@@ -503,12 +513,25 @@ public class Postprocessor {
                     else newhead = obj.replace(m.group(1),m.group(1) + " matching " + match);
                     usedFilters.add(f);
                 }
+                else if (fstring.startsWith(var + " does not exist")) {
+                    if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")) {
+                        if (!occursAnyWhereElse(obj,sentence)) {
+                            sentence.setVerb("do not exist");
+                            newhead = "";
+                        }
+                        else {
+                            newhead = "no "+obj;
+                        }
+                    }
+                    else sentence.setFeature("negated",true);
+                    usedFilters.add(f);
+                }
                 else if (fstring.split(" ")[0].equals(obj)) {
+                    // SUBJ is ?x . ?x V OBJ -> SUBJ V OBJ
                     if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")
-                            && fstring.startsWith(obj+ " is ")
-                            && !occursAnyWhereElse(obj,sentence)) {
-                        // ... is ?x . ?x is ... -> ... is ...
-                        newhead = fstring.replace(obj+" is ","");
+                            && fstring.startsWith(obj)
+                            && !occursAnyWhereElse(obj,sentence)) {   
+                        newhead = fstring.replace(obj,"");
                     }
                     else newhead += " which " + fstring.replace(obj,"");
                     usedFilters.add(f);
