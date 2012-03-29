@@ -257,7 +257,7 @@ public class Postprocessor {
             String key = realiser.realiseSentence(sentence).replace(realiser.realise(subj).toString(),"");
             
             // if verb+object of sentence is the same as one already encountered, fuse subjects
-            if (memory.containsKey(key)) { 
+            if (memory.containsKey(key)) {
                 SPhraseSpec memelement = memory.get(key);               
                 NLGElement newsubj = fuse(subj,memelement.getSubject(),conjunction); 
                 if (newsubj != null) memelement.setSubject(newsubj); // change memelement and don't add sentence
@@ -295,11 +295,14 @@ public class Postprocessor {
                             if (getVerb(s) != null && getVerb(s).equals("be")) objIs = true;
                             if (getVerb(sent) != null && getVerb(sent).equals("be")) subjIs = true;
                             if (objIs || subjIs) {
+                                System.out.println("Want to fuse " + object + "..."); // DEBUG
                                 if (!isNeeded(object,sentences,s,sent)) {
+                                    System.out.println("...OK."); // DEBUG
                                     objsent = s;
                                     subjsent = sent;
                                     break loop;
                                 }
+                                else System.out.println("...No."); // DEBUG
                             }
                         }
                     }
@@ -622,8 +625,13 @@ public class Postprocessor {
     
     private void addFilterInformation(SPhraseSpec sentence) {
         
-        String obj  = sentence.getObject().getFeatureAsString("head");
+        String obj  = realiser.realise(sentence.getObject()).toString();
         Pattern p = Pattern.compile(".*(\\?([\\w]*))(\\s|\\z)");
+        
+        String[] comparison = {" is greater than or equal to ",
+                                           " is greather than ",
+                                           " is less than ",
+                                           " is less than or equal to "};
         
         Set<NLGElement> usedFilters = new HashSet<NLGElement>();
         
@@ -673,10 +681,6 @@ public class Postprocessor {
                     usedFilters.add(f);
                 }
                 else {
-                    String[] comparison = {" is greater than or equal to ",
-                                           " is greather than ",
-                                           " is less than ",
-                                           " is less than or equal to "};
                     for (String comp : comparison) {
                         if (fstring.startsWith(var + comp)) {
                             String match = fstring.replace(var+comp,"");
@@ -691,12 +695,11 @@ public class Postprocessor {
         }
         
         // attach filter information to subject
-        String subj = sentence.getSubject().getFeatureAsString("head");
-        p = Pattern.compile("(^|\\A)(\\?([\\w]*))?!'");
+        String subj = realiser.realise(sentence.getSubject()).toString();
+        p = Pattern.compile("(^|\\A)(\\?([\\w]*))((?!')||\\z)");
         m = p.matcher(subj);
-        if (m.find()) { // i.e. if the subject is a variable at the end of the phrase
+        if (m.find()) { // i.e. if the subject is a variable at the beginning of the phrase
             String var = m.group(2);
-            String newhead = subj;
             for (NLGElement f : filter) {
                 String fstring = realiser.realiseSentence(f);
                 if (fstring.endsWith(".")) fstring = fstring.substring(0,fstring.length()-1);
