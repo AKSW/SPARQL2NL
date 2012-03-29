@@ -27,6 +27,14 @@ public class SPARQL2NLTest {
                 + "SELECT DISTINCT ?height "
                 + "WHERE { res:Claudia_Schiffer dbo:height ?height . "
                 + "FILTER(\"1.0e6\"^^<http://www.w3.org/2001/XMLSchema#double> <= ?height)}";
+        String query2b = "PREFIX res: <http://dbpedia.org/resource/> "
+                + "PREFIX dbo: <http://dbpedia.org/ontology/> "
+                + "SELECT DISTINCT ?height "
+                + "WHERE { res:Claudia_Schiffer dbo:height ?height . }";
+        String query2c = "PREFIX dbo: <http://dbpedia.org/ontology/> "
+                + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
+                + "SELECT DISTINCT ?x "
+                + "WHERE { ?x rdf:type dbo:Place . }";
 
         String query = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
@@ -59,7 +67,7 @@ public class SPARQL2NLTest {
                 //+ "SELECT ?uri "
                 + "WHERE { ?uri rdf:type yago:EuropeanCountries . "
                 + "?uri dbo:governmentType ?govern . "
-                + "FILTER regex(?govern,'monarchy') . "
+                + "FILTER regex(?govern,'monarchy','i') . "
                 + "OPTIONAL { ?govern rdf:type dbo:Film . } " 
                 //+ "FILTER (!BOUND(?date))"
                 + "}";
@@ -181,13 +189,25 @@ public class SPARQL2NLTest {
                 + "?x rdfs:label 'Christian Bale'."
                 + "{res:Batman_Begins dbo:starring ?x.} UNION {res:Batman_Begins dbp:starring ?x.}"
                 + "?uri rdfs:label ?string .}";
+        String query14 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
+                + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
+                + "PREFIX dbo: <http://dbpedia.org/ontology/> "
+                + "PREFIX dbp: <http://dbpedia.org/property/> "
+                + "PREFIX res: <http://dbpedia.org/resource/> "
+                + "SELECT ?uri ?string WHERE { "
+                + "?uri rdf:type dbo:Film ."
+                + "?uri dbo:starring ?x ."
+                + "?x rdf:type dbo:Person ."
+                + "?x rdfs:label 'Christian Bale'."
+                + "res:Batman_Begins dbo:place ?x."
+                + "OPTIONAL { ?x  dbp:has dbo:Mountain . }"
+                + "?uri rdfs:label ?string .}";
         
-        String[] queries = {query,query2,query3,query3b,query4,query5,query6,query7,query8,query9,query10,query11};
+        String[] queries = {query,query2,query2b,query2c,query3,query3b,query4,query5,query6,query7,query8,query9,query10,query11,query14};
 //      String[] queries = {query11,query12,query13};
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             Lexicon lexicon = Lexicon.getDefaultLexicon();
-            Realiser realiser = new Realiser(lexicon);
             SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(ep);
             
             for (String q : queries) {

@@ -221,9 +221,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             head.setSubject("This query");
             head.setVerb("ask for the existence of");
         }
-        if (!POSTPROCESSING) { 
+        if (POSTPROCESSING) select = post.returnSelect();  
+        else {
+            // this is done in the first run and select is then set also for the second (postprocessing) run
             select = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());  // if tEx.isCount(), this gives "number of" + select
-        }
+        } 
         head.setObject(select);
         //now generate body
         if (!whereElements.isEmpty() || post.output != null) {
@@ -459,6 +461,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 objects.add(object);
             }
         }
+        
+        post.selects.addAll(objects);
+        
         if (objects.size() == 1) {
             //if(count) objects.get(0).addPreModifier("the number of");
             return objects.get(0);

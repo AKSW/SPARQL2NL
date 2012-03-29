@@ -115,6 +115,8 @@ public class TypeExtractor extends ElementVisitorBase {
 	private String inferGenericType(Var var){
 		Set<Triple> triples = var2Triples.get(var);
 	
+                if (triples == null) return OWL.Thing.getURI();
+                
 		//if var is in subject position it should not be a literal, but an entity
 		for(Triple triple : triples){
 			if(triple.getSubject().sameValueAs(var)){
