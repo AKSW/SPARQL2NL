@@ -295,14 +295,11 @@ public class Postprocessor {
                             if (getVerb(s) != null && getVerb(s).equals("be")) objIs = true;
                             if (getVerb(sent) != null && getVerb(sent).equals("be")) subjIs = true;
                             if (objIs || subjIs) {
-                                System.out.println("Want to fuse " + object + "..."); // DEBUG
                                 if (!isNeeded(object,sentences,s,sent)) {
-                                    System.out.println("...OK."); // DEBUG
                                     objsent = s;
                                     subjsent = sent;
                                     break loop;
                                 }
-                                else System.out.println("...No."); // DEBUG
                             }
                         }
                     }
@@ -348,10 +345,13 @@ public class Postprocessor {
         return false;
     }
     private String getSubject(NLGElement el) {
+        if (el == null) return null;
         if (el.getFeature("subjects") != null) {
             ArrayList<NLGElement> subjects = new ArrayList<NLGElement>(((Collection<NLGElement>) el.getFeature("subjects")));
             if (subjects != null && !subjects.isEmpty()) {
-                return subjects.get(0).getFeature("head").toString();
+                if (subjects.get(0).getFeature("head") != null) {
+                    return subjects.get(0).getFeature("head").toString();
+                }
             }
         }
         else if (el.hasFeature("coordinates")) {
@@ -359,7 +359,9 @@ public class Postprocessor {
                if (c.getFeature("subjects") != null) {
                     ArrayList<NLGElement> subjects = new ArrayList<NLGElement>(((Collection<NLGElement>) c.getFeature("subjects")));
                     if (subjects != null && !subjects.isEmpty()) {
-                        return subjects.get(0).getFeature("head").toString();
+                        if (subjects.get(0).getFeature("head") != null) {
+                            return subjects.get(0).getFeature("head").toString();
+                        }
                     }
                 } 
             }
@@ -367,10 +369,13 @@ public class Postprocessor {
         return null;
     }
     private String getObject(NLGElement el) {
+        if (el == null) return null;
         if (el.hasFeature("verb_phrase") && ((NLGElement) el.getFeature("verb_phrase")).hasFeature("complements")) {
             ArrayList<NLGElement> objects = new ArrayList<NLGElement>(((Collection<NLGElement>) ((NLGElement) el.getFeature("verb_phrase")).getFeature("complements")));
             if (objects != null && !objects.isEmpty()) {
-                return objects.get(0).getFeature("head").toString();
+                if (objects.get(0).getFeature("head") != null) {
+                    return objects.get(0).getFeature("head").toString();
+                }
             }
         }
         else if (el.hasFeature("coordinates")) {
@@ -378,7 +383,9 @@ public class Postprocessor {
                 if (c.hasFeature("verb_phrase") && ((NLGElement) c.getFeature("verb_phrase")).hasFeature("complements")) {
                     ArrayList<NLGElement> objects = new ArrayList<NLGElement>(((Collection<NLGElement>) ((NLGElement) c.getFeature("verb_phrase")).getFeature("complements")));
                     if (objects != null && !objects.isEmpty()) {
-                        return objects.get(0).getFeature("head").toString();
+                        if (objects.get(0).getFeature("head") != null) {
+                            return objects.get(0).getFeature("head").toString();
+                        }
                     }
                 }
             }
