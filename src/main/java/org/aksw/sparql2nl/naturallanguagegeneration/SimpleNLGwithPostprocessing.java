@@ -270,7 +270,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 optionalHead.setSubject("it");
                 optionalHead.setVerb("retrieve");
                 if (POSTPROCESSING) optionalHead.setObject(select);
-                else optionalHead.setObject(processTypes(typeMap, optionalVars, query.isDistinct(), query.isDistinct()));
+                else optionalHead.setObject(processTypes(typeMap, optionalVars, tEx.isCount(), query.isDistinct()));
                 optionalHead.setFeature(Feature.CUE_PHRASE, "Additionally, ");
                 if (!optionalElements.isEmpty()) {
                     NLGElement optionalBody;

@@ -210,9 +210,17 @@ public class SPARQL2NLTest {
                 + "SELECT DISTINCT  ?date WHERE"
                 + "{ res:Charmed dbo:starring ?actor ."
                 + " ?actor dbo:birthDate ?date }";
+        String query16 = "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
+                + "PREFIX  res:  <http://dbpedia.org/resource/>"
+                + "PREFIX  dbo:  <http://dbpedia.org/ontology/>"
+                + "PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
+                + "SELECT DISTINCT  ?uri ?string WHERE"
+                + " { res:Brooklyn_Bridge dbo:crosses ?uri . "
+                + "OPTIONAL { ?uri rdfs:label ?string . FILTER ( lang(?string) = \"en\" ) } } ";
+
 
 //        String[] queries = {query,query2,query2b,query2c,query3,query3b,query4,query5,query6,query7,query8,query9,query10,query11,query14};
-      String[] queries = {query15};
+      String[] queries = {query15,query16};
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             Lexicon lexicon = Lexicon.getDefaultLexicon();
