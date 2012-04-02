@@ -56,6 +56,23 @@ public class NLConstructor {
         return null;
     }
     
+    public String generateSentence() {
+        
+        SPhraseSpec head = nlg.createClause();
+        head.setSubject(nlg.createNounPhrase("this","query"));
+        head.setVerb("retrieve");
+        
+        CoordinatedPhraseElement c = nlg.createCoordinatedPhrase();
+                
+        for (Entity e : cardbox.primaries) {   
+            NPPhraseSpec np = entity2NP(e);
+            head.setObject(np);
+        }
+        
+        return realiser.realiseSentence(head);
+        
+    }
+    
         
         
     private NPPhraseSpec entity2NP(Entity e) {

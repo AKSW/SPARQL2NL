@@ -68,7 +68,7 @@ public class URIConverter {
      * @param uri
      * @return
      */
-    private String dereferenceURI(String uri){System.out.println(uri);
+    private String dereferenceURI(String uri){
     	//TODO add caching for vocabulary
     	String label = null;
     	try {

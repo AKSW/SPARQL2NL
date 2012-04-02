@@ -185,7 +185,7 @@ public class BoaPatternSelector {
             query.addField("boa-score");
             query.addField("nlr-var");
             query.addField("nlr-no-var");
-            query.setRows(100000);
+            query.setRows(10);
             QueryResponse response = server.query(query);
             SolrDocumentList docList = response.getResults();
 

@@ -75,7 +75,7 @@ public class SmoothNLGTest {
                 + "OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') } "
                 + " } ORDER BY DESC(?otherelevation) LIMIT 1";
         try {
-            CardBox c; NLConstructor con;
+            CardBox c; NLConstructor con;System.out.println(query1);
             c = decon.deconstruct(QueryFactory.create(query1,Syntax.syntaxARQ));
             con = new NLConstructor(c);
             con.construct();

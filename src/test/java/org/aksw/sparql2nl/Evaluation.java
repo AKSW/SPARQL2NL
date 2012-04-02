@@ -9,10 +9,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -20,6 +20,9 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLG;
 import org.aksw.sparql2nl.queryprocessing.Similarity.SimilarityMeasure;
+import org.aksw.sparql2nl.smooth_nlg.CardBox;
+import org.aksw.sparql2nl.smooth_nlg.NLConstructor;
+import org.aksw.sparql2nl.smooth_nlg.SPARQLDeconstructor;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
@@ -29,6 +32,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.Syntax;
 
@@ -314,22 +318,52 @@ public class Evaluation {
 		}
 	}
 	
-	public void run2(){
+	public void run_simple(){
 		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpediaLiveAKSW();//getEndpointDBpedia();
 		readSPARQLQueriesFromXML(new File(QUERIES_FILE));
 		SimpleNLG nlg = new SimpleNLG(endpoint);
 		for(Entry<Integer, String> entry : id2Query.entrySet()){
-			String query = entry.getValue();
-			if(query.contains("OUT OF SCOPE")){
+			String queryString = entry.getValue();
+			if(queryString.contains("OUT OF SCOPE")){
 				continue;
 			}
-//			logger.info("Evaluating query\n" + query);
+			Query query = QueryFactory.create(queryString, Syntax.syntaxARQ);
+			logger.info("-------------------------------------------------");
+			logger.info("Query " + entry.getKey() + ":\n");
+			logger.info(query.toString());
 			String nlr = null;
 			try {
-				nlr = nlg.getNLR(QueryFactory.create(query, Syntax.syntaxARQ));
+				nlr = nlg.getNLR(query);
 			} catch (Exception e) {
-				logger.error(e,e);
-				System.err.println(query);
+				logger.error("ERROR",e);
+			}
+			logger.info(nlr);
+		}
+	}
+	
+	public void run_smooth() {
+		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpediaLiveAKSW();// getEndpointDBpedia();
+		readSPARQLQueriesFromXML(new File(QUERIES_FILE));
+		SPARQLDeconstructor decon = new SPARQLDeconstructor(endpoint);
+		CardBox c;
+		NLConstructor con;
+		for (Entry<Integer, String> entry : id2Query.entrySet()) {
+			String queryString = entry.getValue();
+			if (queryString.contains("OUT OF SCOPE")) {
+				continue;
+			}
+			Query query = QueryFactory.create(queryString, Syntax.syntaxARQ);
+
+			c = decon.deconstruct(query);
+			con = new NLConstructor(c);
+			logger.info("-------------------------------------------------");
+			logger.info("Query " + entry.getKey() + ":\n");
+			logger.info(query.toString());
+			String nlr = null;
+			try {
+				nlr = con.generateSentence();
+			} catch (Exception e) {
+				logger.error("ERROR", e);
 			}
 			logger.info(nlr);
 		}
@@ -339,7 +373,8 @@ public class Evaluation {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		new Evaluation().run2();
+//		new Evaluation().run_simple();
+		new Evaluation().run_smooth();
 	}
 
 }
