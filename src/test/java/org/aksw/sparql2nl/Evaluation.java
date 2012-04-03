@@ -35,6 +35,7 @@ import org.xml.sax.SAXException;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.Syntax;
+import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 
 public class Evaluation {
 	
@@ -321,7 +322,7 @@ public class Evaluation {
 	public void run_simple(){
 		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpediaLiveAKSW();//getEndpointDBpedia();
 		readSPARQLQueriesFromXML(new File(QUERIES_FILE));
-		SimpleNLG nlg = new SimpleNLG(endpoint);
+		SimpleNLGwithPostprocessing nlg = new SimpleNLGwithPostprocessing(endpoint);
 		for(Entry<Integer, String> entry : id2Query.entrySet()){
 			String queryString = entry.getValue();
 			if(queryString.contains("OUT OF SCOPE")){
@@ -373,8 +374,8 @@ public class Evaluation {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-//		new Evaluation().run_simple();
-		new Evaluation().run_smooth();
+		new Evaluation().run_simple();
+//		new Evaluation().run_smooth();
 	}
 
 }

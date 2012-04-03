@@ -418,10 +418,14 @@ public class Postprocessor {
                 prefix = prefix.trim();
 
                 if (lf != 0) {
+                    String newhead1 = ""; 
+                    String newhead2 = "";
                     String newhead = prefix + " ";
-                    for (int i = lf; i < real1.length; i++) newhead += real1[i] + " ";
-                    newhead += conjunction;
-                    for (int i = lf; i < real2.length; i++) newhead += " " + real2[i];
+                    for (int i = lf; i < real1.length; i++) newhead1 += real1[i] + " ";
+                    for (int i = lf; i < real2.length; i++) newhead2 += " " + real2[i];
+                    if (!newhead1.trim().toLowerCase().equals(newhead2.trim().toLowerCase())) {
+                        newhead += newhead1 + conjunction + newhead2;
+                    } else newhead += newhead1;
                     e1.setFeature("head",newhead);
                     return e1;
                 }        
@@ -471,6 +475,9 @@ public class Postprocessor {
                         sentence.setSubject(obj);
                         activeStore.add(sentence);
                     } 
+                    else if (((WordElement) sentence.getVerb()).getBaseForm().equals("have")) {
+                        sentencesLeft.add(sentence);
+                    } 
                     else { 
                         sentence.setFeature(Feature.PASSIVE,true);
                         passiveStore.add(sentence);
@@ -512,25 +519,25 @@ public class Postprocessor {
         // collect the above SPhraseSpecs
         for (SPhraseSpec s : sentences) {
             String sstring = realiser.realiseSentence(s);
-            if (sstring.startsWith(var+"\'s type is ") && !sstring.startsWith(var+"\'s type is ?")) {
+            if ((sstring.startsWith(var+"\'s type is ") || sstring.startsWith(var+"\' type is ")) && !sstring.startsWith(var+"\'s type is ?")) {
                 type = s; optionalMap.put(sstring,false);
             }
-            else if (sstring.startsWith(var+"\'s label is ")) {
+            else if (sstring.startsWith(var+"\'s label is ") || sstring.startsWith(var+"\' label is ")) {
                 label = s; optionalMap.put(sstring,false);
             }
-            else if (sstring.startsWith(var+"\'s name is ")) {
+            else if (sstring.startsWith(var+"\'s name is ") || sstring.startsWith(var+"\' name is ")) {
                 name = s; optionalMap.put(sstring,false);
             }
         } 
         for (SPhraseSpec s : optionalsentences) {
             String sstring = realiser.realiseSentence(s);
-            if (sstring.startsWith(var+"\'s type is ") && !sstring.startsWith(var+"\'s type is ?")) {
+            if ((sstring.startsWith(var+"\'s type is ") || sstring.startsWith(var+"\' type is ")) && !sstring.startsWith(var+"\'s type is ?")) {
                 type = s; optionalMap.put(sstring,true);
             }
-            else if (sstring.startsWith(var+"\'s label is ")) {
+            else if (sstring.startsWith(var+"\'s label is ") || sstring.startsWith(var+"\' label is ")) {
                 label = s; optionalMap.put(sstring,true);
             }
-            else if (sstring.startsWith(var+"\'s name is ")) {
+            else if (sstring.startsWith(var+"\'s name is ") || sstring.startsWith(var+"\' name is ")) {
                 name = s; optionalMap.put(sstring,true);
             } 
         } 
@@ -543,6 +550,9 @@ public class Postprocessor {
         boolean opt = false;
         NPPhraseSpec objnp = null;
         NPPhraseSpec np = null;
+        String labelvar = null;
+        String namevar = null;
+        String typevar = null;
         if (label != null || name != null) {
             String noun = ""; 
             boolean already = false;
@@ -550,7 +560,11 @@ public class Postprocessor {
                 String sstring = realiser.realiseSentence(label);
                 String lang = checkLanguage(label.getObject().getFeatureAsString("head"));
                 if (lang != null) noun += lang + " ";
-                noun += "label " + sstring.replace(var+"\'s label is ","").replaceAll("\\.",""); 
+                String pattern;
+                if (var.endsWith("s")) pattern = var+"\' label is "; 
+                else pattern = var+"\'s label is "; 
+                labelvar = sstring.replace(pattern,"");
+                noun += "label " + sstring.replace(pattern,"").replaceAll("\\.",""); 
                 already = true; 
                 if (optionalMap.get(sstring)) { optionalsentences.remove(label); opt = true; }
                 else sentences.remove(label);
@@ -560,17 +574,27 @@ public class Postprocessor {
                 String sstring = realiser.realiseSentence(name);
                 String lang = checkLanguage(name.getObject().getFeatureAsString("head"));
                 if (lang != null) noun += lang + " ";
-                noun += "name " + sstring.replace(var+"\'s name is ","").replaceAll("\\.","");
+                String pattern;
+                if (var.endsWith("s")) pattern = var+"\' name is "; 
+                else pattern = var+"\'s name is "; 
+                namevar = sstring.replace(pattern,"");
+                noun += "name " + sstring.replace(pattern,"").replaceAll("\\.","");
                 if (optionalMap.get(sstring)) { optionalsentences.remove(name); opt = true; }
                 else sentences.remove(name);
                 already = true;
             }
-            np = nlg.createNounPhrase("the",noun);
+            
+            np = nlg.createNounPhrase(); 
+            np.setHead("the "+noun);
         }
         
         if (type != null) {
             String sstring = realiser.realiseSentence(type);
-            String classstring = sstring.replace(var+"\'s type is ","").replaceAll("\\.","");
+            String pattern;
+            if (var.endsWith("s")) pattern = var+"\' type is "; 
+            else pattern = var+"\'s type is "; 
+            typevar = sstring.replace(pattern,"");
+            String classstring = sstring.replace(pattern,"").replaceAll("\\.","");
             objnp = nlg.createNounPhrase("a",classstring);
             if (np != null) objnp.addPostModifier(("with " + realiser.realise(np)).replaceAll("\\.",""));
             newsentence.setVerb("be");
@@ -585,6 +609,9 @@ public class Postprocessor {
         }
         if (opt) newsentence.setFeature("modal","may");
         
+        // if labelvar/namevar occur among selects and nowhere else (expect for the typle/label info)
+        // then replace select(var) with "var and its label (if such exists)"
+        
         sentences.add(newsentence); 
         }
     }
@@ -595,9 +622,12 @@ public class Postprocessor {
          NLGElement usedfilter = null;
          for (NLGElement f : filter) {
             String fstring = realiser.realiseSentence(f);
-            if (fstring.startsWith(var+" is in ")) {
-                out = fstring.replace(var+" is in ","").replaceAll("\\.","");
+            if (fstring.startsWith(var+" is in English")) {
+                out = "English";
                 usedfilter = f;
+                String remainder = fstring.replace(var+" is in English","").replaceAll("\\.","");
+                if (remainder.trim().startsWith("and") || remainder.trim().startsWith("And")) remainder = remainder.replaceFirst("and","").replaceFirst("And","").trim();
+                if (!remainder.isEmpty()) filter.add(nlg.createNLGElement(remainder));
                 break;
             }
          }
@@ -715,7 +745,7 @@ public class Postprocessor {
                     if (inSelects(subj)) sentence.setFeature("negated",true);
                     else sentence.setSubject("no " + realiser.realise(sentence.getSubject()).toString());
                 }
-                if (fstring.startsWith(var)) {
+                else if (fstring.startsWith(var)) {
                     sentence.addComplement("and " + fstring.replace(var,"").trim());
                     usedFilters.add(f);
                 }

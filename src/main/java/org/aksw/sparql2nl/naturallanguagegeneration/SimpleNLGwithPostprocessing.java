@@ -113,7 +113,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         POSTPROCESSING = true;
         output = realiser.realiseSentence(convert2NLE(query));
         
-        System.out.println("After postprocessing:\n" + output);
+        // System.out.println("After postprocessing:\n" + output);
+        System.out.println("After postprocessing:");
         
         post.flush();
         
@@ -337,15 +338,15 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 limitOffset.setVerb("return");
                 if (limit > 1) {
                     if (query.hasOrderBy()) {
-                        limitOffset.setObject("at most the first " + limit + " results");
+                        limitOffset.setObject("only the first " + limit + " results");
                     } else {
-                        limitOffset.setObject("at most " + limit + " results");
+                        limitOffset.setObject("only " + limit + " results");
                     }
                 } else {
                     if (query.hasOrderBy()) {
-                        limitOffset.setObject("at most the first result");
+                        limitOffset.setObject("only the first result");
                     } else {
-                        limitOffset.setObject("at most one result");
+                        limitOffset.setObject("only one result");
                     }
                 }
             }
