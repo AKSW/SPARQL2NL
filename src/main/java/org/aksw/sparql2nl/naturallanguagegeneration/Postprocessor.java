@@ -121,6 +121,7 @@ public class Postprocessor {
         
         // 5.
         integrateLabelInfoIntoSelects(bodyparts);
+        fuseWithSelectsAgain(bodyparts);
         
         // 6. put it all together
         // TODO before fusing, test whether var occurs anywhere else (maybe with output+optionaloutput?)
@@ -856,6 +857,36 @@ public class Postprocessor {
             if (!sel.getFeatureAsString("head").equals(var)) newselects.add(sel);
         }
         selects = newselects;
+    }
+    
+    private void fuseWithSelectsAgain(Set<NLGElement> bodyparts) {
+        NLGElement bodypart = null;
+        if (bodyparts.size() == 1) {
+            NLGElement bp = new ArrayList<NLGElement>(bodyparts).get(0);
+            String b = realiser.realiseSentence(bp);
+            if (!b.contains("and") && !b.contains("or")) {
+                Pattern p = Pattern.compile("(\\?[\\w]*) is (.*)\\.");
+                Matcher m = p.matcher(b);
+                if (m.matches()) {
+                    NPPhraseSpec oldspec = null;
+                    NPPhraseSpec newspec = null;
+                    for (NPPhraseSpec sel : selects) {
+                        if (sel.getFeatureAsString("head").equals(m.group(1))) {
+                            oldspec = sel;
+                            newspec = nlg.createNounPhrase();
+                            newspec.setFeature("head",m.group(2));
+                            if (oldspec.hasFeature("postmodifiers")) {
+                                newspec.addPostModifier(oldspec.getFeatureAsStringList("postmodifiers").get(0).replace("their","its"));
+                            }
+                        }
+                    }
+                    selects.remove(oldspec);
+                    selects.add(newspec);
+                    bodypart = bp;
+                }
+            }
+        }
+        if (bodypart != null) bodyparts.remove(bodypart);
     }
     
     public NLGElement returnSelect() {
