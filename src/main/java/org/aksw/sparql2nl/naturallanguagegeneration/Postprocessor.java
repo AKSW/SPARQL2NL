@@ -596,7 +596,10 @@ public class Postprocessor {
             if (var.endsWith("s")) pattern = var+"\' type is "; 
             else pattern = var+"\'s type is "; 
             String classstring = sstring.replace(pattern,"").replaceAll("\\.","");
-            objnp = nlg.createNounPhrase("a",classstring);
+            String determiner;
+            if (Pattern.matches("[a,i,e,u,o,A,I,E,U,O].*",classstring)) determiner = "an";
+            else determiner = "a";
+            objnp = nlg.createNounPhrase(determiner,classstring);
             if (np != null) objnp.addPostModifier(("with " + realiser.realise(np)).replaceAll("\\.",""));
             newsentence.setVerb("be");
             newsentence.setObject(objnp);
