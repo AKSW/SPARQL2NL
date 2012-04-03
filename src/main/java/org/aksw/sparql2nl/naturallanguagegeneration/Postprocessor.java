@@ -412,7 +412,7 @@ public class Postprocessor {
                 String prefix = "";
                 int lf = 0;
                 for (int i = 0; i < Math.min(real1.length,real2.length); i++) {
-                    if (real1[i].equals(real2[i])) prefix += " " + real1[i];
+                    if (real1[i].toLowerCase().equals(real2[i].toLowerCase())) prefix += " " + real1[i];
                     else { lf = i; break; }
                 } 
                 prefix = prefix.trim();
@@ -435,7 +435,7 @@ public class Postprocessor {
                 String postfix = "";
                 int lb = 0;
                 for (int i = real1.length-1; i >= 0; i--) {
-                    if (real1[i].equals(real2[i])) {
+                    if (real1[i].toLowerCase().equals(real2[i].toLowerCase())) {
                         postfix = real1[i] + " " + postfix;
                         lb++;
                     }
@@ -444,10 +444,14 @@ public class Postprocessor {
                 postfix = postfix.trim();
 
                 if (lb != 0) {
+                    String newhead1 = "";
+                    String newhead2 = "";
                     String newhead = "";
-                    for (int i = 0; i < real1.length-lb; i++) newhead += real1[i] + " ";
-                    newhead += conjunction;
-                    for (int i = 0; i < real2.length-lb; i++) newhead += " " + real2[i];
+                    for (int i = 0; i < real1.length-lb; i++) newhead1 += real1[i] + " ";
+                    for (int i = 0; i < real2.length-lb; i++) newhead2 += " " + real2[i];
+                    if (!newhead1.trim().toLowerCase().equals(newhead2.trim().toLowerCase())) {
+                        newhead += newhead1 + conjunction + newhead2;
+                    } else newhead += newhead1;
                     newhead += " " + postfix;
                     e1.setFeature("head",newhead);
                     return e1;
@@ -707,16 +711,6 @@ public class Postprocessor {
                     else sentence.setFeature("negated",true);
                     usedFilters.add(f);
                 }
-                else if (fstring.split(" ")[0].equals(obj)) {
-                    // SUBJ is ?x . ?x V OBJ -> SUBJ V OBJ
-                    if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")
-                            && fstring.startsWith(obj)
-                            && !occursAnyWhereElse(obj,sentence)) {   
-                        newhead = fstring.replace(obj,"");
-                    }
-                    else newhead += " which " + fstring.replace(obj,"");
-                    usedFilters.add(f);
-                }
                 else {
                     for (String comp : comparison) {
                         if (fstring.startsWith(var + comp)) {
@@ -725,6 +719,17 @@ public class Postprocessor {
                             usedFilters.add(f);
                             break;
                         }
+                    }
+                    if (fstring.split(" ")[0].equals(obj)) {
+                        // SUBJ is ?x . ?x V OBJ -> SUBJ V OBJ
+                        if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")
+                                && fstring.startsWith(obj)
+                                && !occursAnyWhereElse(obj,sentence)) {   
+                            newhead = fstring.replace(obj,"").trim();
+                        }
+                        else newhead += " which " + fstring.replace(obj,"");
+                        sentence.setVerb(nlg.createNLGElement("")); // verb is contained in object (newhead)
+                        usedFilters.add(f);
                     }
                 }
             }
