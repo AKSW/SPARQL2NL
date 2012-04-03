@@ -119,7 +119,10 @@ public class Postprocessor {
             bodyparts.add(new StringElement(fstring));
         }
         
-        // 5. put it all together
+        // 5.
+        integrateLabelInfoIntoSelects(bodyparts);
+        
+        // 6. put it all together
         // TODO before fusing, test whether var occurs anywhere else (maybe with output+optionaloutput?)
         for (NLGElement bodypart : fuseObjectWithSubject(bodyparts)) body.addCoordinate(bodypart);
         output = coordinate(body);  
@@ -554,9 +557,6 @@ public class Postprocessor {
         boolean opt = false;
         NPPhraseSpec objnp = null;
         NPPhraseSpec np = null;
-        String labelvar = null;
-        String namevar = null;
-        String typevar = null;
         if (label != null || name != null) {
             String noun = ""; 
             boolean already = false;
@@ -567,7 +567,6 @@ public class Postprocessor {
                 String pattern;
                 if (var.endsWith("s")) pattern = var+"\' label is "; 
                 else pattern = var+"\'s label is "; 
-                labelvar = sstring.replace(pattern,"");
                 noun += "label " + sstring.replace(pattern,"").replaceAll("\\.",""); 
                 already = true; 
                 if (optionalMap.get(sstring)) { optionalsentences.remove(label); opt = true; }
@@ -581,7 +580,6 @@ public class Postprocessor {
                 String pattern;
                 if (var.endsWith("s")) pattern = var+"\' name is "; 
                 else pattern = var+"\'s name is "; 
-                namevar = sstring.replace(pattern,"");
                 noun += "name " + sstring.replace(pattern,"").replaceAll("\\.","");
                 if (optionalMap.get(sstring)) { optionalsentences.remove(name); opt = true; }
                 else sentences.remove(name);
@@ -597,7 +595,6 @@ public class Postprocessor {
             String pattern;
             if (var.endsWith("s")) pattern = var+"\' type is "; 
             else pattern = var+"\'s type is "; 
-            typevar = sstring.replace(pattern,"");
             String classstring = sstring.replace(pattern,"").replaceAll("\\.","");
             objnp = nlg.createNounPhrase("a",classstring);
             if (np != null) objnp.addPostModifier(("with " + realiser.realise(np)).replaceAll("\\.",""));
@@ -612,9 +609,6 @@ public class Postprocessor {
             newsentence.setObject(np);
         }
         if (opt) newsentence.setFeature("modal","may");
-        
-        // if labelvar/namevar occur among selects and nowhere else (expect for the typle/label info)
-        // then replace select(var) with "var and its label (if such exists)"
         
         sentences.add(newsentence); 
         }
@@ -762,7 +756,7 @@ public class Postprocessor {
     
     private boolean inSelects(String var) {
         for (NPPhraseSpec sel : selects) {
-            if (realiser.realise(sel).toString().equals(var)) return true;
+            if (realiser.realise(sel).toString().endsWith(var)) return true;
         }
         return false;
     }
@@ -802,6 +796,63 @@ public class Postprocessor {
             selects.add(replacements.get(key));
         }
         sentences.removeAll(delete);
+    }
+    
+    private void integrateLabelInfoIntoSelects(Set<NLGElement> bodyparts) {
+        Pattern p = Pattern.compile("(\\?([\\w]*)) ((.*)and\\s)?((has)||(may have)) the((\\s[\\w]*)? ((label)||(name))) (\\?[\\w]*)( and(.*))?\\.");
+        NLGElement info = null;
+        NLGElement rest = null;
+        for (NLGElement bodypart : bodyparts) {
+            String bstring = realiser.realiseSentence(bodypart);
+            Matcher m = p.matcher(bstring);
+            if (m.matches() && inSelects(m.group(1)) && inSelects(m.group(13))) {
+                boolean labelvarfree = true;
+                for (NLGElement b : bodyparts) {
+                    if (!b.equals(bodypart) && realiser.realiseSentence(b).contains(m.group(13))) { // TODO "?string2" contains "?string"
+                        labelvarfree = false;
+                        break;
+                    }
+                }
+                if (labelvarfree) {
+                    info = bodypart; 
+                    String restrealization = "";
+                    if (m.group(4) != null) restrealization += m.group(1)+" "+m.group(4);
+                    if (m.group(15) != null) { 
+                        if (restrealization.isEmpty()) { 
+                            if (m.group(15).trim().startsWith(m.group(1))) restrealization += m.group(15);
+                            else restrealization += m.group(1) + m.group(15);
+                        }
+                        else restrealization += " and "+m.group(15);
+                    }                                              
+                    if (!restrealization.isEmpty()) rest = nlg.createNLGElement(restrealization);
+                    removeFromSelects(m.group(13));
+                    for (NPPhraseSpec sel : selects) {
+                        if (sel.getFeatureAsString("head").equals(m.group(1))) {
+                            String pron = "their";
+                            if (sel.hasFeature("premodifiers")) {
+                                List<NLGElement> premods = new ArrayList<NLGElement>((Collection) sel.getFeature("premodifiers"));
+                                if (!premods.isEmpty() && premods.get(0).hasFeature("number")) {
+                                    if (premods.get(0).getFeatureAsString("number").equals("SINGULAR")) pron = "its";
+                                }
+                            }
+                            String postmodifier = "and " + pron + m.group(8);
+                            if (m.group(5).equals("may have")) postmodifier += " (if it exists)";
+                            sel.addPostModifier(postmodifier);
+                        }
+                    }
+                }
+            }
+        }
+        bodyparts.remove(info);
+        if (rest != null) bodyparts.add(rest);
+    }
+    
+    private void removeFromSelects(String var) {
+        List<NPPhraseSpec> newselects = new ArrayList<NPPhraseSpec>();
+        for (NPPhraseSpec sel : selects) {
+            if (!sel.getFeatureAsString("head").equals(var)) newselects.add(sel);
+        }
+        selects = newselects;
     }
     
     public NLGElement returnSelect() {
