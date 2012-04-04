@@ -175,7 +175,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         Set<String> whereVars = getVars(whereElements, projectionVars);
         // case we only have stuff such as rdf:type queries
         if (whereVars.isEmpty()) {
-            whereVars = projectionVars;
+            //whereVars = projectionVars
+            whereVars = tEx.explicitTypedVars;
         }
         Set<String> optionalVars = getVars(optionalElements, projectionVars);
         //important. Remove variables that have already been declared in first
@@ -364,6 +365,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
      */
     private static List<Element> getWhereElements(Query query) {
         List<Element> result = new ArrayList<Element>();
+        Element f = query.getQueryPattern();
         ElementGroup elt = (ElementGroup) query.getQueryPattern();
         for (int i = 0; i < elt.getElements().size(); i++) {
             Element e = elt.getElements().get(i);
@@ -968,7 +970,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(ep);
-            Query sparqlQuery = QueryFactory.create(query2, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
