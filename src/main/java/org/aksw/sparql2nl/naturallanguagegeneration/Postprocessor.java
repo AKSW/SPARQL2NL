@@ -77,10 +77,9 @@ public class Postprocessor {
       
         // 1. 
         fuseWithSelects();
-        
-        Set<NLGElement> bodyparts = new HashSet<NLGElement>();
                 
         // 2. compose body
+        Set<NLGElement> bodyparts = new HashSet<NLGElement>();
         // if it's an ASK query without variables, simply verbalise all sentences and unions
         CoordinatedPhraseElement body = nlg.createCoordinatedPhrase();
         body.setConjunction("and");
@@ -126,7 +125,7 @@ public class Postprocessor {
         // 6. put it all together
         // TODO before fusing, test whether var occurs anywhere else (maybe with output+optionaloutput?)
         for (NLGElement bodypart : fuseObjectWithSubject(bodyparts)) body.addCoordinate(bodypart);
-        output = coordinate(body);  
+        output = coordinate(body);
     }
     
     private NLGElement talkAboutMostImportant() { 
@@ -298,7 +297,7 @@ public class Postprocessor {
                         if (subject != null && subject.equals(object)) {
                             if (getVerb(s) != null && getVerb(s).equals("be")) objIs = true;
                             if (getVerb(sent) != null && getVerb(sent).equals("be")) subjIs = true;
-                            if (objIs || subjIs) {
+                            if ((objIs || subjIs) && !realiser.realiseSentence(sent).contains(" not ")) {
                                 if (!isNeeded(object,sentences,s,sent)) {
                                     objsent = s;
                                     subjsent = sent;
@@ -721,6 +720,7 @@ public class Postprocessor {
                     if (fstring.split(" ")[0].equals(obj)) {
                         // SUBJ is ?x . ?x V OBJ -> SUBJ V OBJ
                         if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")
+                                && !sentence.getFeatureAsBoolean("negated")
                                 && fstring.startsWith(obj)
                                 && !occursAnyWhereElse(obj,sentence)) {   
                             newhead = fstring.replace(obj,"").trim();
@@ -864,7 +864,7 @@ public class Postprocessor {
         if (bodyparts.size() == 1) {
             NLGElement bp = new ArrayList<NLGElement>(bodyparts).get(0);
             String b = realiser.realiseSentence(bp);
-            if (!b.contains("and") && !b.contains("or")) {
+            if (!b.contains(" and ") && !b.contains(" or ") && !b.contains(" not ")) {
                 Pattern p = Pattern.compile("(\\?[\\w]*) is (.*)\\.");
                 Matcher m = p.matcher(b);
                 if (m.matches()) {

@@ -188,17 +188,19 @@ public class FilterExpressionConverter implements ExprVisitor{
                 }
             } else if(func instanceof E_Equals){
             	if(left instanceof E_Lang && simplifyLanguageFilterConstructs){
-            		verb = "be in";
             		rightElement = nlgFactory.createNounPhrase(getLanguageForAbbreviation(realiser.realise(rightElement).getRealisation()));
+                        verb = "be in";
             	} else {
-            		verb = "be equal to";
+                        if (realiser.realise(rightElement).toString().startsWith("?")) verb = "be the same as";
+                        else verb = "be equal to";
             	}
             } else if (func instanceof E_NotEquals) {
             	if(left instanceof E_Lang && simplifyLanguageFilterConstructs){
             		verb = "be in";
             		rightElement = nlgFactory.createNounPhrase(getLanguageForAbbreviation(realiser.realise(rightElement).getRealisation()));
             	} else {
-            		verb = "be equal to";
+            		if (realiser.realise(rightElement).toString().startsWith("?")) verb = "be the same as";
+                        else verb = "be equal to";
             	}
                 phrase.setFeature(Feature.NEGATED, true);
             } 
