@@ -1,8 +1,12 @@
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -26,6 +30,8 @@ import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
+import com.drew.metadata.exif.DataFormat;
+import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
@@ -48,7 +54,6 @@ import com.hp.hpl.jena.sparql.syntax.ElementUnion;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
-import simplenlg.framework.*;
 
 /**
  *
@@ -684,6 +689,22 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             p.setVerb("be related via " + t.getPredicate().toString() + " to");
             if (t.getObject().isVariable()) {
                 p.setObject(t.getObject().toString());
+            } else if(t.getObject().isLiteral()){//TODO implement LiteralConverter
+            	System.out.println(t.getObject().getLiteralDatatype());
+            	if(t.getObject().getLiteralDatatype() != null && (t.getObject().getLiteralDatatype().equals(XSDDatatype.XSDdate) || t.getObject().getLiteralDatatype().equals(XSDDatatype.XSDdateTime))){
+            		try {
+						SimpleDateFormat simpleDateFormat = new SimpleDateFormat("YYYY-MM-DD");
+						Date date = simpleDateFormat.parse(t.getObject().getLiteralLexicalForm());
+						DateFormat format = DateFormat.getDateInstance(DateFormat.LONG);
+						String newDate = format.format(date);
+						p.setObject(newDate);
+					} catch (ParseException e) {
+						e.printStackTrace();
+						p.setObject(t.getObject().getLiteralLexicalForm());
+					}
+            	} else {
+            		p.setObject(t.getObject().getLiteralLexicalForm());
+            	}
             } else {
                 p.setObject(getNPPhrase(t.getObject().toString(), false));
             }
