@@ -315,16 +315,16 @@ public class Postprocessor {
         sentences.remove(objsent);
         sentences.remove(subjsent);
         if (objIs) {
-            String newsent = realiser.realiseSentence(subjsent).replace(object,realiser.realiseSentence(objsent).replace(object,"").replace("is","").replace("are","").trim());
-            if (newsent.endsWith(".")) newsent = newsent.substring(0,newsent.length()-1);
+            String newsent = realiser.realiseSentence(subjsent).replace(object,realiser.realiseSentence(objsent).replace(object,"").replace(" is ","").replace(" are ","").trim());
+            if (newsent.endsWith(".")) newsent = newsent.substring(0,newsent.length()-1).trim();
             sentences.add(nlg.createNLGElement(newsent));           
 //            objsent.setVerb(subjsent.getVerb());
 //            objsent.setObject(subjsent.getObject());
 //            sentences.add(objsent);
         }
         else if (subjIs) {
-            String newsent = realiser.realiseSentence(objsent).replace(subject,realiser.realiseSentence(subjsent).replace(subject,"").replace("is","").replace("are","").trim());
-            if (newsent.endsWith(".")) newsent = newsent.substring(0,newsent.length()-1);
+            String newsent = realiser.realiseSentence(objsent).replace(subject,realiser.realiseSentence(subjsent).replace(subject,"").replace(" is ","").replace(" are ","").trim());
+            if (newsent.endsWith(".")) newsent = newsent.substring(0,newsent.length()-1).trim();
             sentences.add(nlg.createNLGElement(newsent));      
 //            subjsent.setVerb(objsent.getVerb());
 //            subjsent.setObject(objsent.getObject());
