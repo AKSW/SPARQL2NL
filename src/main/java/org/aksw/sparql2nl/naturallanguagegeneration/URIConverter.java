@@ -8,6 +8,8 @@ import java.net.URLConnection;
 
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.kb.sparql.SparqlQuery;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.util.SimpleIRIShortFormProvider;
 
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
@@ -20,6 +22,7 @@ import com.hp.hpl.jena.vocabulary.RDFS;
 
 public class URIConverter {
 	
+	private SimpleIRIShortFormProvider sfp = new SimpleIRIShortFormProvider();
 	private SparqlEndpoint endpoint;
 	
 	public URIConverter(SparqlEndpoint endpoint) {
@@ -34,7 +37,7 @@ public class URIConverter {
         }
         try {
             String labelQuery = "SELECT ?label WHERE {<" + uri + "> "
-                    + "<http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' || lang(?label) = '')}";
+                    + "<http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' )}";
 
             // take care of graph issues. Only takes one graph. Seems like some sparql endpoint do
             // not like the FROM option.
@@ -52,6 +55,9 @@ public class URIConverter {
             }
             if(label == null){
             	label = dereferenceURI(uri);
+            }
+            if(label == null){
+            	label = sfp.getShortForm(IRI.create(uri));
             }
             if(label == null){
             	label = uri;

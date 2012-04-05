@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -45,6 +46,7 @@ public class Evaluation {
 //	private static final String QUERIES_FILE = "resources/GoodQALD.xml";
 	private static final String QUERIES_FILE = "resources/qald2-dbpedia-train.xml";
 //	private static final String QUERIES_FILE = "resources/qald2-musicbrainz-train.xml";
+//	private static final String QUERIES_FILE = "resources/qald2-dbpedia-test.xml";
 	private static final int NR_OF_REPRESENTATIONS = 10;
 	
 	
@@ -319,10 +321,9 @@ public class Evaluation {
 		}
 	}
 	
-	public void run_simple(){
-		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpediaLiveAKSW();//getEndpointDBpedia();
+	public void run_simple(SparqlEndpoint endpoint){
 		readSPARQLQueriesFromXML(new File(QUERIES_FILE));
-		SimpleNLGwithPostprocessing nlg = new SimpleNLGwithPostprocessing(endpoint);
+		SimpleNLG nlg = new SimpleNLG(endpoint);
 		for(Entry<Integer, String> entry : id2Query.entrySet()){
 			String queryString = entry.getValue();
 			if(queryString.contains("OUT OF SCOPE")){
@@ -342,40 +343,37 @@ public class Evaluation {
 		}
 	}
 	
-	public void run_smooth() {
-		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpediaLiveAKSW();// getEndpointDBpedia();
+	public void run_smooth(SparqlEndpoint endpoint) {
 		readSPARQLQueriesFromXML(new File(QUERIES_FILE));
-		SPARQLDeconstructor decon = new SPARQLDeconstructor(endpoint);
-		CardBox c;
-		NLConstructor con;
-		for (Entry<Integer, String> entry : id2Query.entrySet()) {
+		SimpleNLGwithPostprocessing nlg = new SimpleNLGwithPostprocessing(endpoint);
+		for(Entry<Integer, String> entry : id2Query.entrySet()){
+			if(entry.getKey()<67) continue;
 			String queryString = entry.getValue();
-			if (queryString.contains("OUT OF SCOPE")) {
+			if(queryString.contains("OUT OF SCOPE")){
 				continue;
 			}
 			Query query = QueryFactory.create(queryString, Syntax.syntaxARQ);
-
-			c = decon.deconstruct(query);
-			con = new NLConstructor(c);
 			logger.info("-------------------------------------------------");
 			logger.info("Query " + entry.getKey() + ":\n");
 			logger.info(query.toString());
 			String nlr = null;
 			try {
-				nlr = con.generateSentence();
+				nlr = nlg.getNLR(query);
 			} catch (Exception e) {
-				logger.error("ERROR", e);
+				logger.error("ERROR",e);
 			}
-			logger.info(nlr);
+//			logger.info(nlr);
 		}
 	}
 
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) {
-		new Evaluation().run_simple();
-//		new Evaluation().run_smooth();
+	public static void main(String[] args) throws Exception{
+		SparqlEndpoint endpoint = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
+		endpoint = SparqlEndpoint.getEndpointDBpedia();
+//		new Evaluation().run_simple(endpoint);
+		new Evaluation().run_smooth(endpoint);
 	}
 
 }
