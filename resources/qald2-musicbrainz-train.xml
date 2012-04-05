@@ -1277,6 +1277,7 @@ Give me all Celldweller EPs.
 <query><![CDATA[
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX mo: <http://purl.org/ontology/mo/>
 SELECT DISTINCT ?album ?title 
 WHERE {
@@ -1384,7 +1385,7 @@ How many members does the largest group have?
 <query><![CDATA[
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX mo: <http://purl.org/ontology/mo/>
-SELECT COUNT(?artist) AS ?number
+SELECT (COUNT(?artist) AS ?number)
 WHERE {
   ?artist mo:member_of ?band .
 }
@@ -1794,6 +1795,7 @@ WHERE {
   ?artist foaf:name ?artistname .
   ?artist rel:spouseOf ?spouse .
 } 
+GROUP BY ?artist ?artistname
 HAVING (COUNT(?spouse) > 1)
 ]]></query>
 </question>

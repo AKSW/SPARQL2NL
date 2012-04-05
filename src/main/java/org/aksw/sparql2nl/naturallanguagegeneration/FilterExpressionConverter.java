@@ -13,7 +13,9 @@ import simplenlg.realiser.english.Realiser;
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.sparql.expr.E_Bound;
+import com.hp.hpl.jena.sparql.expr.E_Cast;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
+import com.hp.hpl.jena.sparql.expr.E_Function;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
 import com.hp.hpl.jena.sparql.expr.E_GreaterThanOrEqual;
 import com.hp.hpl.jena.sparql.expr.E_Lang;
@@ -27,6 +29,7 @@ import com.hp.hpl.jena.sparql.expr.E_Regex;
 import com.hp.hpl.jena.sparql.expr.E_Str;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.ExprAggregator;
+import com.hp.hpl.jena.sparql.expr.ExprFunction;
 import com.hp.hpl.jena.sparql.expr.ExprFunction0;
 import com.hp.hpl.jena.sparql.expr.ExprFunction1;
 import com.hp.hpl.jena.sparql.expr.ExprFunction2;
@@ -41,6 +44,7 @@ import com.hp.hpl.jena.sparql.expr.aggregate.AggCountVar;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggMax;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggMin;
 import com.hp.hpl.jena.sparql.expr.aggregate.Aggregator;
+import com.hp.hpl.jena.vocabulary.XSD;
 
 public class FilterExpressionConverter implements ExprVisitor{
 	
@@ -108,7 +112,7 @@ public class FilterExpressionConverter implements ExprVisitor{
 				throw new UnsupportedOperationException(func + " is not implemented yet.");
 			}
 			stack.push(element);
-		}
+		} 
 		
 	}
 
@@ -241,9 +245,17 @@ public class FilterExpressionConverter implements ExprVisitor{
 				
 			}
 			phrase.setVerb("match " + adverb);
+			stack.push(phrase);
+		} else if(func instanceof E_Function){
+			ExprFunction function = func.getFunction();
+			if(function.getFunctionIRI().equals(XSD.integer.getURI())){
+				function.getArg(1).visit(this);
+			} else {
+				throw new UnsupportedOperationException(function.getFunctionIRI() + " is not implemented yet.");
+			}
+		} else {
+			throw new UnsupportedOperationException(func + " is not implemented yet.");
 		}
-		stack.push(phrase);
-		
 	}
 
 	@Override

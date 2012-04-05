@@ -113,7 +113,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         POSTPROCESSING = true;
         output = realiser.realiseSentence(convert2NLE(query));
         
-        System.out.println("After postprocessing:\n" + output);
+        System.out.println("After postprocessing:\n" + output.trim());
         //System.out.println("After postprocessing:");
         
         post.flush();
