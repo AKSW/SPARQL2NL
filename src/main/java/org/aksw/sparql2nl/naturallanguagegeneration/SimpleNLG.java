@@ -887,7 +887,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             SimpleNLG snlg = new SimpleNLG(ep);
-            Query sparqlQuery = QueryFactory.create(query2, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query10, Syntax.syntaxARQ);
             DocumentElement elt = snlg.convert2NLE(sparqlQuery);            
             System.out.println("Simple NLG: " + elt);
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));

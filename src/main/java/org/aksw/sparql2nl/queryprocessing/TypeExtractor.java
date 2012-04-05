@@ -46,7 +46,8 @@ public class TypeExtractor extends ElementVisitorBase {
 
 	private List<Var> projectionVars;
 	private Map<Var, Set<Triple>> var2Triples;
-	
+	public Set<String> explicitTypedVars;
+        
 	private Map<String, Set<String>> var2TypesMap;
 	
 	private DomainExtractor domainExtractor;
@@ -63,11 +64,13 @@ public class TypeExtractor extends ElementVisitorBase {
 		this.endpoint = endpoint;
 	}
 
+       
 	public Map<String, Set<String>> extractTypes(Query query) {
 		this.query = query;
 		
 		var2TypesMap = new HashMap<String, Set<String>>();
 		var2Triples = new HashMap<Var, Set<Triple>>();
+                explicitTypedVars = new HashSet<String>();
 		projectionVars = query.getProjectVars();
 		isCount = false;
 		//handle COUNT aggregator by replacing generic var name with var name in COUNT construct
@@ -98,6 +101,10 @@ public class TypeExtractor extends ElementVisitorBase {
 			if(!var2TypesMap.containsKey(var.getName())){
 				var2TypesMap.put(var.getName(), Collections.singleton(inferGenericType(var)));
 			}
+                        else
+                        {
+                            explicitTypedVars.add(var.getName());
+                        }
 		}
 		
 		return var2TypesMap;
