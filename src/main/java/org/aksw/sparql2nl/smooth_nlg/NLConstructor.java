@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.aksw.sparql2nl.naturallanguagegeneration.boa.BoaPatternSelector;
-import org.aksw.sparql2nl.naturallanguagegeneration.boa.Pattern;
+import org.aksw.sparql2nl.nlp.relation.BoaPatternSelector;
+import org.aksw.sparql2nl.nlp.relation.Pattern;
 
 import simplenlg.aggregation.ClauseCoordinationRule;
 import simplenlg.features.Feature;
