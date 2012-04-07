@@ -26,6 +26,8 @@ import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
+import simplenlg.morphology.english.MorphologyProcessor;
+import simplenlg.morphology.english.MorphologyRules;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
@@ -235,7 +237,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             //process head
             //we could create a lexicon from which we could read these
             head.setSubject("This query");
-            head.setVerb("ask for the existence of");
+            head.setVerb("ask whether");
         }
         if (POSTPROCESSING) {
             select = post.returnSelect();
@@ -445,12 +447,14 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         } else {
             String label = uriConverter.convert(className);
             if (label != null) {
-                object = nlgFactory.createNounPhrase(label);
+                object = nlgFactory.createNounPhrase(nlgFactory.createInflectedWord(label, LexicalCategory.NOUN));
             } else {
                 object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
             }
+          
         }
         object.setPlural(plural);
+       
         return object;
     }
 
@@ -690,7 +694,6 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             if (t.getObject().isVariable()) {
                 p.setObject(t.getObject().toString());
             } else if(t.getObject().isLiteral()){//TODO implement LiteralConverter
-            	System.out.println(t.getObject().getLiteralDatatype());
             	if(t.getObject().getLiteralDatatype() != null && (t.getObject().getLiteralDatatype().equals(XSDDatatype.XSDdate) || t.getObject().getLiteralDatatype().equals(XSDDatatype.XSDdateTime))){
             		try {
 						SimpleDateFormat simpleDateFormat = new SimpleDateFormat("YYYY-MM-DD");
@@ -728,7 +731,20 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             if (t.getObject().isVariable()) {
                 p.setObject(t.getObject().toString());
             } else if (t.getObject().isLiteral()) {
-                p.setObject(t.getObject().getLiteralLexicalForm());
+            	if(t.getObject().getLiteralDatatype() != null && (t.getObject().getLiteralDatatype().equals(XSDDatatype.XSDdate) || t.getObject().getLiteralDatatype().equals(XSDDatatype.XSDdateTime))){
+            		try {
+						SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+						Date date = simpleDateFormat.parse(t.getObject().getLiteralLexicalForm());
+						DateFormat format = DateFormat.getDateInstance(DateFormat.LONG);
+						String newDate = format.format(date);
+						p.setObject(newDate);
+					} catch (ParseException e) {
+						e.printStackTrace();
+						p.setObject(t.getObject().getLiteralLexicalForm());
+					}
+            	} else {
+            		p.setObject(t.getObject().getLiteralLexicalForm());
+            	}
             } else {
                 p.setObject(getNPPhrase(t.getObject().toString(), false));
             }

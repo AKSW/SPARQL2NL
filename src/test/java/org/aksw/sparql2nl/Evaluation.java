@@ -44,8 +44,8 @@ public class Evaluation {
 	
 //	private static final String QUERIES_FILE = "resources/queries.txt";
 //	private static final String QUERIES_FILE = "resources/GoodQALD.xml";
-//	private static final String QUERIES_FILE = "resources/qald2-dbpedia-train.xml";
-	private static final String QUERIES_FILE = "resources/qald2-musicbrainz-train.xml";
+	private static final String QUERIES_FILE = "resources/qald2-dbpedia-train.xml";
+//	private static final String QUERIES_FILE = "resources/qald2-musicbrainz-train.xml";
 //	private static final String QUERIES_FILE = "resources/qald2-dbpedia-test.xml";
 	private static final int NR_OF_REPRESENTATIONS = 10;
 	
@@ -347,7 +347,7 @@ public class Evaluation {
 		readSPARQLQueriesFromXML(new File(QUERIES_FILE));
 		SimpleNLGwithPostprocessing nlg = new SimpleNLGwithPostprocessing(endpoint);
 		for(Entry<Integer, String> entry : id2Query.entrySet()){
-			if(entry.getKey()<6) continue;
+			if(entry.getKey()<46) continue;
 			String queryString = entry.getValue();
 			if(queryString.contains("OUT OF SCOPE")){
 				continue;
@@ -362,7 +362,7 @@ public class Evaluation {
 			} catch (Exception e) {
 				logger.error("ERROR",e);
 			}
-//			logger.info(nlr);
+			System.exit(0);
 		}
 	}
 
@@ -371,7 +371,7 @@ public class Evaluation {
 	 */
 	public static void main(String[] args) throws Exception{
 		SparqlEndpoint endpoint = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
-//		endpoint = SparqlEndpoint.getEndpointDBpedia();
+		endpoint = SparqlEndpoint.getEndpointDBpedia();
 //		new Evaluation().run_simple(endpoint);
 		new Evaluation().run_smooth(endpoint);
 	}
