@@ -794,20 +794,17 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             //        PhraseElement np = nlgFactory.createNounPhrase(subj, getEnglishLabel(t.getPredicate().toString()));
             String realisedsubj = realiser.realise(subj).getRealisation();
             String predicateLabel = uriConverter.convert(t.getPredicate().getURI());
-            if (!useBOA || t.getPredicate().matches(RDFS.label.asNode()) || new WordTypeDetector().isNoun(predicateLabel)) {
-            	if (realisedsubj.endsWith("s")) {
-                    realisedsubj += "\' ";
-                } else {
-                    realisedsubj += "\'s ";
-                }
+            if (!useBOA || t.getPredicate().matches(RDFS.label.asNode())) { // || new WordTypeDetector().isNoun(predicateLabel)) {
+            	if (realisedsubj.endsWith("s")) realisedsubj += "\' ";
+                else realisedsubj += "\'s ";
             	p.setSubject(realisedsubj + predicateLabel);
-	            p.setVerb("be");
-			} else {
-				System.out.println(t.getPredicate().getURI());
-				List<org.aksw.sparql2nl.nlp.relation.Pattern> patterns = BoaPatternSelector.getNaturalLanguageRepresentation(t.getPredicate().getURI(), 1);
-				p.setSubject(realisedsubj);
+	        p.setVerb("be");
+            } else {
+		System.out.println(t.getPredicate().getURI());
+		List<org.aksw.sparql2nl.nlp.relation.Pattern> patterns = BoaPatternSelector.getNaturalLanguageRepresentation(t.getPredicate().getURI(), 1);
+		p.setSubject(realisedsubj);
                 p.setVerb(normalizeVerb(patterns.get(0).naturalLanguageRepresentationWithoutVariables));
-			}
+            }
             
             
             if (t.getObject().isVariable()) {
