@@ -245,23 +245,59 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             // this is done in the first run and select is then set also for the second (postprocessing) run
             select = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());  // if tEx.isCount(), this gives "number of" + select
         }
-        head.setObject(select);
-        //now generate body
-        if (!whereElements.isEmpty() || post.output != null) {
-            if (POSTPROCESSING) {
-                body = post.output;
+        if(query.isAskType()){
+        	head.setObject(realiser.realise(getNLFromElements(whereElements)));
+        	if (!whereElements.isEmpty() || post.output != null) {
+                if (POSTPROCESSING) {
+                    body = post.output;
+                } else {
+                    body = getNLFromElements(whereElements);
+                }
+                // add as first sentence
+                sentences.add(nlgFactory.createSentence(head));
+                //this concludes the first sentence.
             } else {
-                body = getNLFromElements(whereElements);
+                sentences.add(nlgFactory.createSentence(head));
             }
-            //now add conjunction
-            CoordinatedPhraseElement phrase1 = nlgFactory.createCoordinatedPhrase(head, body);
-            phrase1.setConjunction("such that");
-            // add as first sentence
-            sentences.add(nlgFactory.createSentence(phrase1));
-            //this concludes the first sentence.
         } else {
-            sentences.add(nlgFactory.createSentence(head));
+        	head.setObject(select);
+            //now generate body
+            if (!whereElements.isEmpty() || post.output != null) {
+                if (POSTPROCESSING) {
+                    body = post.output;
+                } else {
+                    body = getNLFromElements(whereElements);
+                }
+                //now add conjunction
+                CoordinatedPhraseElement phrase1 = nlgFactory.createCoordinatedPhrase(head, body);
+                phrase1.setConjunction("such that");
+                // add as first sentence
+                sentences.add(nlgFactory.createSentence(phrase1));
+                //this concludes the first sentence.
+            } else {
+                sentences.add(nlgFactory.createSentence(head));
+            }
         }
+        
+        /*
+         head.setObject(select);
+            //now generate body
+            if (!whereElements.isEmpty() || post.output != null) {
+                if (POSTPROCESSING) {
+                    body = post.output;
+                } else {
+                    body = getNLFromElements(whereElements);
+                }
+                //now add conjunction
+                CoordinatedPhraseElement phrase1 = nlgFactory.createCoordinatedPhrase(head, body);
+                phrase1.setConjunction("such that");
+                // add as first sentence
+                sentences.add(nlgFactory.createSentence(phrase1));
+                //this concludes the first sentence.
+            } else {
+                sentences.add(nlgFactory.createSentence(head));
+            }
+         */
 
         // The second sentence deals with the optional clause (if it exists)
         boolean optionalexists;

@@ -60,6 +60,10 @@
 					<artifactId>jena-arq</artifactId>
 					<groupId>org.apache.jena</groupId>
 				</exclusion>
+				<exclusion>
+					<artifactId>jena</artifactId>
+					<groupId>com.hp.hpl.jena</groupId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>

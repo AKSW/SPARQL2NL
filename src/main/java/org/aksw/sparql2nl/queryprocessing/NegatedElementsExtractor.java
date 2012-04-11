@@ -114,6 +114,17 @@ public class NegatedElementsExtractor extends ElementVisitorBase{
                 + "      { res:Batman_Begins dbp:starring ?b. res:Batman_Begins dbo:starring ?c. FILTER(!BOUND(?b)) } "
                 + "  }";
 		
+		querya = "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
+                + "PREFIX  res:  <http://dbpedia.org/resource/> "
+                + "PREFIX  dbo:  <http://dbpedia.org/ontology/> "
+                + "PREFIX  dbp:  <http://dbpedia.org/property/> "
+                + "PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
+                + " "
+                + "ASK "
+                + "WHERE "
+                + "  {  res:Batman_Begins dbo:starring res:Christian_Bale. FILTER(!BOUND(?b)) } "
+                + "  }";
+		
 		Query q = QueryFactory.create(querya, Syntax.syntaxARQ);
 		new NegatedElementsExtractor().getNegatedElements(q);
 	}
