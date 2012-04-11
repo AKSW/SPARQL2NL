@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.aksw.sparql2nl.nlp.relation.BoaPatternSelector;
 import org.aksw.sparql2nl.nlp.stemming.PlingStemmer;
 import org.aksw.sparql2nl.queryprocessing.GenericType;
 import org.aksw.sparql2nl.queryprocessing.TypeExtractor;
@@ -77,6 +78,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     public boolean POSTPROCESSING;
     public boolean SWITCH;
     private NLGElement select;
+    
+    private boolean useBOA = true;
     private SparqlEndpoint endpoint;
     
 
@@ -380,7 +383,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             SPhraseSpec order = nlgFactory.createClause();
             order.setSubject("The results");
             order.getSubject().setPlural(true);
-            order.setVerb("be ordered by");
+            order.setVerb("be in");
             List<SortCondition> sc = query.getOrderBy();
             if (sc.size() == 1) {
                 Expr expr = sc.get(0).getExpression();
@@ -389,9 +392,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     order.setObject(ev.toString());
                 }
                 if (sc.get(0).direction < 0) {
-                    order.addComplement("in descending order");
+                    order.addComplement("descending order");
                 } else {
-                    order.addComplement("in ascending order");
+                    order.addComplement("ascending order");
                 }
             }
             sentences.add(nlgFactory.createSentence(order));
@@ -669,14 +672,27 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             List<Triple> triples = new ArrayList<Triple>();
 
             //get all triples. We assume that the depth of union is always 1
+            List<NLGElement> list = new ArrayList<NLGElement>();
             for (Element atom : union.getElements()) {
-                ElementPathBlock epb = ((ElementPathBlock) (((ElementGroup) atom).getElements().get(0)));
-                if (!epb.isEmpty()) {
-                    Triple t = epb.getPattern().get(0).asTriple();
-                    triples.add(t);
-                }
+                list.add(getNLFromSingleClause(atom)); 
+//                ElementPathBlock epb = ((ElementPathBlock) (((ElementGroup) atom).getElements().get(0)));
+//                if (!epb.isEmpty()) {
+//                    Triple t = epb.getPattern().get(0).asTriple();
+//                    triples.add(t);
+//                }
             }
-            return getNLForTripleList(triples, "or");
+            //should not happen
+            if(list.size()==0) return null;
+            if(list.size()==1) return list.get(0);
+            else
+            {
+                cpe = nlgFactory.createCoordinatedPhrase(list.get(0), list.get(1));
+                for(int i=2; i<list.size(); i++)
+                    cpe.addComplement(list.get(i));
+                cpe.setConjunction("or");
+            }
+            return cpe;
+            //return getNLForTripleList(triples, "or");
         } // if it's a filter
         else if (e instanceof ElementFilter) {
             ElementFilter filter = (ElementFilter) e;
@@ -687,6 +703,23 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             }
             return el;
         }
+		if (e instanceof ElementGroup) {
+			if (((ElementGroup) e).getElements().size() == 1)
+				return getNLFromSingleClause(((ElementGroup) e).getElements()
+						.get(0));
+			else {
+				CoordinatedPhraseElement cpe;
+				List<NLGElement> list = new ArrayList<NLGElement>();
+				for (Element elt : ((ElementGroup) e).getElements()) {
+					list.add(getNLFromSingleClause(elt));
+				}
+				cpe = nlgFactory.createCoordinatedPhrase(list.get(0), list.get(1));
+				for(int i=2; i<list.size(); i++)
+                    cpe.addComplement(list.get(i));
+                cpe.setConjunction("and");
+                return cpe;
+			}			
+		}
         return null;
     }
 
@@ -760,13 +793,23 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             //        subj.setFeature(Feature.POSSESSIVE, true);
             //        PhraseElement np = nlgFactory.createNounPhrase(subj, getEnglishLabel(t.getPredicate().toString()));
             String realisedsubj = realiser.realise(subj).getRealisation();
-            if (realisedsubj.endsWith("s")) {
-                realisedsubj += "\' ";
-            } else {
-                realisedsubj += "\'s ";
-            }
-            p.setSubject(realisedsubj + uriConverter.convert(t.getPredicate().toString()));
-            p.setVerb("be");
+            String predicateLabel = uriConverter.convert(t.getPredicate().getURI());
+            if (!useBOA || t.getPredicate().matches(RDFS.label.asNode()) || new WordTypeDetector().isNoun(predicateLabel)) {
+            	if (realisedsubj.endsWith("s")) {
+                    realisedsubj += "\' ";
+                } else {
+                    realisedsubj += "\'s ";
+                }
+            	p.setSubject(realisedsubj + predicateLabel);
+	            p.setVerb("be");
+			} else {
+				System.out.println(t.getPredicate().getURI());
+				List<org.aksw.sparql2nl.nlp.relation.Pattern> patterns = BoaPatternSelector.getNaturalLanguageRepresentation(t.getPredicate().getURI(), 1);
+				p.setSubject(realisedsubj);
+                p.setVerb(normalizeVerb(patterns.get(0).naturalLanguageRepresentationWithoutVariables));
+			}
+            
+            
             if (t.getObject().isVariable()) {
                 p.setObject(t.getObject().toString());
             } else if (t.getObject().isLiteral()) {
@@ -791,6 +834,13 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         p.setFeature(Feature.TENSE, Tense.PRESENT);
 
         return p;
+    }
+    
+    private String normalizeVerb(String verb){
+    	if(verb.startsWith("to ")){
+    		verb = verb.replace("to ", "");
+    	}
+    	return verb;
     }
 
     private String getVerbFrom(Node predicate) {
