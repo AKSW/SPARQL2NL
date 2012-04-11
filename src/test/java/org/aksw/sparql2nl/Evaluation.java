@@ -347,7 +347,7 @@ public class Evaluation {
 		readSPARQLQueriesFromXML(new File(QUERIES_FILE));
 		SimpleNLGwithPostprocessing nlg = new SimpleNLGwithPostprocessing(endpoint);
 		for(Entry<Integer, String> entry : id2Query.entrySet()){
-			if(entry.getKey()<4) continue;
+			if(entry.getKey()<17) continue;
 			String queryString = entry.getValue();
 			if(queryString.contains("OUT OF SCOPE")){
 				continue;

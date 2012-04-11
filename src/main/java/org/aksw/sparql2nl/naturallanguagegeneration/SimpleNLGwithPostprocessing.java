@@ -794,6 +794,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             //        PhraseElement np = nlgFactory.createNounPhrase(subj, getEnglishLabel(t.getPredicate().toString()));
             String realisedsubj = realiser.realise(subj).getRealisation();
             String predicateLabel = uriConverter.convert(t.getPredicate().getURI());
+            
             if (!useBOA || t.getPredicate().matches(RDFS.label.asNode()) || new WordTypeDetector().isNoun(predicateLabel)) {
             	if (realisedsubj.endsWith("s")) {
                     realisedsubj += "\' ";
