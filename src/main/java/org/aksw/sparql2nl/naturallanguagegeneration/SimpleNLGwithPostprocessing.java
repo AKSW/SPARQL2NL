@@ -79,7 +79,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     public boolean SWITCH;
     private NLGElement select;
     
-    private boolean useBOA = true;
+    private boolean useBOA = false;
     private SparqlEndpoint endpoint;
     
 
@@ -96,6 +96,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         expressionConverter = new FilterExpressionConverter(uriConverter);
 
     }
+    
+    public void setUseBOA(boolean useBOA) {
+		this.useBOA = useBOA;
+	}
 
     /**
      * Converts the representation of the query as Natural Language Element into
