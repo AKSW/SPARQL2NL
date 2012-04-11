@@ -525,7 +525,7 @@ public class Postprocessor {
         
         // collect the above SPhraseSpecs
         for (SPhraseSpec s : sentences) {
-            String sstring = realiser.realiseSentence(s);
+            String sstring = realiser.realise(s).toString();
             if ((sstring.startsWith(var+"\'s type is ") || sstring.startsWith(var+"\' type is ")) && !sstring.startsWith(var+"\'s type is ?")) {
                 type = s; optionalMap.put(sstring,false);
             }
@@ -537,7 +537,7 @@ public class Postprocessor {
             }
         } 
         for (SPhraseSpec s : optionalsentences) {
-            String sstring = realiser.realiseSentence(s);
+            String sstring = realiser.realise(s).toString();
             if ((sstring.startsWith(var+"\'s type is ") || sstring.startsWith(var+"\' type is ")) && !sstring.startsWith(var+"\'s type is ?")) {
                 type = s; optionalMap.put(sstring,true);
             }
@@ -561,26 +561,26 @@ public class Postprocessor {
             String noun = ""; 
             boolean already = false;
             if (label != null) { 
-                String sstring = realiser.realiseSentence(label);
+                String sstring = realiser.realise(label).toString();
                 String lang = checkLanguage(label.getObject().getFeatureAsString("head"));
                 if (lang != null) noun += lang + " ";
                 String pattern;
                 if (var.endsWith("s")) pattern = var+"\' label is "; 
                 else pattern = var+"\'s label is "; 
-                noun += "label " + sstring.replace(pattern,"").replaceAll("\\.",""); 
+                noun += "label \"" + sstring.replace(pattern,"") + "\""; 
                 already = true; 
                 if (optionalMap.get(sstring)) { optionalsentences.remove(label); opt = true; }
                 else sentences.remove(label);
             }
             if (name != null) { 
                 if (already) noun += " and ";
-                String sstring = realiser.realiseSentence(name);
+                String sstring = realiser.realise(name).toString();
                 String lang = checkLanguage(name.getObject().getFeatureAsString("head"));
                 if (lang != null) noun += lang + " ";
                 String pattern;
                 if (var.endsWith("s")) pattern = var+"\' name is "; 
                 else pattern = var+"\'s name is "; 
-                noun += "name " + sstring.replace(pattern,"").replaceAll("\\.","");
+                noun += "name \"" + sstring.replace(pattern,"") + "\"";
                 if (optionalMap.get(sstring)) { optionalsentences.remove(name); opt = true; }
                 else sentences.remove(name);
                 already = true;
@@ -591,21 +591,21 @@ public class Postprocessor {
         }
         
         if (type != null) {
-            String sstring = realiser.realiseSentence(type);
+            String sstring = realiser.realise(type).toString();
             String pattern;
             if (var.endsWith("s")) pattern = var+"\' type is "; 
             else pattern = var+"\'s type is "; 
-            String classstring = sstring.replace(pattern,"").replaceAll("\\.","");
+            String classstring = sstring.replace(pattern,"");
             String determiner;
             if (Pattern.matches("[a,i,e,u,o,A,I,E,U,O].*",classstring)) determiner = "an";
             else determiner = "a";
             objnp = nlg.createNounPhrase(determiner,classstring);
-            if (np != null) objnp.addPostModifier(("with " + realiser.realise(np)).replaceAll("\\.",""));
+            if (np != null) objnp.addPostModifier(("with " + realiser.realise(np).toString()));
             newsentence.setVerb("be");
             newsentence.setObject(objnp);
             // removal:
             if (optionalMap.get(sstring)) { optionalsentences.remove(type); opt = true; }
-            else sentences.remove(type);  
+            else sentences.remove(type); 
         }
         else {
             newsentence.setVerb("have");
@@ -702,7 +702,7 @@ public class Postprocessor {
                             newhead = "";
                         }
                         else {
-                            newhead = "no "+obj;
+                            // newhead = "no "+obj; // TODO change this!
                         }
                     }
                     else sentence.setFeature("negated",true);
@@ -783,12 +783,17 @@ public class Postprocessor {
                 for (SPhraseSpec s : sentences) {
                     // selects TYPE ?x such that ?x is OBJECT -> selects OBJECT
                     if (((WordElement) s.getVerb()).getBaseForm().equals("be")) {
-                        if (realiser.realise(s.getSubject()).toString().equals("?"+var)) {
-                            replacements.put(sel,nlg.createNounPhrase(s.getObject()));
-                            delete.add(s); break;
-                        }
-                        else if (realiser.realise(s.getObject()).toString().equals("?"+var)) {
-                            replacements.put(sel,nlg.createNounPhrase(s.getSubject()));
+                        NPPhraseSpec repl = null;
+                        if (realiser.realise(s.getSubject()).toString().equals("?"+var)) 
+                            repl = nlg.createNounPhrase(s.getObject());
+                        else if (realiser.realise(s.getObject()).toString().equals("?"+var)) 
+                            repl = nlg.createNounPhrase(s.getSubject());
+                        if (repl != null) {
+                            if (realiser.realise(sel).toString().contains(" number of ")) {
+                                repl.setPlural(true); // .setFeature(Feature.NUMBER,NumberAgreement.PLURAL);
+                                repl.addPreModifier("the number of ");
+                            }
+                            replacements.put(sel,repl);
                             delete.add(s); break;
                         }
                     }
@@ -863,8 +868,9 @@ public class Postprocessor {
         NLGElement bodypart = null;
         if (bodyparts.size() == 1) {
             NLGElement bp = new ArrayList<NLGElement>(bodyparts).get(0);
-            String b = realiser.realiseSentence(bp);
+            String b = realiser.realise(bp).toString();
             if (!b.contains(" and ") && !b.contains(" or ") && !b.contains(" not ")) {
+                // Case 1: is-sentence
                 Pattern p = Pattern.compile("(\\?[\\w]*) is (.*)\\.");
                 Matcher m = p.matcher(b);
                 if (m.matches()) {
@@ -875,6 +881,9 @@ public class Postprocessor {
                             oldspec = sel;
                             newspec = nlg.createNounPhrase();
                             newspec.setFeature("head",m.group(2));
+                            if (realiser.realise(oldspec).toString().contains(" number of ")) {
+                                newspec.addPreModifier("the number of");
+                            }
                             if (oldspec.hasFeature("postmodifiers")) {
                                 newspec.addPostModifier(oldspec.getFeatureAsStringList("postmodifiers").get(0).replace("their","its"));
                             }
@@ -884,9 +893,51 @@ public class Postprocessor {
                     selects.add(newspec);
                     bodypart = bp;
                 }
+                // Case 2: some other verb
+                p = Pattern.compile("(\\?[\\w]*) (.*)\\.");
+                m = p.matcher(b);
+                if (m.matches()) {
+                    NPPhraseSpec oldspec = null;
+                    NPPhraseSpec newspec = null;
+                    for (NPPhraseSpec sel : selects) {
+                        if (sel.getFeatureAsString("head").equals(m.group(1))) {
+                            oldspec = sel;
+                            newspec = nlg.createNounPhrase();
+                            newspec.setFeature("head",realiser.realise(sel).toString().replace(m.group(1),""));
+                            boolean oldPlural = bp.isPlural();
+                            bp.setPlural(true);
+                            newspec.addComplement("that" + realiser.realise(bp).toString().replace(m.group(1),""));
+                            bp.setPlural(oldPlural);
+                        }
+                    }
+                    selects.remove(oldspec);
+                    selects.add(newspec);
+                    bodypart = bp;
+                }
             }
         }
         if (bodypart != null) bodyparts.remove(bodypart);
+        
+        // ?var and ?var's title -> ?var and their title
+        Pattern p = Pattern.compile("(\\?\\w*)\'s ((((t|T)itle)|((n|N)ame))(\\z|.*))");
+        Set<NPPhraseSpec> oldspecs = new HashSet<NPPhraseSpec>();
+        Set<NPPhraseSpec> newspecs = new HashSet<NPPhraseSpec>();
+        for (NPPhraseSpec select : selects) {
+            Matcher m = p.matcher(realiser.realise(select).toString());
+            if (m.matches()) {               
+                for (NPPhraseSpec sel : selects) {
+                    if (sel.getFeatureAsString("head").equals(m.group(1))) {
+                        oldspecs.add(sel);
+                        oldspecs.add(select);
+                        NPPhraseSpec newspec = nlg.createNounPhrase(realiser.realise(sel).toString());
+                        newspec.addPostModifier("and their " + m.group(2));
+                        newspecs.add(newspec);
+                    }
+                }
+            }
+        }
+        selects.removeAll(oldspecs);
+        selects.addAll(newspecs);
     }
     
     public NLGElement returnSelect() {
