@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.aksw.sparql2nl.nlp.stemming.PlingStemmer;
 import org.aksw.sparql2nl.queryprocessing.GenericType;
 import org.aksw.sparql2nl.queryprocessing.TypeExtractor;
 import org.dllearner.kb.sparql.SparqlEndpoint;
@@ -77,6 +78,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     public boolean SWITCH;
     private NLGElement select;
     private SparqlEndpoint endpoint;
+    
 
     public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint) {
         this.endpoint = endpoint;
@@ -483,6 +485,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         } else {
             String label = uriConverter.convert(className);
             if (label != null) {
+            	label = PlingStemmer.stem(label);
                 object = nlgFactory.createNounPhrase(nlgFactory.createInflectedWord(label, LexicalCategory.NOUN));
             } else {
                 object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
