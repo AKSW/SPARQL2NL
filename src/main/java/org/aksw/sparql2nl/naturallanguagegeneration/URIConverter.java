@@ -17,6 +17,7 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
 
@@ -41,7 +42,7 @@ public class URIConverter {
 
             // take care of graph issues. Only takes one graph. Seems like some sparql endpoint do
             // not like the FROM option.
-            ResultSet results = new SparqlQuery(labelQuery, endpoint).send();
+            ResultSet results = executeSelect(labelQuery);
 
             //get label from knowledge base
             String label = null;
@@ -92,6 +93,13 @@ public class URIConverter {
 			e.printStackTrace();
 		}
     	return label;
+    }
+    
+    private ResultSet executeSelect(String query){
+    	QueryEngineHTTP qexec = new QueryEngineHTTP(endpoint.getURL().toString(), query);
+    	qexec.setDefaultGraphURIs(endpoint.getDefaultGraphURIs());
+    	ResultSet rs = qexec.execSelect();
+    	return rs;
     }
 
 }
