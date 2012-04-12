@@ -128,8 +128,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
         // 3. run convert2NLE again, but this time use body generations from postprocessor
         POSTPROCESSING = true;
-        output = realiser.realiseSentence(convert2NLE(query));
-        System.out.println("After postprocessing:\n" + output.trim());
+        //output = realiser.realiseSentence(convert2NLE(query));
+        output = post.finalPolishing(convert2NLE(query)).getRealisation();
+        output = output.replace(",,",",").replace("..","."); // wherever this duplicate punctuation comes from...
+        System.out.println("After postprocessing:\n" + output);
         //System.out.println("After postprocessing:");
 
         post.flush();

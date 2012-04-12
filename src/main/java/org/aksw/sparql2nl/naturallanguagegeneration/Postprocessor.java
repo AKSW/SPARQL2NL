@@ -810,16 +810,17 @@ public class Postprocessor {
     }
     
     private void integrateLabelInfoIntoSelects(Set<NLGElement> bodyparts) {
-        Pattern p = Pattern.compile("(\\?([\\w]*)) ((.*)and\\s)?((has)||(may have)) the((\\s[\\w]*)? ((label)||(name))) (\\?[\\w]*)( and(.*))?\\.");
+        
+        Pattern p = Pattern.compile("(\\?\\w*)((('s?) (.*))?and( \\?\\w*)?)? ((has)||(may have)) the((\\s\\w*)? ((label)||(name))) (\\?[\\w]*)( and(.*))?\\.?");
         NLGElement info = null;
         NLGElement rest = null;
         for (NLGElement bodypart : bodyparts) {
             String bstring = realiser.realiseSentence(bodypart);
             Matcher m = p.matcher(bstring);
-            if (m.matches() && inSelects(m.group(1)) && inSelects(m.group(13))) {
+            if (m.matches() && inSelects(m.group(1)) && inSelects(m.group(15))) {
                 boolean labelvarfree = true;
                 for (NLGElement b : bodyparts) {
-                    if (!b.equals(bodypart) && realiser.realiseSentence(b).matches("(\\A|(.*\\s))\\"+m.group(13)+"(\\s|\\z).*")) {
+                    if (!b.equals(bodypart) && realiser.realiseSentence(b).matches("(\\A|(.*\\s))\\"+m.group(15)+"(\\s|\\z).*")) {
                         labelvarfree = false;
                         break;
                     }
@@ -827,16 +828,20 @@ public class Postprocessor {
                 if (labelvarfree) {
                     info = bodypart; 
                     String restrealization = "";
-                    if (m.group(4) != null) restrealization += m.group(1)+" "+m.group(4);
-                    if (m.group(15) != null) { 
+                    if (m.group(2) != null) {
+                        String part2 = m.group(2);
+                        if (m.group(2).endsWith(" and "+m.group(1))) part2 = part2.substring(0,part2.lastIndexOf(" and "));
+                        restrealization += m.group(1)+part2;
+                    }
+                    if (m.group(16) != null) { 
                         if (restrealization.isEmpty()) { 
-                            if (m.group(15).trim().startsWith(m.group(1))) restrealization += m.group(15);
-                            else restrealization += m.group(1) + m.group(15);
+                            if (m.group(17).trim().startsWith(m.group(1))) restrealization += m.group(17);
+                            else restrealization += m.group(1) + m.group(17);
                         }
-                        else restrealization += " and "+m.group(15);
-                    }                                              
+                        else restrealization += " and "+m.group(16);
+                    }    
                     if (!restrealization.isEmpty()) rest = nlg.createNLGElement(restrealization);
-                    removeFromSelects(m.group(13));
+                    removeFromSelects(m.group(15));
                     for (NPPhraseSpec sel : selects) {
                         if (sel.getFeatureAsString("head").equals(m.group(1))) {
                             boolean keepuri = false;
@@ -858,8 +863,8 @@ public class Postprocessor {
                                     if (premods.get(0).getFeatureAsString("number").equals("SINGULAR")) pron = "its";
                                 }
                             }
-                            String postmodifier = "and " + pron + m.group(8);
-                            if (m.group(5).equals("may have")) postmodifier += " (if it exists)";
+                            String postmodifier = "and " + pron + m.group(10);
+                            if (m.group(7).equals("may have")) postmodifier += " (if it exists)";
                             sel.addPostModifier(postmodifier);
                         }
                     }
@@ -1066,6 +1071,29 @@ public class Postprocessor {
                     }
                 }
             }
+    }
+    
+    public NLGElement finalPolishing(NLGElement el) {
+        String els = realiser.realiseSentence(el);
+        if (els.endsWith(".")) els = els.substring(0,els.length()-1);
+        String nonvar = "[\\w,\\s,\\,,\\.,',0-9,\\(,\\),\"]*";
+        String var = "((\\A|\\s)(\\?\\w*)('s?)?(\\s|\\z))";
+        Pattern p = Pattern.compile(nonvar+var+nonvar+var+nonvar);
+        Matcher m = p.matcher(els);
+//      <DEBUG>
+//      System.out.println(" >> " + els);
+//      if (m.matches()) System.out.println(" >> "+ m.matches() + " (" + m.group(3)+", "+m.group(8)+")"); // DEBUG
+//      </DEBUG>
+        if (m.matches() && m.group(3).equals(m.group(8))) { // i.e. if there are exactly two variable occurences and they are the same variable
+            // then remove first variable occurence and replace the second by a pronoun
+            els = els.replaceFirst("\\"+m.group(3)+" ","");
+            String pron = "they";
+            if (els.matches(".*(\\?\\w*)('s? \\w*)?(\\,|\\.|\\z)")) pron = "them"; // "A.I. is for people who not have regex skill." (@DEVOPS_BORAT)
+            if (!m.group(9).isEmpty()) pron = "their";
+            els = els.replace(m.group(8)+m.group(9),pron);
+        }
+        if (el != null) el.setRealisation(els);
+        return el;
     }
     
     
