@@ -567,7 +567,8 @@ public class Postprocessor {
                 String pattern;
                 if (var.endsWith("s")) pattern = var+"\' label is "; 
                 else pattern = var+"\'s label is "; 
-                noun += "label \"" + sstring.replace(pattern,"") + "\""; 
+                if (sstring.replace(pattern,"").startsWith("?")) noun += "label " + sstring.replace(pattern,""); 
+                else noun += "label \"" + sstring.replace(pattern,"") + "\""; 
                 already = true; 
                 if (optionalMap.get(sstring)) { optionalsentences.remove(label); opt = true; }
                 else sentences.remove(label);
@@ -580,7 +581,8 @@ public class Postprocessor {
                 String pattern;
                 if (var.endsWith("s")) pattern = var+"\' name is "; 
                 else pattern = var+"\'s name is "; 
-                noun += "name \"" + sstring.replace(pattern,"") + "\"";
+                if (sstring.replace(pattern,"").startsWith("?")) noun += "name " + sstring.replace(pattern,"");
+                else noun += "name \"" + sstring.replace(pattern,"") + "\"";
                 if (optionalMap.get(sstring)) { optionalsentences.remove(name); opt = true; }
                 else sentences.remove(name);
                 already = true;
@@ -817,7 +819,7 @@ public class Postprocessor {
             if (m.matches() && inSelects(m.group(1)) && inSelects(m.group(13))) {
                 boolean labelvarfree = true;
                 for (NLGElement b : bodyparts) {
-                    if (!b.equals(bodypart) && realiser.realiseSentence(b).contains(m.group(13))) { // TODO "?string2" contains "?string"
+                    if (!b.equals(bodypart) && realiser.realiseSentence(b).matches("(\\A|(.*\\s))\\"+m.group(13)+"(\\s|\\z).*")) {
                         labelvarfree = false;
                         break;
                     }
@@ -837,6 +839,18 @@ public class Postprocessor {
                     removeFromSelects(m.group(13));
                     for (NPPhraseSpec sel : selects) {
                         if (sel.getFeatureAsString("head").equals(m.group(1))) {
+                            boolean keepuri = false;
+                            if (rest != null) keepuri = true;
+                            else {
+                                for (NLGElement b : bodyparts) {
+                                    if (!b.equals(bodypart) && realiser.realiseSentence(b).matches("(\\A|(.*\\s))\\"+m.group(1)+"(\\s|\\z).*")) { 
+                                        keepuri = true;
+                                        break;
+                                    }
+                                }
+                                if (realiser.realiseSentence(optionaloutput).matches("(\\A|(.*\\s))\\"+m.group(1)+"(\\s|\\z).*")) keepuri = true;
+                            }
+                            if (!keepuri) sel.setHead("");
                             String pron = "their";
                             if (sel.hasFeature("premodifiers")) {
                                 List<NLGElement> premods = new ArrayList<NLGElement>((Collection) sel.getFeature("premodifiers"));
@@ -865,22 +879,40 @@ public class Postprocessor {
     }
     
     private void fuseWithSelectsAgain(Set<NLGElement> bodyparts) {
+        
+        if (bodyparts.size() == 0) {
+            String opts = realiser.realiseSentence(optionaloutput);
+            if (!opts.isEmpty()) {
+            Pattern p1 = Pattern.compile("Additionally, it retrieves data such that ([\\w,\\s,']*) is (\\?\\w*) if such exist.");
+            Pattern p2 = Pattern.compile("Additionally, it retrieves data such that (\\?\\w*) is ([\\w,\\s,']*) if such exist.");
+            Matcher m1 = p1.matcher(opts);
+            Matcher m2 = p2.matcher(opts);
+            if (m1.find()) {
+                
+            }
+            }
+        }
+        
         NLGElement bodypart = null;
         if (bodyparts.size() == 1) {
             NLGElement bp = new ArrayList<NLGElement>(bodyparts).get(0);
             String b = realiser.realise(bp).toString();
             if (!b.contains(" and ") && !b.contains(" or ") && !b.contains(" not ")) {
                 // Case 1: is-sentence
-                Pattern p = Pattern.compile("(\\?[\\w]*) is (.*)\\.");
-                Matcher m = p.matcher(b);
-                if (m.matches()) {
+                Pattern p1 = Pattern.compile("(\\?[\\w]*) is (.*)(\\.)?");
+                Pattern p2 = Pattern.compile("(.*) is (\\?[\\w]*)(\\.)?");
+                Matcher m1 = p1.matcher(b); Matcher m2 = p2.matcher(b);
+                String var = null; String other = null;
+                if (m1.matches()) { var = m1.group(1); other = m1.group(2); }
+                else if (m2.matches()) { var = m2.group(2); other = m2.group(1); }
+                if (var != null && other != null) {
                     NPPhraseSpec oldspec = null;
                     NPPhraseSpec newspec = null;
                     for (NPPhraseSpec sel : selects) {
-                        if (sel.getFeatureAsString("head").equals(m.group(1))) {
+                        if (sel.getFeatureAsString("head").equals(var)) {
                             oldspec = sel;
                             newspec = nlg.createNounPhrase();
-                            newspec.setFeature("head",m.group(2));
+                            newspec.setFeature("head",other);
                             if (realiser.realise(oldspec).toString().contains(" number of ")) {
                                 newspec.addPreModifier("the number of");
                             }
@@ -894,8 +926,8 @@ public class Postprocessor {
                     bodypart = bp;
                 }
                 // Case 2: some other verb
-                p = Pattern.compile("(\\?[\\w]*) (.*)\\.");
-                m = p.matcher(b);
+                Pattern p = Pattern.compile("(\\?[\\w]*) (.*)(\\.)?"); // TODO + (('|('s)) \\w*)?
+                Matcher m = p.matcher(b);
                 if (m.matches()) {
                     NPPhraseSpec oldspec = null;
                     NPPhraseSpec newspec = null;

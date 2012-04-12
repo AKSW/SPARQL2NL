@@ -608,17 +608,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             if (conjunction.equals("or")) {
                 Set<SPhraseSpec> union = new HashSet<SPhraseSpec>();
                 union.add(p);
-                if (SWITCH) {
-                    post.optionalunions.add(union);
-                } else {
-                    post.unions.add(union);
-                }
+                if (SWITCH) post.optionalunions.add(union);
+                else  post.unions.add(union);
             } else {
-                if (SWITCH) {
-                    post.optionalsentences.add(p);
-                } else {
-                    post.sentences.add(p);
-                }
+                if (SWITCH) post.optionalsentences.add(p);
+                else post.sentences.add(p);
             }
             return p;
         } else { // the following code is a bit redundant...
