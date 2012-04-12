@@ -34,6 +34,7 @@ public class Postprocessor {
     NLGElement optionaloutput;
     Set<NLGElement> filter;
     Set<SPhraseSpec> currentlystored;
+    boolean ask;
     
     public Postprocessor() {
         lexicon = Lexicon.getDefaultLexicon();
@@ -50,6 +51,7 @@ public class Postprocessor {
         optionaloutput = null;    
         filter = new HashSet<NLGElement>();
         currentlystored = new HashSet<SPhraseSpec>();
+        ask = false;
     }
     
     public void flush() {
@@ -64,6 +66,7 @@ public class Postprocessor {
         optionaloutput = null;
         filter = new HashSet<NLGElement>();
         currentlystored = new HashSet<SPhraseSpec>();
+        ask = false;
     }
     
     public void addPrimary(String s) {
@@ -77,16 +80,16 @@ public class Postprocessor {
       
         // 1. 
         fuseWithSelects();
-                
+        
         // 2. compose body
         Set<NLGElement> bodyparts = new HashSet<NLGElement>();
         // if it's an ASK query without variables, simply verbalise all sentences and unions
         CoordinatedPhraseElement body = nlg.createCoordinatedPhrase();
         body.setConjunction("and");
         if (primaries.isEmpty() && secondaries.isEmpty()) {
-            bodyparts.add(verbalise(sentences,new HashSet<SPhraseSpec>(),unions));           
+            bodyparts.add(verbalise(sentences,new HashSet<SPhraseSpec>(),unions)); 
         }
-        // otherwise verbalise properties of primaries and secondaries in order importance (i.e. of number of occurrences)
+        // otherwise verbalise properties of primaries and secondaries in order of importance (i.e. of number of occurrences)
         else { 
           for (String var : primaries)   aggregateTypeAndLabelInformation("?"+var);
           for (String var : secondaries) aggregateTypeAndLabelInformation("?"+var);
@@ -99,6 +102,8 @@ public class Postprocessor {
         if (!optionalsentences.isEmpty() || !optionalunions.isEmpty()) {
              optionaloutput = verbalise(optionalsentences,new HashSet<SPhraseSpec>(),optionalunions);
         }
+        
+        System.out.println(" optionaloutput: " + realiser.realiseSentence(optionaloutput)); // DEUBG
         
         // 4. add filters (or what remains of them) to body
         // fuse
@@ -120,11 +125,12 @@ public class Postprocessor {
         
         // 5.
         integrateLabelInfoIntoSelects(bodyparts);
-        fuseWithSelectsAgain(bodyparts);
+        fuseWithSelectsAgain(bodyparts);        
         
         // 6. put it all together
         // TODO before fusing, test whether var occurs anywhere else (maybe with output+optionaloutput?)
         for (NLGElement bodypart : fuseObjectWithSubject(bodyparts)) body.addCoordinate(bodypart);
+                
         output = coordinate(body);
     }
     
@@ -161,18 +167,13 @@ public class Postprocessor {
 
         // verbalise sentences 
         Set<SPhraseSpec> sentences = new HashSet<SPhraseSpec>();
-        for (SPhraseSpec s : activeStore) {
-            sentences.add(s);
-        }
-        for (SPhraseSpec s : passiveStore) {
-            sentences.add(s);
-        }
+        for (SPhraseSpec s : activeStore) sentences.add(s);
+        for (SPhraseSpec s : passiveStore) sentences.add(s);
         currentlystored.addAll(sentences);
         for (Set<SPhraseSpec> u : unionStore) currentlystored.addAll(u);
         
         CoordinatedPhraseElement coord = nlg.createCoordinatedPhrase();
         coord.setConjunction("and");
-        
         Set<SPhraseSpec> fusedsentences = fuseSubjects(fuseObjects(sentences,"and"),"and");
         for (SPhraseSpec s : fusedsentences) {
             addFilterInformation(s);
@@ -226,6 +227,8 @@ public class Postprocessor {
     
     private Set<SPhraseSpec> fuseObjects(Set<SPhraseSpec> sentences,String conjunction) {
         
+        if (sentences.size() == 1) return sentences;
+        
         Hashtable<String,SPhraseSpec> memory = new Hashtable<String,SPhraseSpec>();
         HashSet<SPhraseSpec> failed = new HashSet<SPhraseSpec>();
         
@@ -248,8 +251,10 @@ public class Postprocessor {
         failed.addAll(memory.values());
         return failed;
     }
-       private Set<SPhraseSpec> fuseSubjects(Set<SPhraseSpec> sentences,String conjunction) {
+    private Set<SPhraseSpec> fuseSubjects(Set<SPhraseSpec> sentences,String conjunction) {
 
+        if (sentences.size() == 1) return sentences;
+           
         Hashtable<String,SPhraseSpec> memory = new Hashtable<String,SPhraseSpec>();
         HashSet<SPhraseSpec> failed = new HashSet<SPhraseSpec>();
         
@@ -277,8 +282,9 @@ public class Postprocessor {
         // SUBJ is ?x . ?x V  OBJ -> SUBJ V OBJ
         // SUBJ V  ?x . ?x is OBJ -> SUBJ V OBJ
         
-//        if (sentences == null) return new HashSet<NLGElement>();
-        
+        if (sentences == null) return new HashSet<NLGElement>();
+        if (sentences.size() == 1) return sentences;
+                
         NLGElement objsent = null;
         NLGElement subjsent = null;
         String object = null;
@@ -406,7 +412,7 @@ public class Postprocessor {
     private NLGElement fuse(NLGElement e1,NLGElement e2,String conjunction) {
                 
         if (!e1.getCategory().equals(e2.getCategory())) return null; // cannot fuse elements of different category
-        
+                
         if (e1.getCategory().equals(PhraseCategory.NOUN_PHRASE)) {
             String[] real1 = e1.getFeatureAsString("head").split(" ");
             String[] real2 = e2.getFeatureAsString("head").split(" ");
@@ -697,7 +703,7 @@ public class Postprocessor {
                     }
                     usedFilters.add(f);
                 }
-                else if (fstring.startsWith(var + " does not exist")) {
+                else if (fstring.startsWith(var + " does not exist") && !ask) {
                     if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")) {
                         if (!occursAnyWhereElse(obj,sentence)) {
                             sentence.setVerb("do not exist");
@@ -705,7 +711,7 @@ public class Postprocessor {
                         }
                         else {
                             // newhead = "no "+obj; // TODO change this!
-                        }
+                        }                        
                     }
                     else sentence.setFeature("negated",true);
                     usedFilters.add(f);
@@ -993,7 +999,7 @@ public class Postprocessor {
     
     private boolean occursAnyWhereElse(String var,SPhraseSpec sent) { 
         // anywhere else than in sent, that is
-        if (numberOfOccurrences(var.replace("?","")) > 1) return true; // > 1 because it does also occur in filter
+        if (numberOfOccurrences(var.replace("?","")) > 2) return true; // > 2 because it occurs in sent and in filter
         for (SPhraseSpec s : currentlystored) {
             if (!s.equals(sent) && realiser.realiseSentence(s).contains("?"+var)) 
                 return true;
@@ -1074,30 +1080,40 @@ public class Postprocessor {
     }
     
     public NLGElement finalPolishing(NLGElement el) {
-        String els = realiser.realiseSentence(el);
-        if (els.endsWith(".")) els = els.substring(0,els.length()-1);
-        String nonvar = "[\\w,\\s,\\,,\\.,',0-9,\\(,\\),\"]*";
-        String var = "((\\A|\\s)(\\?\\w*)('s?)?(\\s|\\z))";
-        Pattern p = Pattern.compile(nonvar+var+nonvar+var+nonvar);
-        Matcher m = p.matcher(els);
-//      <DEBUG>
-//      System.out.println(" >> " + els);
-//      if (m.matches()) System.out.println(" >> "+ m.matches() + " (" + m.group(3)+", "+m.group(8)+")"); // DEBUG
-//      </DEBUG>
-        if (m.matches() && m.group(3).equals(m.group(8))) { // i.e. if there are exactly two variable occurences and they are the same variable
-            // then remove first variable occurence and replace the second by a pronoun
-            els = els.replaceFirst("\\"+m.group(3)+" ","");
-            String pron = "they";
-            if (els.matches(".*(\\?\\w*)('s? \\w*)?(\\,|\\.|\\z)")) pron = "them"; // "A.I. is for people who not have regex skill." (@DEVOPS_BORAT)
-            if (!m.group(9).isEmpty()) pron = "their";
-            els = els.replace(m.group(8)+m.group(9),pron);
+        
+        if (ask) {
+            return el;
         }
-        if (el != null) el.setRealisation(els);
-        return el;
+        else {
+            String els = realiser.realiseSentence(el);
+            if (els.endsWith(".")) els = els.substring(0,els.length()-1);
+            String nonvar = "[\\w,\\s,\\,,\\.,',0-9,\\(,\\),\"]*";
+            String var = "((\\A|\\s)(\\?\\w*)('s?)?(\\s|\\z))";
+            Pattern p = Pattern.compile(nonvar+var+nonvar+var+nonvar);
+            Matcher m = p.matcher(els);
+    //      <DEBUG>
+    //      System.out.println(" >> " + els);
+    //      if (m.matches()) System.out.println(" >> "+ m.matches() + " (" + m.group(3)+", "+m.group(8)+")");
+    //      </DEBUG>
+            if (m.matches() && m.group(3).equals(m.group(8))) { // i.e. if there are exactly two variable occurences and they are the same variable
+                // then remove first variable occurence and replace the second by a pronoun
+                els = els.replaceFirst("\\"+m.group(3)+" ","");
+                String pron = "they";
+                if (els.matches(".*(\\?\\w*)('s? \\w*)?(\\,|\\.|\\z)")) pron = "them"; // "A.I. is for people who not have regex skill." (@DEVOPS_BORAT)
+                if (m.group(9) != null) pron = "their";
+                els = els.replace(m.group(8)+m.group(9),pron);
+            }
+            if (el != null) el.setRealisation(els);
+            return el;
+        }
     }
     
     
     public void print() {
+        
+        if (ask) System.out.println("ASK"); 
+        else System.out.println("SELECT");
+        
         String maxP = max(primaries);
         String maxS = max(secondaries);
         System.out.print("\nPrimary variables: ");

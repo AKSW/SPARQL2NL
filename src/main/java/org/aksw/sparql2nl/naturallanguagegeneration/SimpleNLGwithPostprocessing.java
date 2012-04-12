@@ -117,11 +117,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         POSTPROCESSING = false;
         SWITCH = false;
         output = realiser.realiseSentence(convert2NLE(query));
-
+        
         System.out.println("SimpleNLG:\n" + output);
-        if (VERBOSE) {
-            post.print();
-        }
+        if (VERBOSE) post.print();
 
         // 2. run postprocessor
         post.postprocess();
@@ -233,6 +231,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             if (typeMap.isEmpty()) {
                 head.setSubject("This query");
                 head.setVerb("ask whether");
+                post.ask = true;
                 if (POSTPROCESSING) {
                     head.setObject(post.output);
                 } else {
@@ -698,8 +697,12 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             ElementFilter filter = (ElementFilter) e;
             Expr expr = filter.getExpr();
             NLGElement el = getNLFromSingleExpression(expr);
-            if (!POSTPROCESSING) {
-                post.filter.add(el);
+            if (!POSTPROCESSING) { 
+                boolean duplicate = false;;
+                for (NLGElement f : post.filter) {
+                    if (realiser.realise(f).toString().equals(realiser.realise(el).toString())) duplicate = true; 
+                }
+                if (!duplicate) post.filter.add(el);
             }
             return el;
         }
