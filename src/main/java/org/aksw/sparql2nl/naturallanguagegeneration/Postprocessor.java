@@ -133,9 +133,6 @@ public class Postprocessor {
         
         // 6. put it all together        
         for (NLGElement bodypart : fuseObjectWithSubject(bodyparts)) body.addCoordinate(bodypart);
-        
-        for (NLGElement b : bodyparts) System.out.println(" >> " + realiser.realiseSentence(b)); // DEBUG
-        
         output = coordinate(body);
         
         // 7. remove stupid complementisers (no idea where they come from!)
