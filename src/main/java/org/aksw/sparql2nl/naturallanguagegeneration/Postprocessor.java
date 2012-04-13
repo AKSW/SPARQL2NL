@@ -80,6 +80,7 @@ public class Postprocessor {
       
         // 1. 
         if (!ask) fuseWithSelects();
+        else {}
         
         // 2. compose body
         Set<NLGElement> bodyparts = new HashSet<NLGElement>();
@@ -101,6 +102,9 @@ public class Postprocessor {
         // 3. verbalise optionals if there are any (is added to final output in SimpleNLG)
         if (!optionalsentences.isEmpty() || !optionalunions.isEmpty()) {
              optionaloutput = verbalise(optionalsentences,new HashSet<SPhraseSpec>(),optionalunions);
+             if (!ask) optionaloutput.setFeature(Feature.MODAL,"may");
+             bodyparts.add(optionaloutput);
+             optionaloutput = null;
         }
         
         // 4. add filters (or what remains of them) to body
@@ -707,14 +711,15 @@ public class Postprocessor {
                     }
                     usedFilters.add(f);
                 }
-                else if (fstring.startsWith(var + " does not exist") && !ask) {
+                else if (fstring.startsWith(var + " does not exist")) {
                     if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")) {
                         if (!occursAnyWhereElse(obj,sentence)) {
                             sentence.setVerb("do not exist");
                             newhead = "";
                         }
                         else {
-                            // newhead = "no "+obj; // TODO change this!
+                            newhead = realiser.realise(sentence.getSubject()).toString();
+                            sentence.setSubject("no "+obj);
                         }                        
                     }
                     else sentence.setFeature("negated",true);

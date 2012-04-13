@@ -207,9 +207,9 @@ public class SPARQL2NLTest {
                 + "PREFIX  foaf: <http://xmlns.com/foaf/0.1/>"
                 + "PREFIX  dbo:  <http://dbpedia.org/ontology/>"
                 + "PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
-                + "SELECT DISTINCT  ?date WHERE"
+                + "SELECT DISTINCT  ?actor WHERE"
                 + "{ res:Charmed dbo:starring ?actor ."
-                + " ?actor dbo:birthDate ?date }";
+                + " OPTIONAL { ?actor dbo:birthDate ?date . } }";
         String query16 = "PREFIX  res:  <http://dbpedia.org/resource/>"
                 + "PREFIX  dbo:  <http://dbpedia.org/ontology/>"
                 + "ASK WHERE { OPTIONAL { res:Frank_Herbert dbo:deathDate ?date } FILTER ( ! bound(?date) ) }";
