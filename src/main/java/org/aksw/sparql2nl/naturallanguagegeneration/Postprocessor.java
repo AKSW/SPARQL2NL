@@ -79,7 +79,7 @@ public class Postprocessor {
     public void postprocess() {
       
         // 1. 
-        fuseWithSelects();
+        if (!ask) fuseWithSelects();
         
         // 2. compose body
         Set<NLGElement> bodyparts = new HashSet<NLGElement>();
@@ -103,8 +103,6 @@ public class Postprocessor {
              optionaloutput = verbalise(optionalsentences,new HashSet<SPhraseSpec>(),optionalunions);
         }
         
-        System.out.println(" optionaloutput: " + realiser.realiseSentence(optionaloutput)); // DEUBG
-        
         // 4. add filters (or what remains of them) to body
         // fuse
         List<NLGElement> filters = new ArrayList(filter);
@@ -124,14 +122,20 @@ public class Postprocessor {
         }
         
         // 5.
-        integrateLabelInfoIntoSelects(bodyparts);
-        fuseWithSelectsAgain(bodyparts);        
+        if (!ask) {
+            integrateLabelInfoIntoSelects(bodyparts);
+            fuseWithSelectsAgain(bodyparts);        
+        }
         
-        // 6. put it all together
-        // TODO before fusing, test whether var occurs anywhere else (maybe with output+optionaloutput?)
+        // 6. put it all together        
         for (NLGElement bodypart : fuseObjectWithSubject(bodyparts)) body.addCoordinate(bodypart);
-                
         output = coordinate(body);
+        
+        // 7. remove stupid complementisers (no idea where they come from!)
+        if (output != null && output.hasFeature("coordinates")) {
+            for (NLGElement el : output.getFeatureAsElementList("coordinates")) 
+                el.removeFeature("complementiser");
+        }
     }
     
     private NLGElement talkAboutMostImportant() { 
@@ -196,7 +200,7 @@ public class Postprocessor {
             NLGElement unionphrase = coordinate(unioncoord);
             if (unionphrase != null) coord.addCoordinate(unionphrase);
         }
-            
+        
         return coordinate(coord);
     }
     
@@ -932,9 +936,11 @@ public class Postprocessor {
                             }
                         }
                     }
-                    selects.remove(oldspec);
-                    selects.add(newspec);
-                    bodypart = bp;
+                    if (oldspec != null && newspec != null) {
+                        selects.remove(oldspec);
+                        selects.add(newspec);
+                        bodypart = bp;
+                    }
                 }
                 // Case 2: some other verb
                 Pattern p = Pattern.compile("(\\?[\\w]*) (.*)(\\.)?"); // TODO + (('|('s)) \\w*)?
@@ -953,9 +959,11 @@ public class Postprocessor {
                             bp.setPlural(oldPlural);
                         }
                     }
-                    selects.remove(oldspec);
-                    selects.add(newspec);
-                    bodypart = bp;
+                    if (oldspec != null && newspec != null) {
+                        selects.remove(oldspec);
+                        selects.add(newspec);
+                        bodypart = bp;
+                    }
                 }
             }
         }
@@ -999,7 +1007,7 @@ public class Postprocessor {
     
     private boolean occursAnyWhereElse(String var,SPhraseSpec sent) { 
         // anywhere else than in sent, that is
-        if (numberOfOccurrences(var.replace("?","")) > 2) return true; // > 2 because it occurs in sent and in filter
+        if (numberOfOccurrences(var.replace("?","")) > 1) return true; // > 1 because it occurs in filter 
         for (SPhraseSpec s : currentlystored) {
             if (!s.equals(sent) && realiser.realiseSentence(s).contains("?"+var)) 
                 return true;

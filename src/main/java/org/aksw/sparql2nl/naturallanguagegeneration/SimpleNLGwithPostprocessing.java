@@ -74,7 +74,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     public static final String ENTITY = "owl#thing";
     public static final String VALUE = "value";
     public static final String UNKNOWN = "valueOrEntity";
-    public boolean VERBOSE = false;
+    public boolean VERBOSE = true;
     public boolean POSTPROCESSING;
     public boolean SWITCH;
     private NLGElement select;
@@ -126,8 +126,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
         // 3. run convert2NLE again, but this time use body generations from postprocessor
         POSTPROCESSING = true;
-        //output = realiser.realiseSentence(convert2NLE(query));
-        output = post.finalPolishing(convert2NLE(query)).getRealisation();
+        output = realiser.realiseSentence(convert2NLE(query));
+//        output = post.finalPolishing(convert2NLE(query)).getRealisation();
         output = output.replace(",,",",").replace("..","."); // wherever this duplicate punctuation comes from...
         System.out.println("After postprocessing:\n" + output);
         //System.out.println("After postprocessing:");
@@ -219,58 +219,34 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             }
         }
 
-        //process SELECT queries
-        if (query.isSelectType()) {
-            //process head
-            //we could create a lexicon from which we could read these
-            head.setSubject("This query");
-            head.setVerb("retrieve");
-        } //process ASK queries
-        else {
+        //process ASK queries
+        if (query.isAskType()) {
+            post.ask = true;
             //process factual ask queries (no variables at all)
-            if (typeMap.isEmpty()) {
-                head.setSubject("This query");
-                head.setVerb("ask whether");
-                post.ask = true;
-                if (POSTPROCESSING) {
-                    head.setObject(post.output);
-                } else {
-                    // head.setObject(getNLFromElements(whereElements)) is correct
-                    // but leads to a bug
-                    head.setObject(realiser.realise(getNLFromElements(whereElements)));
-                }
-                head.getObject().setFeature(Feature.SUPRESSED_COMPLEMENTISER,true);
-                //head.getObject().setFeature(Feature.COMPLEMENTISER, "whether");
-                sentences.add(nlgFactory.createSentence(realiser.realise(head)));
-                return nlgFactory.createParagraph(sentences);
-            }
-            //process head
-            //we could create a lexicon from which we could read these
             head.setSubject("This query");
             head.setVerb("ask whether");
+            
+            if (POSTPROCESSING) head.setObject(post.output);
+            else // head.setObject(getNLFromElements(whereElements)) is correct but leads to a bug
+                head.setObject(realiser.realise(getNLFromElements(whereElements)));
+            
+            head.getObject().setFeature(Feature.SUPRESSED_COMPLEMENTISER,true);
+            
+            sentences.add(nlgFactory.createSentence(realiser.realise(head)));
+            if (typeMap.isEmpty()) return nlgFactory.createParagraph(sentences);
         }
-        if (POSTPROCESSING) {
-            select = post.returnSelect();
-        } else {
-            // this is done in the first run and select is then set also for the second (postprocessing) run
-            select = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());  // if tEx.isCount(), this gives "number of" + select
-        }
-        if(query.isAskType()){
-        	head.setObject(realiser.realise(getNLFromElements(whereElements)));
-        	if (!whereElements.isEmpty() || post.output != null) {
-                if (POSTPROCESSING) {
-                    body = post.output;
-                } else {
-                    body = getNLFromElements(whereElements);
-                }
-                // add as first sentence
-                sentences.add(nlgFactory.createSentence(head));
-                //this concludes the first sentence.
-            } else {
-                sentences.add(nlgFactory.createSentence(head));
-            }
-        } else {
-        	head.setObject(select);
+        else {
+        //process SELECT queries
+        
+            head.setSubject("This query");
+            head.setVerb("retrieve");
+        
+            if (POSTPROCESSING) select = post.returnSelect();
+            else // this is done in the first run and select is then set also for the second (postprocessing) run
+                select = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());  // if tEx.isCount(), this gives "number of" + select
+        
+            head.setObject(select);
+            head.getObject().setFeature(Feature.SUPRESSED_COMPLEMENTISER,true);
             //now generate body
             if (!whereElements.isEmpty() || post.output != null) {
                 if (POSTPROCESSING) {
@@ -612,8 +588,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 if (SWITCH) post.optionalunions.add(union);
                 else  post.unions.add(union);
             } else {
-                if (SWITCH) post.optionalsentences.add(p);
-                else post.sentences.add(p);
+                if (SWITCH) addTo(post.optionalsentences,p);
+                else addTo(post.sentences,p);
             }
             return p;
         } else { // the following code is a bit redundant...
@@ -625,19 +601,13 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 if (conjunction.equals("or")) {
                     union.add(p);
                 } else {
-                    if (SWITCH) {
-                        post.optionalsentences.add(p);
-                    } else {
-                        post.sentences.add(p);
-                    }
+                    if (SWITCH) addTo(post.optionalsentences,p);
+                    else addTo(post.sentences,p);
                 }
             }
             if (conjunction.equals("or")) {
-                if (SWITCH) {
-                    post.optionalunions.add(union);
-                } else {
-                    post.unions.add(union);
-                }
+                if (SWITCH) post.optionalunions.add(union);
+                else post.unions.add(union);
             }
             // do simplenlg
             CoordinatedPhraseElement cpe;
@@ -963,6 +933,15 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             cpe.setConjunction("and");
             return cpe;
         }
+    }
+    
+    private void addTo(Set<SPhraseSpec> sentences, SPhraseSpec sent) {
+        boolean duplicate = false;;
+        for (SPhraseSpec s : sentences) {
+            if (realiser.realise(s).toString().equals(realiser.realise(sent).toString())) 
+                duplicate = true; 
+         }
+         if (!duplicate) sentences.add(sent);
     }
 
     public static void main(String args[]) {
