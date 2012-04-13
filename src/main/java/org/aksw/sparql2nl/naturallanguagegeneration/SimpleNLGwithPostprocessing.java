@@ -74,9 +74,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     public static final String ENTITY = "owl#thing";
     public static final String VALUE = "value";
     public static final String UNKNOWN = "valueOrEntity";
-    public boolean VERBOSE = true;
+    public boolean VERBOSE = false;
     public boolean POSTPROCESSING;
     public boolean SWITCH;
+    public boolean UNIONSWITCH;
     private NLGElement select;
     
     private boolean useBOA = false;
@@ -116,6 +117,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         // 1. run convert2NLE and in parallel assemble postprocessor
         POSTPROCESSING = false;
         SWITCH = false;
+        UNIONSWITCH = false;
         output = realiser.realiseSentence(convert2NLE(query));
         
         System.out.println("SimpleNLG:\n" + output);
@@ -587,7 +589,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 union.add(p);
                 if (SWITCH) post.optionalunions.add(union);
                 else  post.unions.add(union);
-            } else {
+            } else if (!UNIONSWITCH) {
                 if (SWITCH) addTo(post.optionalsentences,p);
                 else addTo(post.sentences,p);
             }
@@ -600,7 +602,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 p = getNLForTriple(triples.get(i));
                 if (conjunction.equals("or")) {
                     union.add(p);
-                } else {
+                } else if (!UNIONSWITCH) {
                     if (SWITCH) addTo(post.optionalsentences,p);
                     else addTo(post.sentences,p);
                 }
@@ -638,18 +640,27 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             CoordinatedPhraseElement cpe;
             //cast to union
             ElementUnion union = (ElementUnion) e;
-            List<Triple> triples = new ArrayList<Triple>();
+
+            UNIONSWITCH = true; // for POSTPROCESSOR
+            List<Triple> triples = new ArrayList<Triple>(); // for POSTPROCESSOR
 
             //get all triples. We assume that the depth of union is always 1
             List<NLGElement> list = new ArrayList<NLGElement>();
             for (Element atom : union.getElements()) {
                 list.add(getNLFromSingleClause(atom)); 
-//                ElementPathBlock epb = ((ElementPathBlock) (((ElementGroup) atom).getElements().get(0)));
-//                if (!epb.isEmpty()) {
-//                    Triple t = epb.getPattern().get(0).asTriple();
-//                    triples.add(t);
-//                }
+
+                // for POSTPROCESSOR
+                ElementPathBlock epb = ((ElementPathBlock) (((ElementGroup) atom).getElements().get(0)));
+                if (!epb.isEmpty()) {
+                    Triple t = epb.getPattern().get(0).asTriple();
+                    triples.add(t);
+                }
+                //
+            
             }
+            
+            getNLForTripleList(triples, "or"); // for POSTPROCESSOR
+            
             //should not happen
             if(list.size()==0) return null;
             if(list.size()==1) return list.get(0);
@@ -660,6 +671,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     cpe.addComplement(list.get(i));
                 cpe.setConjunction("or");
             }
+            UNIONSWITCH = false;
             return cpe;
             //return getNLForTripleList(triples, "or");
         } // if it's a filter

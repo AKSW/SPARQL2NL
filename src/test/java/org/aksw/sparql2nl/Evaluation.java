@@ -49,7 +49,7 @@ public class Evaluation {
 //	private static final String QUERIES_FILE = "resources/qald2-dbpedia-test.xml";
 	private static final int NR_OF_REPRESENTATIONS = 10;
 	
-        private static int testme = 46;
+        private static int testme = 0;
 	
 	private SortedMap<Integer, String> id2Question = new TreeMap<Integer, String>();
 	private SortedMap<Integer, String> id2Query = new TreeMap<Integer, String>();
@@ -348,7 +348,7 @@ public class Evaluation {
 		readSPARQLQueriesFromXML(new File(QUERIES_FILE));
 		SimpleNLGwithPostprocessing nlg = new SimpleNLGwithPostprocessing(endpoint);
 		for(Entry<Integer, String> entry : id2Query.entrySet()){
-			if(entry.getKey() != testme) continue;
+			//if (entry.getKey() != testme) continue; 
 			String queryString = entry.getValue();
 			if(queryString.contains("OUT OF SCOPE")){
 				continue;
@@ -363,7 +363,7 @@ public class Evaluation {
 			} catch (Exception e) {
 				logger.error("ERROR",e);
 			}
-			System.exit(0);
+			//System.exit(0);
 		}
 	}
 
