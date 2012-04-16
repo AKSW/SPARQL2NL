@@ -567,7 +567,8 @@ public class Postprocessor {
                 String pattern;
                 if (var.endsWith("s")) pattern = var+"\' label is "; 
                 else pattern = var+"\'s label is "; 
-                noun += "label \"" + sstring.replace(pattern,"") + "\""; 
+//                noun += "label \"" + sstring.replace(pattern,"") + "\""; 
+                noun += "label " + sstring.replace(pattern,"") + ""; 
                 already = true; 
                 if (optionalMap.get(sstring)) { optionalsentences.remove(label); opt = true; }
                 else sentences.remove(label);
