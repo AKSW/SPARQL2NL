@@ -44,11 +44,12 @@ public class Evaluation {
 	
 //	private static final String QUERIES_FILE = "resources/queries.txt";
 //	private static final String QUERIES_FILE = "resources/GoodQALD.xml";
-	private static final String QUERIES_FILE = "resources/qald2-dbpedia-train.xml";
+	private static final String QUERIES_FILE = "resources/qald2-dbpedia-test.xml";
 //	private static final String QUERIES_FILE = "resources/qald2-musicbrainz-train.xml";
 //	private static final String QUERIES_FILE = "resources/qald2-dbpedia-test.xml";
 	private static final int NR_OF_REPRESENTATIONS = 10;
 	
+        private static int testme = 80;
 	
 	private SortedMap<Integer, String> id2Question = new TreeMap<Integer, String>();
 	private SortedMap<Integer, String> id2Query = new TreeMap<Integer, String>();
@@ -347,7 +348,7 @@ public class Evaluation {
 		readSPARQLQueriesFromXML(new File(QUERIES_FILE));
 		SimpleNLGwithPostprocessing nlg = new SimpleNLGwithPostprocessing(endpoint);
 		for(Entry<Integer, String> entry : id2Query.entrySet()){
-			if(entry.getKey()<65) continue;
+			if (testme != -1 && entry.getKey() != testme) continue; 
 			String queryString = entry.getValue();
 			if(queryString.contains("OUT OF SCOPE")){
 				continue;
@@ -362,7 +363,7 @@ public class Evaluation {
 			} catch (Exception e) {
 				logger.error("ERROR",e);
 			}
-			System.exit(0);
+			//System.exit(0);
 		}
 	}
 

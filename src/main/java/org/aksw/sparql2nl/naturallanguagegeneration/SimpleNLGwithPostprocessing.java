@@ -77,6 +77,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     public boolean VERBOSE = false;
     public boolean POSTPROCESSING;
     public boolean SWITCH;
+    public boolean UNIONSWITCH;
     private NLGElement select;
     
     private boolean useBOA = false;
@@ -116,12 +117,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         // 1. run convert2NLE and in parallel assemble postprocessor
         POSTPROCESSING = false;
         SWITCH = false;
+        UNIONSWITCH = false;
         output = realiser.realiseSentence(convert2NLE(query));
-
+        
         System.out.println("SimpleNLG:\n" + output);
-        if (VERBOSE) {
-            post.print();
-        }
+        if (VERBOSE) post.print();
 
         // 2. run postprocessor
         post.postprocess();
@@ -129,7 +129,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         // 3. run convert2NLE again, but this time use body generations from postprocessor
         POSTPROCESSING = true;
         output = realiser.realiseSentence(convert2NLE(query));
-        System.out.println("After postprocessing:\n" + output.trim());
+//        output = post.finalPolishing(convert2NLE(query)).getRealisation();
+        output = output.replace(",,",",").replace("..","."); // wherever this duplicate punctuation comes from...
+        System.out.println("After postprocessing:\n" + output);
         //System.out.println("After postprocessing:");
 
         post.flush();
@@ -219,57 +221,34 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             }
         }
 
-        //process SELECT queries
-        if (query.isSelectType()) {
-            //process head
-            //we could create a lexicon from which we could read these
-            head.setSubject("This query");
-            head.setVerb("retrieve");
-        } //process ASK queries
-        else {
+        //process ASK queries
+        if (query.isAskType()) {
+            post.ask = true;
             //process factual ask queries (no variables at all)
-            if (typeMap.isEmpty()) {
-                head.setSubject("This query");
-                head.setVerb("ask whether");
-                if (POSTPROCESSING) {
-                    head.setObject(post.output);
-                } else {
-                    // head.setObject(getNLFromElements(whereElements)) is correct
-                    // but leads to a bug
-                    head.setObject(realiser.realise(getNLFromElements(whereElements)));
-                }
-                head.getObject().setFeature(Feature.SUPRESSED_COMPLEMENTISER,true);
-                //head.getObject().setFeature(Feature.COMPLEMENTISER, "whether");
-                sentences.add(nlgFactory.createSentence(realiser.realise(head)));
-                return nlgFactory.createParagraph(sentences);
-            }
-            //process head
-            //we could create a lexicon from which we could read these
             head.setSubject("This query");
             head.setVerb("ask whether");
+            
+            if (POSTPROCESSING) head.setObject(post.output);
+            else // head.setObject(getNLFromElements(whereElements)) is correct but leads to a bug
+                head.setObject(realiser.realise(getNLFromElements(whereElements)));
+            
+            head.getObject().setFeature(Feature.SUPRESSED_COMPLEMENTISER,true);
+            
+            sentences.add(nlgFactory.createSentence(realiser.realise(head)));
+            if (typeMap.isEmpty()) return nlgFactory.createParagraph(sentences);
         }
-        if (POSTPROCESSING) {
-            select = post.returnSelect();
-        } else {
-            // this is done in the first run and select is then set also for the second (postprocessing) run
-            select = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());  // if tEx.isCount(), this gives "number of" + select
-        }
-        if(query.isAskType()){
-        	head.setObject(realiser.realise(getNLFromElements(whereElements)));
-        	if (!whereElements.isEmpty() || post.output != null) {
-                if (POSTPROCESSING) {
-                    body = post.output;
-                } else {
-                    body = getNLFromElements(whereElements);
-                }
-                // add as first sentence
-                sentences.add(nlgFactory.createSentence(head));
-                //this concludes the first sentence.
-            } else {
-                sentences.add(nlgFactory.createSentence(head));
-            }
-        } else {
-        	head.setObject(select);
+        else {
+        //process SELECT queries
+        
+            head.setSubject("This query");
+            head.setVerb("retrieve");
+        
+            if (POSTPROCESSING) select = post.returnSelect();
+            else // this is done in the first run and select is then set also for the second (postprocessing) run
+                select = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());  // if tEx.isCount(), this gives "number of" + select
+        
+            head.setObject(select);
+            head.getObject().setFeature(Feature.SUPRESSED_COMPLEMENTISER,true);
             //now generate body
             if (!whereElements.isEmpty() || post.output != null) {
                 if (POSTPROCESSING) {
@@ -608,17 +587,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             if (conjunction.equals("or")) {
                 Set<SPhraseSpec> union = new HashSet<SPhraseSpec>();
                 union.add(p);
-                if (SWITCH) {
-                    post.optionalunions.add(union);
-                } else {
-                    post.unions.add(union);
-                }
-            } else {
-                if (SWITCH) {
-                    post.optionalsentences.add(p);
-                } else {
-                    post.sentences.add(p);
-                }
+                if (SWITCH) post.optionalunions.add(union);
+                else  post.unions.add(union);
+            } else if (!UNIONSWITCH) {
+                if (SWITCH) addTo(post.optionalsentences,p);
+                else addTo(post.sentences,p);
             }
             return p;
         } else { // the following code is a bit redundant...
@@ -629,20 +602,14 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 p = getNLForTriple(triples.get(i));
                 if (conjunction.equals("or")) {
                     union.add(p);
-                } else {
-                    if (SWITCH) {
-                        post.optionalsentences.add(p);
-                    } else {
-                        post.sentences.add(p);
-                    }
+                } else if (!UNIONSWITCH) {
+                    if (SWITCH) addTo(post.optionalsentences,p);
+                    else addTo(post.sentences,p);
                 }
             }
             if (conjunction.equals("or")) {
-                if (SWITCH) {
-                    post.optionalunions.add(union);
-                } else {
-                    post.unions.add(union);
-                }
+                if (SWITCH) post.optionalunions.add(union);
+                else post.unions.add(union);
             }
             // do simplenlg
             CoordinatedPhraseElement cpe;
@@ -673,18 +640,27 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             CoordinatedPhraseElement cpe;
             //cast to union
             ElementUnion union = (ElementUnion) e;
-            List<Triple> triples = new ArrayList<Triple>();
+
+            UNIONSWITCH = true; // for POSTPROCESSOR
+            List<Triple> triples = new ArrayList<Triple>(); // for POSTPROCESSOR
 
             //get all triples. We assume that the depth of union is always 1
             List<NLGElement> list = new ArrayList<NLGElement>();
             for (Element atom : union.getElements()) {
                 list.add(getNLFromSingleClause(atom)); 
-//                ElementPathBlock epb = ((ElementPathBlock) (((ElementGroup) atom).getElements().get(0)));
-//                if (!epb.isEmpty()) {
-//                    Triple t = epb.getPattern().get(0).asTriple();
-//                    triples.add(t);
-//                }
+
+                // for POSTPROCESSOR
+                ElementPathBlock epb = ((ElementPathBlock) (((ElementGroup) atom).getElements().get(0)));
+                if (!epb.isEmpty()) {
+                    Triple t = epb.getPattern().get(0).asTriple();
+                    triples.add(t);
+                }
+                //
+            
             }
+            
+            getNLForTripleList(triples, "or"); // for POSTPROCESSOR
+            
             //should not happen
             if(list.size()==0) return null;
             if(list.size()==1) return list.get(0);
@@ -695,6 +671,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     cpe.addComplement(list.get(i));
                 cpe.setConjunction("or");
             }
+            UNIONSWITCH = false;
             return cpe;
             //return getNLForTripleList(triples, "or");
         } // if it's a filter
@@ -702,8 +679,12 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             ElementFilter filter = (ElementFilter) e;
             Expr expr = filter.getExpr();
             NLGElement el = getNLFromSingleExpression(expr);
-            if (!POSTPROCESSING) {
-                post.filter.add(el);
+            if (!POSTPROCESSING) { 
+                boolean duplicate = false;;
+                for (NLGElement f : post.filter) {
+                    if (realiser.realise(f).toString().equals(realiser.realise(el).toString())) duplicate = true; 
+                }
+                if (!duplicate) post.filter.add(el);
             }
             return el;
         }
@@ -964,6 +945,15 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             cpe.setConjunction("and");
             return cpe;
         }
+    }
+    
+    private void addTo(Set<SPhraseSpec> sentences, SPhraseSpec sent) {
+        boolean duplicate = false;;
+        for (SPhraseSpec s : sentences) {
+            if (realiser.realise(s).toString().equals(realiser.realise(sent).toString())) 
+                duplicate = true; 
+         }
+         if (!duplicate) sentences.add(sent);
     }
 
     public static void main(String args[]) {
