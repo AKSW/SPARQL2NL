@@ -786,7 +786,12 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 } else {
                     realisedsubj += "\'s ";
                 }
-            	p.setSubject(realisedsubj + predicateLabel);
+            	String predicateLowerCase = "";
+            	for (String w : predicateLabel.split("(?<!(^|[A-Z]))(?=[A-Z])|(?<!^)(?=[A-Z][a-z])")) {
+                    predicateLowerCase += w.toLowerCase() + " ";
+                }
+            	predicateLowerCase.trim();
+            	p.setSubject(realisedsubj + predicateLowerCase);
             	p.setVerb("be");
             } else {
 				System.out.println(t.getPredicate().getURI());

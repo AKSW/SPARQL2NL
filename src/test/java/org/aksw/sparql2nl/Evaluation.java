@@ -44,12 +44,12 @@ public class Evaluation {
 	
 //	private static final String QUERIES_FILE = "resources/queries.txt";
 //	private static final String QUERIES_FILE = "resources/GoodQALD.xml";
-	private static final String QUERIES_FILE = "resources/qald2-dbpedia-test.xml";
+	private static final String QUERIES_FILE = "resources/qald2-dbpedia-train.xml";
 //	private static final String QUERIES_FILE = "resources/qald2-musicbrainz-train.xml";
 //	private static final String QUERIES_FILE = "resources/qald2-dbpedia-test.xml";
 	private static final int NR_OF_REPRESENTATIONS = 10;
 	
-        private static int testme = 80;
+        private static int testme = 21;
 	
 	private SortedMap<Integer, String> id2Question = new TreeMap<Integer, String>();
 	private SortedMap<Integer, String> id2Query = new TreeMap<Integer, String>();
