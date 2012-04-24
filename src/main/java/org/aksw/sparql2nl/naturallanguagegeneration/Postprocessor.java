@@ -82,6 +82,9 @@ public class Postprocessor {
         if (!ask) fuseWithSelects();
         else {}
         
+        System.out.println("\n--1-------------------------");
+        this.print();
+        
         // 2. compose body
         Set<NLGElement> bodyparts = new HashSet<NLGElement>();
         // if it's an ASK query without variables, simply verbalise all sentences and unions
@@ -99,6 +102,11 @@ public class Postprocessor {
           }
         }
         
+        System.out.println("\n--2-------------------------");
+        this.print();
+        System.out.println(">> Bodyparts:");
+        for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
+        
         // 3. verbalise optionals if there are any (is added to final output in SimpleNLG)
         if (!optionalsentences.isEmpty() || !optionalunions.isEmpty()) {
              optionaloutput = verbalise(optionalsentences,new HashSet<SPhraseSpec>(),optionalunions);
@@ -106,6 +114,11 @@ public class Postprocessor {
              bodyparts.add(optionaloutput);
              optionaloutput = null;
         }
+        
+        System.out.println("\n--3-------------------------");
+        this.print();
+        System.out.println(">> Bodyparts:");
+        for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
         
         // 4. add filters (or what remains of them) to body
         // fuse
@@ -120,26 +133,51 @@ public class Postprocessor {
         }
         // add to body 
         if (currentf != null) {
-            String fstring = realiser.realiseSentence(currentf);
-            if (fstring.endsWith(".")) fstring = fstring.substring(0,fstring.length()-1);
+            String fstring = removeDots(realiser.realise(currentf).toString());
             bodyparts.add(new StringElement(fstring));
         }
+        
+        System.out.println("\n--4-------------------------");
+        this.print();
+        System.out.println(">> Bodyparts:");
+        for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
         
         // 5.
         if (!ask) {
             integrateLabelInfoIntoSelects(bodyparts);
-            fuseWithSelectsAgain(bodyparts);        
+            
+            System.out.println("\n--5-1------------------------");
+            this.print();
+            System.out.println(">> Bodyparts:");
+            for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
+            
+            fuseWithSelectsAgain(bodyparts); 
+            
+            System.out.println("\n--5-2------------------------");
+            this.print();
+            System.out.println(">> Bodyparts:");
+            for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
         }
         
         // 6. put it all together        
         for (NLGElement bodypart : fuseObjectWithSubject(bodyparts)) body.addCoordinate(bodypart);
         output = coordinate(body);
         
+        System.out.println("\n--6-------------------------");
+        this.print();
+        System.out.println(">> Bodyparts:");
+        for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
+        
         // 7. remove stupid complementisers (no idea where they come from!)
         if (output != null && output.hasFeature("coordinates")) {
             for (NLGElement el : output.getFeatureAsElementList("coordinates")) 
                 el.removeFeature("complementiser");
         }
+        System.out.println("\n--7-------------------------");
+        this.print();
+        System.out.println(">> Bodyparts:");
+        for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
+        
     }
     
     private NLGElement talkAboutMostImportant() { 
@@ -244,7 +282,7 @@ public class Postprocessor {
             
             NLGElement subj = sentence.getSubject();
             NLGElement obj  = sentence.getObject();
-            String key = realiser.realiseSentence(sentence).replace(realiser.realise(obj).toString(),"");
+            String key = removeDots(realiser.realiseSentence(sentence).replace(removeDots(realiser.realise(obj).toString()),""));
             
             // if subject and verb are the same, fuse objects
             if (memory.containsKey(key)) { 
@@ -270,7 +308,7 @@ public class Postprocessor {
             
             NLGElement subj = sentence.getSubject();
             NLGElement obj  = sentence.getObject();
-            String key = realiser.realiseSentence(sentence).replace(realiser.realise(subj).toString(),"");
+            String key = removeDots(realiser.realiseSentence(sentence).replace(removeDots(realiser.realise(subj).toString()),""));
             
             // if verb+object of sentence is the same as one already encountered, fuse subjects
             if (memory.containsKey(key)) {
@@ -329,16 +367,16 @@ public class Postprocessor {
         sentences.remove(objsent);
         sentences.remove(subjsent);
         if (objIs) {
-            String newsent = realiser.realiseSentence(subjsent).replace(object,realiser.realiseSentence(objsent).replace(object,"").replace(" is ","").replace(" are ","").trim());
-            if (newsent.endsWith(".")) newsent = newsent.substring(0,newsent.length()-1).trim();
+            String newsent = realiser.realiseSentence(subjsent).replace(object,removeDots(realiser.realiseSentence(objsent)).replace(object,"").replace(" is ","").replace(" are ","").trim());
+            newsent = removeDots(newsent);
             sentences.add(nlg.createNLGElement(newsent));           
 //            objsent.setVerb(subjsent.getVerb());
 //            objsent.setObject(subjsent.getObject());
 //            sentences.add(objsent);
         }
         else if (subjIs) {
-            String newsent = realiser.realiseSentence(objsent).replace(subject,realiser.realiseSentence(subjsent).replace(subject,"").replace(" is ","").replace(" are ","").trim());
-            if (newsent.endsWith(".")) newsent = newsent.substring(0,newsent.length()-1).trim();
+            String newsent = realiser.realiseSentence(objsent).replace(subject,removeDots(realiser.realiseSentence(subjsent)).replace(subject,"").replace(" is ","").replace(" are ","").trim());
+            newsent = removeDots(newsent);
             sentences.add(nlg.createNLGElement(newsent));      
 //            subjsent.setVerb(objsent.getVerb());
 //            subjsent.setObject(objsent.getObject());
@@ -539,7 +577,7 @@ public class Postprocessor {
         
         // collect the above SPhraseSpecs
         for (SPhraseSpec s : sentences) {
-            String sstring = realiser.realise(s).toString();
+            String sstring = removeDots(realiser.realise(s).toString());
             if ((sstring.startsWith(var+"\'s type is ") || sstring.startsWith(var+"\' type is ")) && !sstring.startsWith(var+"\'s type is ?")) {
                 type = s; optionalMap.put(sstring,false);
             }
@@ -551,7 +589,7 @@ public class Postprocessor {
             }
         } 
         for (SPhraseSpec s : optionalsentences) {
-            String sstring = realiser.realise(s).toString();
+            String sstring = removeDots(realiser.realise(s).toString());
             if ((sstring.startsWith(var+"\'s type is ") || sstring.startsWith(var+"\' type is ")) && !sstring.startsWith(var+"\'s type is ?")) {
                 type = s; optionalMap.put(sstring,true);
             }
@@ -574,33 +612,28 @@ public class Postprocessor {
         if (label != null || name != null) {
             String noun = ""; 
             boolean already = false;
-				if (label != null) {
-					String sstring = realiser.realise(label).toString();
-					String lang = checkLanguage(label.getObject()
-							.getFeatureAsString("head"));
-					if (lang != null)
-						noun += lang + " ";
-					String pattern;
-					if (var.endsWith("s"))
-						pattern = var + "\' label is ";
-					else
-						pattern = var + "\'s label is ";
-
-					if (sstring.replace(pattern, "").startsWith("?"))
-						noun += "label " + sstring.replace(pattern, "");
-					else
-						noun += "label \"" + sstring.replace(pattern, "")
-								+ "\"";
-					already = true;
-					if (optionalMap.get(sstring)) {
-						optionalsentences.remove(label);
-						opt = true;
-					} else
-						sentences.remove(label);
-				}
+            if (label != null) {
+                String sstring = removeDots(realiser.realise(label).toString());
+		String lang = checkLanguage(label.getObject().getFeatureAsString("head"));
+		if (lang != null) noun += lang + " ";
+		String pattern;
+		if (var.endsWith("s"))
+                    pattern = var + "\' label is ";
+		else
+                    pattern = var + "\'s label is ";
+		if (sstring.replace(pattern, "").startsWith("?"))
+                    noun += "label " + sstring.replace(pattern, "");
+		else
+                    noun += "label \"" + sstring.replace(pattern, "") + "\"";
+		already = true;
+		if (optionalMap.get(sstring)) {
+                    optionalsentences.remove(label);
+                    opt = true;
+		} else sentences.remove(label);
+            }
             if (name != null) { 
                 if (already) noun += " and ";
-                String sstring = realiser.realise(name).toString();
+                String sstring = removeDots(realiser.realise(name).toString());
                 String lang = checkLanguage(name.getObject().getFeatureAsString("head"));
                 if (lang != null) noun += lang + " ";
                 String pattern;
@@ -618,7 +651,7 @@ public class Postprocessor {
         }
         
         if (type != null) {
-            String sstring = realiser.realise(type).toString();
+            String sstring = removeDots(realiser.realise(type).toString());
             String pattern;
             if (var.endsWith("s")) pattern = var+"\' type is "; 
             else pattern = var+"\'s type is "; 
@@ -627,7 +660,7 @@ public class Postprocessor {
             if (Pattern.matches("[a,i,e,u,o,A,I,E,U,O].*",classstring)) determiner = "an";
             else determiner = "a";
             objnp = nlg.createNounPhrase(determiner,classstring);
-            if (np != null) objnp.addPostModifier(("with " + realiser.realise(np).toString()));
+            if (np != null) objnp.addPostModifier(("with " + removeDots(realiser.realise(np).toString())));
             newsentence.setVerb("be");
             newsentence.setObject(objnp);
             // removal:
@@ -649,11 +682,11 @@ public class Postprocessor {
 
          NLGElement usedfilter = null;
          for (NLGElement f : filter) {
-            String fstring = realiser.realiseSentence(f);
+            String fstring = removeDots(realiser.realise(f).toString());
             if (fstring.startsWith(var+" is in English")) {
                 out = "English";
                 usedfilter = f;
-                String remainder = fstring.replace(var+" is in English","").replaceAll("\\.","");
+                String remainder = fstring.replace(var+" is in English","");
                 if (remainder.trim().startsWith("and") || remainder.trim().startsWith("And")) remainder = remainder.replaceFirst("and","").replaceFirst("And","").trim();
                 if (!remainder.isEmpty()) filter.add(nlg.createNLGElement(remainder));
                 break;
@@ -676,7 +709,7 @@ public class Postprocessor {
             for (SPhraseSpec lang : language) {
                 String subj = lang.getSubject().getFeatureAsString("head");
                 if (subj.equals(var)) {
-                    out = realiser.realiseSentence(lang).replace(var+" is in ","").replaceAll("\\.","");
+                    out = removeDots(realiser.realiseSentence(lang).replace(var+" is in ",""));
                     usedlanguage.add(lang);
                     break;
                 }
@@ -690,7 +723,7 @@ public class Postprocessor {
     
     private void addFilterInformation(SPhraseSpec sentence) {
         
-        String obj  = realiser.realise(sentence.getObject()).toString();
+        String obj  = removeDots(realiser.realise(sentence.getObject()).toString());
         Pattern p = Pattern.compile(".*(\\?([\\w]*))(\\s|\\z)");
         
         String[] comparison = {" is greater than or equal to ",
@@ -706,8 +739,7 @@ public class Postprocessor {
             String var = m.group(1);
             String newhead = obj;
             for (NLGElement f : filter) {
-                String fstring = realiser.realiseSentence(f);
-                if (fstring.trim().endsWith(".")) fstring = fstring.substring(0,fstring.length()-1);
+                String fstring = removeDots(realiser.realise(f).toString());
                 if (fstring.startsWith(var + " matches ")) {
                     String match = fstring.replace(var+" matches ","");
                     if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")
@@ -729,7 +761,7 @@ public class Postprocessor {
                             newhead = "";
                         }
                         else {
-                            newhead = realiser.realise(sentence.getSubject()).toString();
+                            newhead = removeDots(realiser.realise(sentence.getSubject()).toString());
                             sentence.setSubject("no "+obj);
                         }                        
                     }
@@ -763,18 +795,17 @@ public class Postprocessor {
         }
         
         // attach filter information to subject
-        String subj = realiser.realise(sentence.getSubject()).toString();
+        String subj = removeDots(realiser.realise(sentence.getSubject()).toString());
         p = Pattern.compile("(^|\\A)(\\?([\\w]*))((?!')||\\z)");
         m = p.matcher(subj);
         if (m.find()) { // i.e. if the subject is a variable at the beginning of the phrase
             String var = m.group(2);
             for (NLGElement f : filter) {
-                String fstring = realiser.realiseSentence(f);
-                if (fstring.endsWith(".")) fstring = fstring.substring(0,fstring.length()-1);
+                String fstring = removeDots(realiser.realise(f).toString());
                 if (fstring.startsWith(var+" does not exist")) {
                     usedFilters.add(f);
                     if (inSelects(subj)) sentence.setFeature("negated",true);
-                    else sentence.setSubject("no " + realiser.realise(sentence.getSubject()).toString());
+                    else sentence.setSubject("no " + removeDots(realiser.realise(sentence.getSubject()).toString()));
                 }
                 else if (fstring.startsWith(var)) {
                     sentence.addComplement("and " + fstring.replace(var,"").trim());
@@ -801,7 +832,7 @@ public class Postprocessor {
         String var;
         int oc;
         for (NPPhraseSpec sel : selects) {
-            selstring = realiser.realise(sel).toString();
+            selstring = removeDots(realiser.realise(sel).toString());
             var = selstring.substring(selstring.indexOf("?")+1);
             oc = numberOfOccurrences(var);
                         
@@ -841,7 +872,7 @@ public class Postprocessor {
         NLGElement info = null;
         NLGElement rest = null;
         for (NLGElement bodypart : bodyparts) {
-            String bstring = realiser.realiseSentence(bodypart);
+            String bstring = removeDots(realiser.realiseSentence(bodypart));
             Matcher m = p.matcher(bstring);
             if (m.matches() && inSelects(m.group(1)) && inSelects(m.group(15))) {
                 boolean labelvarfree = true;
@@ -911,7 +942,7 @@ public class Postprocessor {
     
     private void fuseWithSelectsAgain(Set<NLGElement> bodyparts) {
         
-        if (bodyparts.size() == 0) {
+        if (bodyparts.isEmpty()) {
             String opts = realiser.realiseSentence(optionaloutput);
             if (!opts.isEmpty()) {
             Pattern p1 = Pattern.compile("Additionally, it retrieves data such that ([\\w,\\s,']*) is (\\?\\w*) if such exist.");
@@ -919,7 +950,7 @@ public class Postprocessor {
             Matcher m1 = p1.matcher(opts);
             Matcher m2 = p2.matcher(opts);
             if (m1.find()) {
-                
+                // TODO
             }
             }
         }
@@ -927,7 +958,7 @@ public class Postprocessor {
         NLGElement bodypart = null;
         if (bodyparts.size() == 1) {
             NLGElement bp = new ArrayList<NLGElement>(bodyparts).get(0);
-            String b = realiser.realise(bp).toString();
+            String b = removeDots(realiser.realise(bp).toString());
             if (!b.contains(" and ") && !b.contains(" or ") && !b.contains(" not ")) {
                 // Case 1: is-sentence
                 Pattern p1 = Pattern.compile("(\\?[\\w]*) is (.*)(\\.)?");
@@ -938,17 +969,17 @@ public class Postprocessor {
                 else if (m2.matches()) { var = m2.group(2); other = m2.group(1); }
                 if (var != null && other != null) {
                     NPPhraseSpec oldspec = null;
-                    NPPhraseSpec newspec = null;
+                    NPPhraseSpec newspec = null;              
                     for (NPPhraseSpec sel : selects) {
                         if (sel.getFeatureAsString("head").equals(var)) {
                             oldspec = sel;
                             newspec = nlg.createNounPhrase();
-                            newspec.setFeature("head",other);
+                            newspec.setFeature("head",removeDots(other));
                             if (realiser.realise(oldspec).toString().contains(" number of ")) {
                                 newspec.addPreModifier("the number of");
                             }
                             if (oldspec.hasFeature("postmodifiers")) {
-                                newspec.addPostModifier(oldspec.getFeatureAsStringList("postmodifiers").get(0).replace("their","its"));
+                                newspec.addPostModifier(oldspec.getFeatureAsStringList("postmodifiers").get(0).replace("their","its")); // TODO check whether their or its
                             }
                         }
                     }
@@ -968,10 +999,11 @@ public class Postprocessor {
                         if (sel.getFeatureAsString("head").equals(m.group(1))) {
                             oldspec = sel;
                             newspec = nlg.createNounPhrase();
-                            newspec.setFeature("head",realiser.realise(sel).toString().replace(m.group(1),""));
+                            String nsp = removeDots(realiser.realise(sel).toString()); 
+                            newspec.setFeature("head",nsp.replace(m.group(1),""));
                             boolean oldPlural = bp.isPlural();
                             bp.setPlural(true);
-                            newspec.addComplement("that" + realiser.realise(bp).toString().replace(m.group(1),""));
+                            newspec.addComplement("that" + removeDots(realiser.realise(bp).toString().replace(m.group(1),"")));
                             bp.setPlural(oldPlural);
                         }
                     }
@@ -996,8 +1028,9 @@ public class Postprocessor {
                     if (sel.getFeatureAsString("head").equals(m.group(1))) {
                         oldspecs.add(sel);
                         oldspecs.add(select);
-                        NPPhraseSpec newspec = nlg.createNounPhrase(realiser.realise(sel).toString());
-                        newspec.addPostModifier("and their " + m.group(2));
+                        String nsp = removeDots(realiser.realise(sel).toString());
+                        NPPhraseSpec newspec = nlg.createNounPhrase(nsp);
+                        newspec.addPostModifier("and their " + removeDots(m.group(2)));
                         newspecs.add(newspec);
                     }
                 }
@@ -1050,7 +1083,14 @@ public class Postprocessor {
             }
         }
         for (NLGElement f : filter) {
-            if (realiser.realiseSentence(f).contains("?"+var)) n++;
+            if (realiser.realise(f).toString().contains("?"+var)) n++;
+        }
+        return n;
+    }
+    private int numberOfOccurrencesInFilter(String var) {
+        int n = 0;
+        for (NLGElement f : filter) {
+            if (realiser.realise(f).toString().contains("?"+var)) n++;
         }
         return n;
     }
@@ -1058,13 +1098,24 @@ public class Postprocessor {
     private String max(Set<String> vars) {
         String out = null;
         int beatme = 0;
+        int beatmyfilter = 0;
         for (String s : vars) {
-            if (numberOfOccurrences(s) >= beatme) {
+            if (numberOfOccurrences(s) > beatme 
+            || (numberOfOccurrences(s) == beatme && numberOfOccurrencesInFilter(s) < beatmyfilter)) {
                 out = s;
                 beatme = numberOfOccurrences(s);
+                beatmyfilter = numberOfOccurrencesInFilter(s);
             }
         }
         return out;
+    }
+    
+    private String removeDots(String s) {
+        if (s.endsWith(".")) 
+            return removeDots(s.substring(0,s.length()-1));
+        else if (s.endsWith(". ")) 
+            return removeDots(s.substring(0,s.length()-2));
+        else return s;
     }
     
     private void cleanUp() { // very stupid Java programming
@@ -1175,7 +1226,11 @@ public class Postprocessor {
         }
         System.out.println("Filters: ");
         for (NLGElement f : filter ) {
-            System.out.print(" -- " + realiser.realiseSentence(f) + "\n");
+            System.out.print(" -- " + realiser.realise(f).toString() + "\n");
         }
+        System.out.println("Currently stored: ");
+        for (NLGElement cs : currentlystored) System.out.println(" -- " + realiser.realiseSentence(cs));
+        System.out.println(" >> output: " + realiser.realiseSentence(output));
+        System.out.println(" >> optiontaloutput: " + realiser.realiseSentence(optionaloutput));
     }
 }

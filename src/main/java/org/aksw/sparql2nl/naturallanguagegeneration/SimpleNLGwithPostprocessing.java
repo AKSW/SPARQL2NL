@@ -74,7 +74,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     public static final String ENTITY = "owl#thing";
     public static final String VALUE = "value";
     public static final String UNKNOWN = "valueOrEntity";
-    public boolean VERBOSE = false;
+    public boolean VERBOSE = true;
     public boolean POSTPROCESSING;
     public boolean SWITCH;
     public boolean UNIONSWITCH;
@@ -369,15 +369,15 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             order.setVerb("be in");
             List<SortCondition> sc = query.getOrderBy();
             if (sc.size() == 1) {
+                if (sc.get(0).direction < 0) {
+                    order.setObject("descending order");
+                } else {
+                    order.setObject("ascending order");
+                }
                 Expr expr = sc.get(0).getExpression();
                 if (expr instanceof ExprVar) {
                     ExprVar ev = (ExprVar) expr;
-                    order.setObject(ev.toString());
-                }
-                if (sc.get(0).direction < 0) {
-                    order.addComplement("descending order");
-                } else {
-                    order.addComplement("ascending order");
+                    order.addComplement("with respect to "+ev.toString()+"");
                 }
             }
             sentences.add(nlgFactory.createSentence(order));
@@ -589,7 +589,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 union.add(p);
                 if (SWITCH) post.optionalunions.add(union);
                 else  post.unions.add(union);
-            } else if (!UNIONSWITCH) {
+            } else { // if (!UNIONSWITCH) {
                 if (SWITCH) addTo(post.optionalsentences,p);
                 else addTo(post.sentences,p);
             }
@@ -602,7 +602,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 p = getNLForTriple(triples.get(i));
                 if (conjunction.equals("or")) {
                     union.add(p);
-                } else if (!UNIONSWITCH) {
+                } else { // } else if (!UNIONSWITCH) {
                     if (SWITCH) addTo(post.optionalsentences,p);
                     else addTo(post.sentences,p);
                 }
