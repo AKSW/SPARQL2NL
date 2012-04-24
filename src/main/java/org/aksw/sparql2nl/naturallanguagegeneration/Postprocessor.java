@@ -868,7 +868,7 @@ public class Postprocessor {
     
     private void integrateLabelInfoIntoSelects(Set<NLGElement> bodyparts) {
         
-        Pattern p = Pattern.compile("(\\?\\w*)((('s?) (.*))?and( \\?\\w*)?)? ((has)||(may have)) the((\\s\\w*)? ((label)||(name))) (\\?[\\w]*)( and(.*))?\\.?");
+        Pattern p = Pattern.compile("(\\?\\w*)((('s)? (.*))?and( \\?\\w*)?)? ((has)||(may have)) the((\\s\\w*)? ((label)||(name))) (\\?[\\w]*)( and(.*))?\\.?");
         NLGElement info = null;
         NLGElement rest = null;
         for (NLGElement bodypart : bodyparts) {
