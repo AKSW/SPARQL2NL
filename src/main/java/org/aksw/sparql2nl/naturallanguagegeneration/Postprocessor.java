@@ -36,6 +36,8 @@ public class Postprocessor {
     Set<SPhraseSpec> currentlystored;
     boolean ask;
     
+    boolean TRACE = false;
+    
     public Postprocessor() {
         lexicon = Lexicon.getDefaultLexicon();
         nlg = new NLGFactory(lexicon);
@@ -82,8 +84,7 @@ public class Postprocessor {
         if (!ask) fuseWithSelects();
         else {}
         
-        System.out.println("\n--1-------------------------");
-        this.print();
+        if (TRACE) { System.out.println("\n--1-------------------------"); this.print(); }
         
         // 2. compose body
         Set<NLGElement> bodyparts = new HashSet<NLGElement>();
@@ -102,10 +103,12 @@ public class Postprocessor {
           }
         }
         
-        System.out.println("\n--2-------------------------");
-        this.print();
-        System.out.println(">> Bodyparts:");
-        for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
+        if (TRACE) { 
+            System.out.println("\n--2-------------------------");
+            this.print();
+            System.out.println(">> Bodyparts:");
+            for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
+        }
         
         // 3. verbalise optionals if there are any (is added to final output in SimpleNLG)
         if (!optionalsentences.isEmpty() || !optionalunions.isEmpty()) {
@@ -115,10 +118,12 @@ public class Postprocessor {
              optionaloutput = null;
         }
         
-        System.out.println("\n--3-------------------------");
-        this.print();
-        System.out.println(">> Bodyparts:");
-        for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
+        if (TRACE) {
+            System.out.println("\n--3-------------------------");
+            this.print();
+            System.out.println(">> Bodyparts:");
+            for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
+        }
         
         // 4. add filters (or what remains of them) to body
         // fuse
@@ -137,23 +142,21 @@ public class Postprocessor {
             bodyparts.add(new StringElement(fstring));
         }
         
-        System.out.println("\n--4-------------------------");
-        this.print();
-        System.out.println(">> Bodyparts:");
-        for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
+        if (TRACE) {
+            System.out.println("\n--4-------------------------");
+            this.print();
+            System.out.println(">> Bodyparts:");
+            for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
+        }
         
         // 5.
         if (!ask) {
             integrateLabelInfoIntoSelects(bodyparts);
-            
-            System.out.println("\n--5-1------------------------");
-            this.print();
-            System.out.println(">> Bodyparts:");
-            for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
-            
             fuseWithSelectsAgain(bodyparts); 
-            
-            System.out.println("\n--5-2------------------------");
+        }
+        
+        if (TRACE) {
+            System.out.println("\n--5-------------------------");
             this.print();
             System.out.println(">> Bodyparts:");
             for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
@@ -163,20 +166,25 @@ public class Postprocessor {
         for (NLGElement bodypart : fuseObjectWithSubject(bodyparts)) body.addCoordinate(bodypart);
         output = coordinate(body);
         
-        System.out.println("\n--6-------------------------");
-        this.print();
-        System.out.println(">> Bodyparts:");
-        for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
+        if (TRACE) {
+            System.out.println("\n--6-------------------------");
+            this.print();
+            System.out.println(">> Bodyparts:");
+            for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
+        }
         
         // 7. remove stupid complementisers (no idea where they come from!)
         if (output != null && output.hasFeature("coordinates")) {
             for (NLGElement el : output.getFeatureAsElementList("coordinates")) 
                 el.removeFeature("complementiser");
         }
-        System.out.println("\n--7-------------------------");
-        this.print();
-        System.out.println(">> Bodyparts:");
-        for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
+        
+        if (TRACE) {
+            System.out.println("\n--7-------------------------");
+            this.print();
+            System.out.println(">> Bodyparts:");
+            for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
+        }
         
     }
     

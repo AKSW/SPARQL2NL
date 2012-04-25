@@ -74,7 +74,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     public static final String ENTITY = "owl#thing";
     public static final String VALUE = "value";
     public static final String UNKNOWN = "valueOrEntity";
-    public boolean VERBOSE = true;
+    public boolean VERBOSE = false;
     public boolean POSTPROCESSING;
     private boolean SWITCH;
     private boolean UNIONSWITCH;
