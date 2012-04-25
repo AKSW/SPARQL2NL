@@ -27,10 +27,10 @@ public class Postprocessor {
     Set<String> primaries;
     Set<String> secondaries;
     Set<SPhraseSpec> sentences;
-    Set<Set<SPhraseSpec>> unions;
+    Set<Set<Set<SPhraseSpec>>> unions;
     NLGElement output;
     Set<SPhraseSpec> optionalsentences;
-    Set<Set<SPhraseSpec>> optionalunions;
+    Set<Set<Set<SPhraseSpec>>> optionalunions;
     NLGElement optionaloutput;
     Set<NLGElement> filter;
     Set<SPhraseSpec> currentlystored;
@@ -44,10 +44,10 @@ public class Postprocessor {
         primaries = new HashSet<String>();
         secondaries = new HashSet<String>();
         sentences = new HashSet<SPhraseSpec>();
-        unions = new HashSet<Set<SPhraseSpec>>();
+        unions = new HashSet<Set<Set<SPhraseSpec>>>();
         output = null;
         optionalsentences = new HashSet<SPhraseSpec>();
-        optionalunions = new HashSet<Set<SPhraseSpec>>();
+        optionalunions = new HashSet<Set<Set<SPhraseSpec>>>();
         optionaloutput = null;    
         filter = new HashSet<NLGElement>();
         currentlystored = new HashSet<SPhraseSpec>();
@@ -59,10 +59,10 @@ public class Postprocessor {
         primaries = new HashSet<String>();
         secondaries = new HashSet<String>();
         sentences = new HashSet<SPhraseSpec>();
-        unions = new HashSet<Set<SPhraseSpec>>();
+        unions = new HashSet<Set<Set<SPhraseSpec>>>();
         output = null;
         optionalsentences = new HashSet<SPhraseSpec>();
-        optionalunions = new HashSet<Set<SPhraseSpec>>();
+        optionalunions = new HashSet<Set<Set<SPhraseSpec>>>();
         optionaloutput = null;
         filter = new HashSet<NLGElement>();
         currentlystored = new HashSet<SPhraseSpec>();
@@ -197,7 +197,7 @@ public class Postprocessor {
         else {
             Set<SPhraseSpec> activeStore = new HashSet<SPhraseSpec>();
             Set<SPhraseSpec> passiveStore = new HashSet<SPhraseSpec>();
-            Set<Set<SPhraseSpec>> unionStore = new HashSet<Set<SPhraseSpec>>();
+            Set<Set<Set<SPhraseSpec>>> unionStore = new HashSet<Set<Set<SPhraseSpec>>>();
             collectAllPhrasesContaining(current,activeStore,passiveStore,unionStore);
 
             NLGElement phrase = verbalise(activeStore,passiveStore,unionStore);
@@ -209,14 +209,16 @@ public class Postprocessor {
         }
     }
     
-    private NLGElement verbalise(Set<SPhraseSpec> activeStore,Set<SPhraseSpec> passiveStore,Set<Set<SPhraseSpec>> unionStore) {
+    private NLGElement verbalise(Set<SPhraseSpec> activeStore,Set<SPhraseSpec> passiveStore,Set<Set<Set<SPhraseSpec>>> unionStore) {
 
         // verbalise sentences 
         Set<SPhraseSpec> sentences = new HashSet<SPhraseSpec>();
         for (SPhraseSpec s : activeStore) sentences.add(s);
         for (SPhraseSpec s : passiveStore) sentences.add(s);
         currentlystored.addAll(sentences);
-        for (Set<SPhraseSpec> u : unionStore) currentlystored.addAll(u);
+        for (Set<Set<SPhraseSpec>> un : unionStore) {
+            for (Set<SPhraseSpec> u : un) currentlystored.addAll(u);
+        }
         
         CoordinatedPhraseElement coord = nlg.createCoordinatedPhrase();
         coord.setConjunction("and");
@@ -227,18 +229,25 @@ public class Postprocessor {
         }
             
         // verbalise unions 
-        for (Set<SPhraseSpec> union : unionStore) {
+        for (Set<Set<SPhraseSpec>> union : unionStore) {
             
-            Set<SPhraseSpec> unionsentences = new HashSet<SPhraseSpec>();
-            unionsentences.addAll(union);
+            Set<NLGElement> unionsentences = new HashSet<NLGElement>();
+            for (Set<SPhraseSpec> un : union) {
+                CoordinatedPhraseElement uncoord = nlg.createCoordinatedPhrase();
+                uncoord.setConjunction("and");
+                removeDuplicateRealisations(un);
+                Set<SPhraseSpec> fusedunions = fuseSubjects(fuseObjects(un,"and"),"and");
+                for (SPhraseSpec s : fusedunions) {
+                    addFilterInformation(s);
+                    uncoord.addCoordinate(s);
+                }
+                NLGElement unphrase = coordinate(uncoord);
+                if (unphrase != null) unionsentences.add(unphrase);
+            }
+            
             CoordinatedPhraseElement unioncoord = nlg.createCoordinatedPhrase();
             unioncoord.setConjunction("or");
-            removeDuplicateRealisations(unionsentences);
-            Set<SPhraseSpec> fusedunions = fuseSubjects(fuseObjects(unionsentences,"or"),"or");
-            for (SPhraseSpec s : fusedunions) {
-                addFilterInformation(s);
-                unioncoord.addCoordinate(s);
-            }
+            for (NLGElement us : unionsentences) unioncoord.addCoordinate(us);
             NLGElement unionphrase = coordinate(unioncoord);
             if (unionphrase != null) coord.addCoordinate(unionphrase);
         }
@@ -518,10 +527,10 @@ public class Postprocessor {
     }
     
     private void collectAllPhrasesContaining(String var,
-            Set<SPhraseSpec> activeStore,Set<SPhraseSpec> passiveStore,Set<Set<SPhraseSpec>> unionStore) {
+            Set<SPhraseSpec> activeStore,Set<SPhraseSpec> passiveStore,Set<Set<Set<SPhraseSpec>>> unionStore) {
         
         Set<SPhraseSpec> sentencesLeft = new HashSet<SPhraseSpec>();
-        Set<Set<SPhraseSpec>> unionsLeft = new HashSet<Set<SPhraseSpec>>();
+        Set<Set<Set<SPhraseSpec>>> unionsLeft = new HashSet<Set<Set<SPhraseSpec>>>();
         
         for (SPhraseSpec sentence : sentences) {
                 if (sentence.getSubject().getFeatureAsString("head").contains("?"+var)) {
@@ -544,19 +553,21 @@ public class Postprocessor {
                 }
                 else sentencesLeft.add(sentence);
         }
-        for (Set<SPhraseSpec> union : unions) {
+        for (Set<Set<SPhraseSpec>> union : unions) {
             boolean takeit = false;
-            for (SPhraseSpec sentence : union) {
-                takeit = false;
-                if (sentence.getSubject().getFeatureAsString("head").contains("?"+var)) takeit = true;
-                else if (sentence.getObject().getFeatureAsString("head").contains("?"+var)) {
-                    if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")) {
-                        NLGElement obj = sentence.getObject();
-                        sentence.setObject(sentence.getSubject());
-                        sentence.setSubject(obj);
-                    } 
-                    else sentence.setFeature(Feature.PASSIVE,true);
-                    takeit = true;
+            for (Set<SPhraseSpec> un : union) {
+                for (SPhraseSpec sentence : un) {
+                    takeit = false;
+                    if (sentence.getSubject().getFeatureAsString("head").contains("?"+var)) takeit = true;
+                    else if (sentence.getObject().getFeatureAsString("head").contains("?"+var)) {
+                        if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")) {
+                            NLGElement obj = sentence.getObject();
+                            sentence.setObject(sentence.getSubject());
+                            sentence.setSubject(obj);
+                        } 
+                        else sentence.setFeature(Feature.PASSIVE,true);
+                        takeit = true;
+                    }
                 }
             }
             if (takeit) unionStore.add(union);
@@ -1072,14 +1083,18 @@ public class Postprocessor {
         for (SPhraseSpec s : optionalsentences) {
             if (realiser.realiseSentence(s).contains("?"+var)) n++;
         }
-        for (Set<SPhraseSpec> union : unions) {
-            for (SPhraseSpec s : union) {
-                if (realiser.realiseSentence(s).contains("?"+var)) n++;
+        for (Set<Set<SPhraseSpec>> union : unions) {
+            for (Set<SPhraseSpec> un : union) {
+                for (SPhraseSpec s : un) {
+                    if (realiser.realiseSentence(s).contains("?"+var)) n++;
+                }
             }
         }
-        for (Set<SPhraseSpec> union : optionalunions) {
-            for (SPhraseSpec s : union) {
-                if (realiser.realiseSentence(s).contains("?"+var)) n++;
+        for (Set<Set<SPhraseSpec>> union : optionalunions) {
+            for (Set<SPhraseSpec> un : union) {
+                for (SPhraseSpec s : un) {
+                    if (realiser.realiseSentence(s).contains("?"+var)) n++;
+                }
             }
         }
         for (NLGElement f : filter) {
@@ -1100,7 +1115,7 @@ public class Postprocessor {
         int beatme = 0;
         int beatmyfilter = 0;
         for (String s : vars) {
-            if (numberOfOccurrences(s) > beatme 
+            if (numberOfOccurrences(s) >= beatme 
             || (numberOfOccurrences(s) == beatme && numberOfOccurrencesInFilter(s) < beatmyfilter)) {
                 out = s;
                 beatme = numberOfOccurrences(s);
@@ -1143,11 +1158,13 @@ public class Postprocessor {
                 }
             }
             if (!found) {
-                for (Set<SPhraseSpec> union : unions) {
-                    for (SPhraseSpec s : union) {
-                        if (realiser.realiseSentence(s).contains(var)) {
-                            varLeft.add(var);
-                            break;
+                for (Set<Set<SPhraseSpec>> union : unions) {
+                    for (Set<SPhraseSpec> un : union) {
+                        for (SPhraseSpec s : un) {
+                            if (realiser.realiseSentence(s).contains(var)) {
+                                varLeft.add(var);
+                                break;
+                            }
                         }
                     }
                 }
@@ -1206,10 +1223,13 @@ public class Postprocessor {
             System.out.println(" -- " + realiser.realiseSentence(s));
         }
         System.out.println("Unions: ");
-        for (Set<SPhraseSpec> union : unions) {
-            System.out.print(" -- ");
-            for (SPhraseSpec s : union) {
-                System.out.print(realiser.realiseSentence(s) + "\n    ");
+        for (Set<Set<SPhraseSpec>> union : unions) {
+            System.out.print(" ---- ");
+            for (Set<SPhraseSpec> un : union) {
+                System.out.print("   -- ");
+                for (SPhraseSpec s : un) {
+                    System.out.print(realiser.realiseSentence(s) + "\n    ");
+                }
             }
             System.out.print("\n");
         }
@@ -1218,10 +1238,13 @@ public class Postprocessor {
             System.out.println(" -- " + realiser.realiseSentence(s));
         }
         System.out.println("Optional unions: ");
-        for (Set<SPhraseSpec> union : optionalunions) {
-            System.out.print(" -- ");
-            for (SPhraseSpec s : union) {
-                System.out.print(realiser.realiseSentence(s) + "\n    ");
+        for (Set<Set<SPhraseSpec>> union : optionalunions) {
+            System.out.print(" ---- ");
+            for (Set<SPhraseSpec> un : union) {
+                System.out.print("   -- ");
+                for (SPhraseSpec s : un) {
+                    System.out.print(realiser.realiseSentence(s) + "\n    ");
+                }
             }
         }
         System.out.println("Filters: ");

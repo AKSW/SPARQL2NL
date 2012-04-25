@@ -76,8 +76,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     public static final String UNKNOWN = "valueOrEntity";
     public boolean VERBOSE = true;
     public boolean POSTPROCESSING;
-    public boolean SWITCH;
-    public boolean UNIONSWITCH;
+    private boolean SWITCH;
+    private boolean UNIONSWITCH;
+    private Set<Set<SPhraseSpec>> UNION;
     private NLGElement select;
     
     private boolean useBOA = false;
@@ -584,12 +585,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         }
         if (triples.size() == 1) {
             SPhraseSpec p = getNLForTriple(triples.get(0));
-            if (conjunction.equals("or")) {
+            if (UNIONSWITCH) {
                 Set<SPhraseSpec> union = new HashSet<SPhraseSpec>();
                 union.add(p);
-                if (SWITCH) post.optionalunions.add(union);
-                else  post.unions.add(union);
-            } else { // if (!UNIONSWITCH) {
+                UNION.add(union);
+            } else {
                 if (SWITCH) addTo(post.optionalsentences,p);
                 else addTo(post.sentences,p);
             }
@@ -600,17 +600,14 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             SPhraseSpec p;
             for (int i = 0; i < triples.size(); i++) {
                 p = getNLForTriple(triples.get(i));
-                if (conjunction.equals("or")) {
-                    union.add(p);
-                } else { // } else if (!UNIONSWITCH) {
+                if (UNIONSWITCH) union.add(p);
+                else {
                     if (SWITCH) addTo(post.optionalsentences,p);
                     else addTo(post.sentences,p);
                 }
             }
-            if (conjunction.equals("or")) {
-                if (SWITCH) post.optionalunions.add(union);
-                else post.unions.add(union);
-            }
+            if (UNIONSWITCH) UNION.add(union);
+
             // do simplenlg
             CoordinatedPhraseElement cpe;
             Triple t0 = triples.get(0);
@@ -629,7 +626,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             ElementPathBlock epb = (ElementPathBlock) e;
             List<Triple> triples = new ArrayList<Triple>();
 
-            //get all triples. We assume that the depth of union is always 1
+            // get all triples
             for (TriplePath tp : epb.getPattern().getList()) {
                 Triple t = tp.asTriple();
                 triples.add(t);
@@ -641,25 +638,15 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             //cast to union
             ElementUnion union = (ElementUnion) e;
 
-            UNIONSWITCH = true; // for POSTPROCESSOR
-            List<Triple> triples = new ArrayList<Triple>(); // for POSTPROCESSOR
+            // for POSTPROCESSOR
+            UNIONSWITCH = true; 
+            UNION = new HashSet<Set<SPhraseSpec>>();
 
-            //get all triples. We assume that the depth of union is always 1
+            // get all triples
             List<NLGElement> list = new ArrayList<NLGElement>();
             for (Element atom : union.getElements()) {
                 list.add(getNLFromSingleClause(atom)); 
-
-                // for POSTPROCESSOR
-                ElementPathBlock epb = ((ElementPathBlock) (((ElementGroup) atom).getElements().get(0)));
-                if (!epb.isEmpty()) {
-                    Triple t = epb.getPattern().get(0).asTriple();
-                    triples.add(t);
-                }
-                //
-            
             }
-            
-            getNLForTripleList(triples, "or"); // for POSTPROCESSOR
             
             //should not happen
             if(list.size()==0) return null;
@@ -671,7 +658,19 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     cpe.addComplement(list.get(i));
                 cpe.setConjunction("or");
             }
+            
+            // for POSTPROCESSOR
+            Set<Set<SPhraseSpec>> UNIONclone = new HashSet<Set<SPhraseSpec>>();
+            for (Set<SPhraseSpec> UN : UNION) {
+                Set<SPhraseSpec> UNclone = new HashSet<SPhraseSpec>();
+                UNclone.addAll(UN);
+                UNIONclone.add(UN);
+            }
+            if (SWITCH) post.optionalunions.add(UNIONclone);
+            else post.unions.add(UNIONclone);
             UNIONSWITCH = false;
+            UNION = new HashSet<Set<SPhraseSpec>>();
+            
             return cpe;
             //return getNLForTripleList(triples, "or");
         } // if it's a filter
