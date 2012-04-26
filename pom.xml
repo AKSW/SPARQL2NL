@@ -108,6 +108,11 @@
 		    <artifactId>solr-solrj</artifactId>
 		    <version>3.5.0</version>
 		</dependency>
+        <dependency>
+        	<groupId>jgrapht</groupId>
+        	<artifactId>jgrapht</artifactId>
+        	<version>0.8.3</version>
+        </dependency>
 	</dependencies>
 	<build>
 		<plugins>
