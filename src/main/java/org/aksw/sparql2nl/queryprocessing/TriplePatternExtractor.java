@@ -12,6 +12,7 @@ import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.sparql.core.TriplePath;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.syntax.Element;
+import com.hp.hpl.jena.sparql.syntax.ElementFilter;
 import com.hp.hpl.jena.sparql.syntax.ElementGroup;
 import com.hp.hpl.jena.sparql.syntax.ElementOptional;
 import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
@@ -27,6 +28,10 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	private Set<Triple> candidates;
 	
 	private boolean inOptionalClause = false;
+	
+	private int unionCount = 0;
+	private int optionalCount = 0;
+	private int filterCount = 0;
 	
 	public Set<Triple> extractTriplePattern(Query query){
 		return extractTriplePattern(query, false);
@@ -82,6 +87,7 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 
 	@Override
 	public void visit(ElementOptional el) {
+		optionalCount++;
 		inOptionalClause = true;
 		el.getOptionalElement().visit(this);
 		inOptionalClause = false;
@@ -113,9 +119,27 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 
 	@Override
 	public void visit(ElementUnion el) {
+		unionCount++;
 		for (Iterator<Element> iterator = el.getElements().iterator(); iterator.hasNext();) {
 			Element e = iterator.next();
 			e.visit(this);
 		}
+	}
+	
+	@Override
+	public void visit(ElementFilter el) {
+		filterCount++;
+	}
+
+	public int getUnionCount() {
+		return unionCount;
+	}
+
+	public int getOptionalCount() {
+		return optionalCount;
+	}
+
+	public int getFilterCount() {
+		return filterCount;
 	}
 }
