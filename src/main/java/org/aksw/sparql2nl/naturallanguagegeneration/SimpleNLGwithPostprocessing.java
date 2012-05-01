@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.aksw.sparql2nl.naturallanguagegeneration.PropertyProcessor.Type;
 import org.aksw.sparql2nl.nlp.relation.BoaPatternSelector;
 import org.aksw.sparql2nl.nlp.stemming.PlingStemmer;
 import org.aksw.sparql2nl.queryprocessing.GenericType;
@@ -28,13 +29,10 @@ import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
-import simplenlg.morphology.english.MorphologyProcessor;
-import simplenlg.morphology.english.MorphologyRules;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
-import com.drew.metadata.exif.DataFormat;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
@@ -84,6 +82,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     private boolean useBOA = false;
     private SparqlEndpoint endpoint;
     
+    private PropertyProcessor pp;
+    
 
     public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint) {
         this.endpoint = endpoint;
@@ -96,6 +96,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
         uriConverter = new URIConverter(endpoint);
         expressionConverter = new FilterExpressionConverter(uriConverter);
+        
+        pp = new PropertyProcessor("resources/wordnet/dict");
 
     }
     
@@ -707,124 +709,119 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         return null;
     }
 
-    public SPhraseSpec getNLForTriple2(Triple t) {
-        SPhraseSpec p = nlgFactory.createClause();
-        //process subject
-        if (t.getSubject().isVariable()) {
-            p.setSubject(t.getSubject().toString());
-        } else {
-            p.setSubject(getNPPhrase(t.getSubject().toString(), false));
-        }
-
-        //process predicate
-        if (t.getPredicate().isVariable()) {
-            p.setVerb("be related via " + t.getPredicate().toString() + " to");
-        } else {
-            p.setVerb(getVerbFrom(t.getPredicate()));
-        }
-
-        //process object
-        if (t.getObject().isVariable()) {
-            p.setObject(t.getObject().toString());
-        } else if (t.getObject().isLiteral()) {
-            p.setObject(t.getObject().getLiteralLexicalForm());
-        } else {
-            p.setObject(getNPPhrase(t.getObject().toString(), false));
-        }
-
-        p.setFeature(Feature.TENSE, Tense.PRESENT);
-
-        return p;
-    }
 
     public SPhraseSpec getNLForTriple(Triple t) {
         SPhraseSpec p = nlgFactory.createClause();
-        //process predicate then return subject is related to
+        //process predicate
+        //start with variables
         if (t.getPredicate().isVariable()) {
+            //if subject is variable then use variable label, else generate textual representation
             if (t.getSubject().isVariable()) {
                 p.setSubject(t.getSubject().toString());
             } else {
                 p.setSubject(getNPPhrase(t.getSubject().toString(), false));
             }
+
+            // predicate is variable, thus simply use variable label
             p.setVerb("be related via " + t.getPredicate().toString() + " to");
             if (t.getObject().isVariable()) {
                 p.setObject(t.getObject().toString());
-            } else if(t.getObject().isLiteral()){//TODO implement LiteralConverter
-            	if(t.getObject().getLiteralDatatype() != null && (t.getObject().getLiteralDatatype().equals(XSDDatatype.XSDdate) || t.getObject().getLiteralDatatype().equals(XSDDatatype.XSDdateTime))){
-            		try {
-						SimpleDateFormat simpleDateFormat = new SimpleDateFormat("YYYY-MM-DD");
-						Date date = simpleDateFormat.parse(t.getObject().getLiteralLexicalForm());
-						DateFormat format = DateFormat.getDateInstance(DateFormat.LONG);
-						String newDate = format.format(date);
-						p.setObject(newDate);
-					} catch (ParseException e) {
-						e.printStackTrace();
-						p.setObject(t.getObject().getLiteralLexicalForm());
-					}
-            	} else {
-            		p.setObject(t.getObject().getLiteralLexicalForm());
-            	}
-            } else {
+            } //process literal objects
+            else if (t.getObject().isLiteral()) {//TODO implement LiteralConverter
+                //System.out.println(t.getObject().getLiteralDatatype());
+                if (t.getObject().getLiteralDatatype() != null && (t.getObject().getLiteralDatatype().equals(XSDDatatype.XSDdate) || t.getObject().getLiteralDatatype().equals(XSDDatatype.XSDdateTime))) {
+                    try {
+                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("YYYY-MM-DD");
+                        Date date = simpleDateFormat.parse(t.getObject().getLiteralLexicalForm());
+                        DateFormat format = DateFormat.getDateInstance(DateFormat.LONG);
+                        String newDate = format.format(date);
+                        p.setObject(newDate);
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                        p.setObject(t.getObject().getLiteralLexicalForm());
+                    }
+                } else {
+                    p.setObject(t.getObject().getLiteralLexicalForm());
+                }
+            } // if object is not literal, then get string representation
+            else {
                 p.setObject(getNPPhrase(t.getObject().toString(), false));
             }
-        } else {
+        } //more interesting case. Predicate is not a variable
+        //then check for noun and verb. If the predicate is a noun or a verb, then
+        //use possessive or verbal form, else simply get the boa pattern
+        else {
+            String predicateAsString = uriConverter.convert(t.getPredicate().toString());
+
+            //convert camelcase to single words
+            String regex = "([a-z])([A-Z])";
+            String replacement = "$1 $2";
+            predicateAsString = predicateAsString.replaceAll(regex, replacement).toLowerCase();
+            if(predicateAsString.contains("(")) predicateAsString = predicateAsString.substring(0, predicateAsString.indexOf("("));
+            //System.out.println(predicateAsString);
+            Type type = pp.getType(predicateAsString);
+
+            // first get the string representation for the subject
             NLGElement subj;
             if (t.getSubject().isVariable()) {
                 subj = nlgFactory.createWord(t.getSubject().toString(), LexicalCategory.NOUN);
             } else {
                 subj = nlgFactory.createWord(uriConverter.convert(t.getSubject().toString()), LexicalCategory.NOUN);
             }
-            //        subj.setFeature(Feature.POSSESSIVE, true);
-            //        PhraseElement np = nlgFactory.createNounPhrase(subj, getEnglishLabel(t.getPredicate().toString()));
-            String realisedsubj = realiser.realise(subj).getRealisation();
-            String predicateLabel = uriConverter.convert(t.getPredicate().getURI());
-            
-            if (!useBOA || t.getPredicate().matches(RDFS.label.asNode()) || new WordTypeDetector().isNoun(predicateLabel)) {
-            	if (realisedsubj.endsWith("s")) {
+
+            //then process the object
+            Object object;
+            if (t.getObject().isVariable()) {
+                object = t.getObject().toString();
+            } else if (t.getObject().isLiteral()) {
+                object = t.getObject().getLiteralLexicalForm();
+            } else {
+                object = getNPPhrase(t.getObject().toString(), false);
+            }
+
+            // now if the predicate is a noun
+            if (type == Type.NOUN) {
+                String realisedsubj = realiser.realise(subj).getRealisation();
+                if (realisedsubj.endsWith("s")) {
                     realisedsubj += "\' ";
                 } else {
                     realisedsubj += "\'s ";
                 }
-            	String predicateLowerCase = "";
-            	for (String w : predicateLabel.split("(?<!(^|[A-Z]))(?=[A-Z])|(?<!^)(?=[A-Z][a-z])")) {
-                    predicateLowerCase += w.toLowerCase() + " ";
+                p.setSubject(realisedsubj + PlingStemmer.stem(predicateAsString));
+                p.setVerb("be");
+                p.setObject(object);
+            } // if the predicate is a verb
+            else if (type == Type.VERB) {
+                p.setSubject(subj);
+                p.setVerb(pp.getInfinitiveForm(predicateAsString));
+                p.setObject(object);
+            } //in other cases, use the BOA pattern
+            else {
+
+                List<org.aksw.sparql2nl.nlp.relation.Pattern> l = BoaPatternSelector.getNaturalLanguageRepresentation(t.getPredicate().toString(), 1);
+                if (l.size() > 0) {
+                    String boaPattern = l.get(0).naturalLanguageRepresentation;
+                    //range before domain
+                    if (boaPattern.startsWith("?R?")) {
+                        p.setSubject(subj);
+                        p.setObject(object);
+                    } else {
+                        p.setObject(subj);
+                        p.setSubject(object);
+                    }
+                    p.setVerb(BoaPatternSelector.getNaturalLanguageRepresentation(t.getPredicate().toString(), 1).get(0).naturalLanguageRepresentationWithoutVariables);
+                } //last resort, i.e., no boa pattern found
+                else {
+                    p.setSubject(subj);
+                    p.setVerb("be related via \"" + predicateAsString + "\" to");
+                    p.setObject(object);
                 }
-            	predicateLowerCase.trim();
-            	p.setSubject(realisedsubj + predicateLowerCase);
-            	p.setVerb("be");
-            } else {
-				System.out.println(t.getPredicate().getURI());
-				List<org.aksw.sparql2nl.nlp.relation.Pattern> patterns = BoaPatternSelector.getNaturalLanguageRepresentation(t.getPredicate().getURI(), 1);
-				p.setSubject(realisedsubj);
-		                p.setVerb(normalizeVerb(patterns.get(0).naturalLanguageRepresentationWithoutVariables));
-            }
-            
-            
-            if (t.getObject().isVariable()) {
-                p.setObject(t.getObject().toString());
-            } else if (t.getObject().isLiteral()) {
-            	if(t.getObject().getLiteralDatatype() != null && (t.getObject().getLiteralDatatype().equals(XSDDatatype.XSDdate) || t.getObject().getLiteralDatatype().equals(XSDDatatype.XSDdateTime))){
-            		try {
-						SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-						Date date = simpleDateFormat.parse(t.getObject().getLiteralLexicalForm());
-						DateFormat format = DateFormat.getDateInstance(DateFormat.LONG);
-						String newDate = format.format(date);
-						p.setObject(newDate);
-					} catch (ParseException e) {
-						e.printStackTrace();
-						p.setObject(t.getObject().getLiteralLexicalForm());
-					}
-            	} else {
-            		p.setObject(t.getObject().getLiteralLexicalForm());
-            	}
-            } else {
-                p.setObject(getNPPhrase(t.getObject().toString(), false));
             }
         }
         p.setFeature(Feature.TENSE, Tense.PRESENT);
 
         return p;
-    }
+    } 
     
     private String normalizeVerb(String verb){
     	if(verb.startsWith("to ")){
