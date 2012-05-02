@@ -392,21 +392,35 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 long offset = query.getOffset();
                 limitOffset.setSubject("The query");
                 limitOffset.setVerb("return");
-                limitOffset.setObject("results between number " + limit + " and " + (offset + limit));
+                if(limit == 1){
+                	String ending;
+                	switch ((int)offset+1){
+                		case 1: ending = "st"; break;
+                		case 2: ending = "nd"; break;
+                		case 3: ending = "rd"; break;
+                		default: ending = "th"; 
+                	}
+                	limitOffset.setObject("the " + (limit + offset) + ending + " result");
+                	
+                } else {
+                	limitOffset.setObject("results between number " + (offset+1) + " and " + (offset + limit));
+                }
+                	
+                
             } else {
                 limitOffset.setSubject("The query");
                 limitOffset.setVerb("return");
                 if (limit > 1) {
                     if (query.hasOrderBy()) {
-                        limitOffset.setObject("only the first " + limit + " results");
+                        limitOffset.setObject("the first " + limit + " results");
                     } else {
-                        limitOffset.setObject("only " + limit + " results");
+                        limitOffset.setObject( limit + " results");
                     }
                 } else {
                     if (query.hasOrderBy()) {
-                        limitOffset.setObject("only the first result");
+                        limitOffset.setObject("the first result");
                     } else {
-                        limitOffset.setObject("only one result");
+                        limitOffset.setObject("one result");
                     }
                 }
             }
@@ -760,7 +774,12 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             predicateAsString = predicateAsString.replaceAll(regex, replacement).toLowerCase();
             if(predicateAsString.contains("(")) predicateAsString = predicateAsString.substring(0, predicateAsString.indexOf("("));
             //System.out.println(predicateAsString);
-            Type type = pp.getType(predicateAsString);
+            Type type;
+            if(t.getPredicate().matches(RDFS.label.asNode())){
+            	type = Type.NOUN;
+            } else {
+            	type = pp.getType(predicateAsString);
+            }
 
             // first get the string representation for the subject
             NLGElement subj;
