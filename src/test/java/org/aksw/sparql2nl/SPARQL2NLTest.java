@@ -217,12 +217,18 @@ public class SPARQL2NLTest {
                 + "ASK WHERE { ?uri rdf:type dbo:VideoGame . ?uri rdfs:label 'Battle Chess'@en . }";
         String query18 = "PREFIX dbo: <http://dbpedia.org/ontology/> PREFIX res: <http://dbpedia.org/resource/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>"
                 + "ASK WHERE { res:Barack_Obama dbo:spouse ?spouse . ?spouse rdfs:label ?name . FILTER(regex(?name,'Michelle'))}";
-        String query19 = "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX  res:  <http://dbpedia.org/resource/> PREFIX  dbo:  <http://dbpedia.org/ontology/> PREFIX  dbp:  <http://dbpedia.org/property/> PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
-                + "SELECT DISTINCT  ?uri ?string WHERE { ?uri rdf:type dbo:SoccerClub ."
-                + " { ?uri dbo:ground res:Spain } UNION { ?uri dbp:ground ?ground . FILTER regex(?ground, \"Spain\") }}";
+        String query19 = "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX  yago: <http://dbpedia.org/class/yago/> PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
+                + "SELECT DISTINCT  ?uri ?string WHERE { ?uri rdf:type yago:RussianCosmonauts . "
+                + "?uri rdf:type yago:FemaleAstronauts . "
+                + "OPTIONAL { ?uri rdfs:label ?string . FILTER ( lang(?string) = \"en\" ) } }";
+        String query20 = "PREFIX  res:  <http://dbpedia.org/resource/> PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dbo:  <http://dbpedia.org/ontology/> PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
+                + "SELECT DISTINCT  ?uri ?string WHERE { "
+                + "{ ?uri rdf:type dbo:City } UNION { ?uri rdf:type dbo:Town }"
+                + "?uri dbo:country res:Germany . ?uri dbo:populationTotal ?population . FILTER ( ?population > 250000 )"
+                + "OPTIONAL { ?uri rdfs:label ?string . FILTER ( lang(?string) = \"en\" ) } }";
         
 //        String[] queries = {query,query2,query2b,query2c,query3,query3b,query4,query5,query6,query7,query8,query9,query10,query11,query14};
-      String[] queries = {query19};
+      String[] queries = {query19,query20};
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             Lexicon lexicon = Lexicon.getDefaultLexicon();

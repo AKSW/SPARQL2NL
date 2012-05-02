@@ -582,9 +582,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     }
 
     public NLGElement getNLForTripleList(List<Triple> triples, String conjunction) {
-        if (triples.isEmpty()) {
-            return null;
-        }
+        
+        if (triples.isEmpty()) return null;
+        
         if (triples.size() == 1) {
             SPhraseSpec p = getNLForTriple(triples.get(0));
             if (UNIONSWITCH) {
@@ -635,7 +635,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             }
             return getNLForTripleList(triples, "and");
         } // if clause is union clause then we generate or statements
-        else if (e instanceof ElementUnion) {
+        else if (e instanceof ElementUnion) {                 
             CoordinatedPhraseElement cpe;
             //cast to union
             ElementUnion union = (ElementUnion) e;
@@ -650,17 +650,6 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 list.add(getNLFromSingleClause(atom)); 
             }
             
-            //should not happen
-            if(list.size()==0) return null;
-            if(list.size()==1) return list.get(0);
-            else
-            {
-                cpe = nlgFactory.createCoordinatedPhrase(list.get(0), list.get(1));
-                for(int i=2; i<list.size(); i++)
-                    cpe.addComplement(list.get(i));
-                cpe.setConjunction("or");
-            }
-            
             // for POSTPROCESSOR
             Set<Set<SPhraseSpec>> UNIONclone = new HashSet<Set<SPhraseSpec>>();
             for (Set<SPhraseSpec> UN : UNION) {
@@ -670,8 +659,20 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             }
             if (SWITCH) post.optionalunions.add(UNIONclone);
             else post.unions.add(UNIONclone);
+                        
             UNIONSWITCH = false;
             UNION = new HashSet<Set<SPhraseSpec>>();
+            
+            //should not happen
+            if(list.size()==0) return null; 
+            if(list.size()==1) return list.get(0);
+            else
+            {
+                cpe = nlgFactory.createCoordinatedPhrase(list.get(0), list.get(1));
+                for(int i=2; i<list.size(); i++)
+                    cpe.addComplement(list.get(i));
+                cpe.setConjunction("or");
+            }
             
             return cpe;
             //return getNLForTripleList(triples, "or");
