@@ -44,7 +44,7 @@ public class Evaluation {
 	
 //	private static final String QUERIES_FILE = "resources/queries.txt";
 //	private static final String QUERIES_FILE = "resources/GoodQALD.xml";
-	private static final String QUERIES_FILE = "resources/qald2-dbpedia-train.xml";
+	private static final String QUERIES_FILE = "resources/qald2-dbpedia-test.xml";
 //	private static final String QUERIES_FILE = "resources/qald2-musicbrainz-train.xml";
 //	private static final String QUERIES_FILE = "resources/qald2-dbpedia-test.xml";
 	private static final int NR_OF_REPRESENTATIONS = 10;
@@ -372,7 +372,7 @@ public class Evaluation {
 	 */
 	public static void main(String[] args) throws Exception{
 		SparqlEndpoint endpoint = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
-		endpoint = SparqlEndpoint.getEndpointDBpedia();
+//		endpoint = SparqlEndpoint.getEndpointDBpedia();
 //		new Evaluation().run_simple(endpoint);
 		new Evaluation().run_smooth(endpoint);
 	}

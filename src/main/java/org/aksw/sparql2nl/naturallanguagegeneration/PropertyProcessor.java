@@ -9,6 +9,8 @@ import edu.smu.tspell.wordnet.SynsetType;
 import edu.smu.tspell.wordnet.WordNetDatabase;
 import java.util.ArrayList;
 
+import com.hp.hpl.jena.vocabulary.RDFS;
+
 /**
  *
  * @author ngonga
@@ -30,6 +32,9 @@ public class PropertyProcessor {
     }
 
     public Type getType(String property) {
+    	if(property.equals(RDFS.label.getURI())){
+    		return Type.NOUN;
+    	}
         property = property.trim();
         //length is > 1
         //
