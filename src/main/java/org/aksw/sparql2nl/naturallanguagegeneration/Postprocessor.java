@@ -220,18 +220,18 @@ public class Postprocessor {
     private NLGElement verbalise(Set<SPhraseSpec> activeStore,Set<SPhraseSpec> passiveStore,Set<Set<Set<SPhraseSpec>>> unionStore) {
 
         // verbalise sentences 
-        Set<SPhraseSpec> sentences = new HashSet<SPhraseSpec>();
-        for (SPhraseSpec s : activeStore) sentences.add(s);
-        for (SPhraseSpec s : passiveStore) sentences.add(s);
-        currentlystored.addAll(sentences);
+        Set<SPhraseSpec> sents = new HashSet<SPhraseSpec>();
+        for (SPhraseSpec s : activeStore) sents.add(s);
+        for (SPhraseSpec s : passiveStore) sents.add(s);
+        currentlystored.addAll(sents);
         for (Set<Set<SPhraseSpec>> un : unionStore) {
             for (Set<SPhraseSpec> u : un) currentlystored.addAll(u);
         }
         
         CoordinatedPhraseElement coord = nlg.createCoordinatedPhrase();
         coord.setConjunction("and");
-        Set<SPhraseSpec> fusedsentences = fuseSubjects(fuseObjects(sentences,"and"),"and");
-        for (SPhraseSpec s : fusedsentences) {
+        Set<SPhraseSpec> fusedsents = fuseSubjects(fuseObjects(sents,"and"),"and");
+        for (SPhraseSpec s : fusedsents) {
             addFilterInformation(s);
             coord.addCoordinate(s);
         }
@@ -916,6 +916,15 @@ public class Postprocessor {
                         }
                         else restrealization += " and "+m.group(16);
                     }    
+                    else if (!restrealization.isEmpty()) { // conjunction before label info will miss an 'and', unless we add it again
+                        String[] restrelparts = restrealization.split(", ");
+                        restrealization = "";
+                        for (int i = 0; i < restrelparts.length; i++) {
+                            restrealization += restrelparts[i];
+                            if (i == restrelparts.length-2) restrealization += " and ";
+                            else if (i < restrelparts.length-2) restrealization += ", ";
+                        }
+                    }
                     if (!restrealization.isEmpty()) rest = nlg.createNLGElement(restrealization);
                     removeFromSelects(m.group(15));
                     for (NPPhraseSpec sel : selects) {
