@@ -101,6 +101,22 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
     }
     
+    public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint, String wordnetDir) {
+        this.endpoint = endpoint;
+
+        lexicon = Lexicon.getDefaultLexicon();
+        nlgFactory = new NLGFactory(lexicon);
+        realiser = new Realiser(lexicon);
+
+        post = new Postprocessor();
+
+        uriConverter = new URIConverter(endpoint);
+        expressionConverter = new FilterExpressionConverter(uriConverter);
+        
+        pp = new PropertyProcessor(wordnetDir);
+
+    }
+    
     public void setUseBOA(boolean useBOA) {
 		this.useBOA = useBOA;
 	}

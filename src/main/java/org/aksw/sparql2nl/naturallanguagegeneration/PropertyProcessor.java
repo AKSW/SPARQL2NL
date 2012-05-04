@@ -18,12 +18,14 @@ import com.hp.hpl.jena.vocabulary.RDFS;
 public class PropertyProcessor {
 
     public double THRESHOLD = 1.0;
-    private Preposition preposition = new Preposition("resources/preposition_list.txt");
+    private Preposition preposition;
     WordNetDatabase database;
 
     public PropertyProcessor(String dictionary) {
         System.setProperty("wordnet.database.dir", dictionary);
         database = WordNetDatabase.getFileInstance();
+        preposition = new Preposition(this.getClass().getClassLoader().getResourceAsStream("preposition_list.txt"));
+        
     }
 
     public enum Type {
