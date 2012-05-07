@@ -18,8 +18,86 @@ import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 
+/**
+ * 
+ * Collects statistics about SPARQL queries (number of patterns, ...).
+ * 
+ * @author Jens Lehmann
+ *
+ */
 public class QueryStats {
 
+	private String queryString;
+	Set<Triple> triples;
+	DirectedGraph<Node, DefaultEdge> g;
+	TriplePatternExtractor tpe;
+	FloydWarshallShortestPaths<Node, DefaultEdge> f;
+	
+	public QueryStats(String queryString) {
+		this.queryString = queryString;
+		Query query = QueryFactory.create(queryString);
+		this.tpe = new TriplePatternExtractor();
+		this.triples = tpe.extractTriplePattern(query);
+		
+		// create JGraphT representation (unlabeled because it is simpler - if
+		// we need edge lables,
+		// https://github.com/jgrapht/jgrapht/wiki/LabeledEdges shows how to do
+		// it)
+		this.g = new DefaultDirectedGraph<Node, DefaultEdge>(
+				DefaultEdge.class);
+		for (Triple triple : triples) {
+			g.addVertex(triple.getSubject());
+			g.addVertex(triple.getObject());
+			g.addEdge(triple.getSubject(), triple.getObject());
+		}
+		
+		this.f = new FloydWarshallShortestPaths<Node, DefaultEdge>(g);		
+	}
+	
+	public String getQueryString() {
+		return queryString;
+	}
+
+	public Set<Triple> getTriples() {
+		return triples;
+	}
+	
+	public int getNrOfTriples() {
+		return triples.size();
+	}
+
+	public double getDiameter() {
+		double d = f.getDiameter();
+		// workaround for https://github.com/jgrapht/jgrapht/issues/5#issuecomment-5408396
+		return d==0 ? 1 : d;
+	}
+	
+	public int getShortestPathsCount() {
+		return f.getShortestPathsCount();
+	}	
+	
+	public int getUnionCount() {
+		return tpe.getUnionCount();
+	}
+
+	public int getOptionalCount() {
+		return tpe.getOptionalCount();
+	}
+
+	public int getFilterCount() {
+		return tpe.getFilterCount();
+	}
+
+	public int getNrOfVertices() {
+		return g.edgeSet().size();
+	}
+	
+	public double getDegree() {
+		// indegree = outdegree = edges / vertices
+		return g.edgeSet().size()
+		/ (double) g.vertexSet().size();
+	}
+	
 	/**
 	 * @param args
 	 * @throws SAXException 
@@ -44,54 +122,36 @@ public class QueryStats {
 				+ "?artist foaf:name 'Liz Story'. ?artisttype rdf:subClassOf ?super . ?super rdf:type ?supsup ."
 				+ "?artist rdf:type ?artisttype ." + "}";
 
-		Query query = QueryFactory.create(queryString2);
-
+		Query query = QueryFactory.create(queryString);
 		System.out.println(query);
+		QueryStats qs = new QueryStats(queryString);
 
-		TriplePatternExtractor tpe = new TriplePatternExtractor();
-		Set<Triple> triples = tpe.extractTriplePattern(query);
-
-		System.out.println("number of triple patterns: " + triples.size());
+		System.out.println("number of triple patterns: " + qs.getNrOfTriples());
 		System.out.println("number of FILTER expressions: "
-				+ tpe.getFilterCount());
+				+ qs.getFilterCount());
 		System.out.println("number of UNION expressions: "
-				+ tpe.getUnionCount());
+				+ qs.getUnionCount());
 		System.out.println("number of OPTIONAL expressions: "
-				+ tpe.getOptionalCount());
+				+ qs.getOptionalCount());
 		System.out.println("sum of the number of the above expressions: "
-				+ (tpe.getFilterCount() + tpe.getUnionCount() + tpe
-						.getOptionalCount()));
-
-		// create JGraphT representation (unlabeled because it is simpler - if
-		// we need edge lables,
-		// https://github.com/jgrapht/jgrapht/wiki/LabeledEdges shows how to do
-		// it)
-		DirectedGraph<Node, DefaultEdge> g = new DefaultDirectedGraph<Node, DefaultEdge>(
-				DefaultEdge.class);
-		for (Triple triple : triples) {
-			g.addVertex(triple.getSubject());
-			g.addVertex(triple.getObject());
-			g.addEdge(triple.getSubject(), triple.getObject());
-		}
+				+ (qs.getFilterCount() + qs.getUnionCount() + qs.getOptionalCount()));
 
 		// System.out.println(g);
 
-		FloydWarshallShortestPaths<Node, DefaultEdge> f = new FloydWarshallShortestPaths<Node, DefaultEdge>(
-				g);
 		// TODO: results look strange
-		System.out.println("graph diameter: " + f.getDiameter());
+		System.out.println("graph diameter: " + qs.getDiameter());
 		System.out.println("number of shortest paths: "
-				+ f.getShortestPathsCount());
+				+ qs.getShortestPathsCount());
 
-		System.out.println("number of vertices: " + g.edgeSet().size());
+		System.out.println("number of vertices: " + qs.getNrOfVertices());
 
 		// TODO: in-/out-degree does not say much - maybe it would be more
 		// meaningful when not counting leafs
-		System.out.println("in/out-degree: " + g.edgeSet().size()
-				/ (double) g.vertexSet().size());
+		System.out.println("in/out-degree: " + qs.getDegree());
 
-		GraphMLExporter<Node,DefaultEdge> ge = new GraphMLExporter();
-		ge.export(new OutputStreamWriter(System.out), g);
+		
+//		GraphMLExporter<Node,DefaultEdge> ge = new GraphMLExporter();
+//		ge.export(new OutputStreamWriter(System.out), g);
 		
 		// bug report (diameter 0 instead of 1)
 		DirectedGraph<String, DefaultEdge> graph = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
@@ -105,5 +165,5 @@ public class QueryStats {
 //		System.out.println(fw.getDiameter());
 		
 	}
-
+	
 }
