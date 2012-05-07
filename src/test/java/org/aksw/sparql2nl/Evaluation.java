@@ -20,6 +20,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLG;
+import org.aksw.sparql2nl.queryprocessing.QueryPreprocessor;
 import org.aksw.sparql2nl.queryprocessing.Similarity.SimilarityMeasure;
 import org.aksw.sparql2nl.smooth_nlg.CardBox;
 import org.aksw.sparql2nl.smooth_nlg.NLConstructor;
@@ -347,6 +348,7 @@ public class Evaluation {
 	public void run_smooth(SparqlEndpoint endpoint) {
 		readSPARQLQueriesFromXML(new File(QUERIES_FILE));
 		SimpleNLGwithPostprocessing nlg = new SimpleNLGwithPostprocessing(endpoint);
+		QueryPreprocessor qPre = new QueryPreprocessor(endpoint);
 		for(Entry<Integer, String> entry : id2Query.entrySet()){
 			if (testme != -1 && entry.getKey() != testme) continue; 
 			String queryString = entry.getValue();
@@ -354,6 +356,8 @@ public class Evaluation {
 				continue;
 			}
 			Query query = QueryFactory.create(queryString, Syntax.syntaxARQ);
+			logger.info(query.toString());
+			query = qPre.replaceVariablesWithTypes(query);
 			logger.info("-------------------------------------------------");
 			logger.info("Query " + entry.getKey() + ":\n");
 			logger.info(query.toString());

@@ -65,8 +65,8 @@ public class TypeExtractor extends ElementVisitorBase {
 	}
 
        
-	public Map<String, Set<String>> extractTypes(Query query) {
-		this.query = query;
+	public Map<String, Set<String>> extractTypes(Query originalQuery) {
+		this.query = QueryFactory.create(originalQuery);
 		
 		var2TypesMap = new HashMap<String, Set<String>>();
 		var2Triples = new HashMap<Var, Set<Triple>>();

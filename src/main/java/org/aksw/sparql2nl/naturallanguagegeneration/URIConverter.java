@@ -20,6 +20,7 @@ import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
+import com.hp.hpl.jena.vocabulary.XSD;
 
 public class URIConverter {
 	
@@ -54,7 +55,7 @@ public class URIConverter {
                     label = soln.getLiteral("label").getLexicalForm();
                 }
             }
-            if(label == null){
+            if(label == null && !uri.startsWith(XSD.getURI())){
             	label = dereferenceURI(uri);
             }
             if(label == null){
