@@ -65,8 +65,8 @@ public class TypeExtractor extends ElementVisitorBase {
 	}
 
        
-	public Map<String, Set<String>> extractTypes(Query originalQuery) {
-		this.query = QueryFactory.create(originalQuery);
+	public Map<String, Set<String>> extractTypes(Query query) {
+		this.query = query;
 		
 		var2TypesMap = new HashMap<String, Set<String>>();
 		var2Triples = new HashMap<Var, Set<Triple>>();
@@ -185,8 +185,11 @@ public class TypeExtractor extends ElementVisitorBase {
 			e.visit(this);
 			if(e instanceof ElementUnion){
 				if(((ElementUnion) e).getElements().size() == 1){
-					bgp = (ElementPathBlock) ((ElementGroup)((ElementUnion) e).getElements().get(0)).getElements().get(0);
-					iterator.remove();
+					Element subElement = ((ElementGroup)((ElementUnion) e).getElements().get(0)).getElements().get(0);
+					if(subElement instanceof ElementPathBlock){
+						bgp = (ElementPathBlock)subElement;
+						iterator.remove();
+					}
 				}
 			} else if(e instanceof ElementPathBlock){
 				if(((ElementPathBlock) e).getPattern().getList().size() == 0){
@@ -226,11 +229,40 @@ public class TypeExtractor extends ElementVisitorBase {
 		for (Iterator<Element> iterator = el.getElements().iterator(); iterator.hasNext();) {
 			Element e = iterator.next();
 			e.visit(this);
-			if(((ElementGroup)e).getElements().isEmpty() || ((ElementPathBlock)((ElementGroup)e).getElements().get(0)).isEmpty()){
+//			if(e instanceof ElementUnion){
+//				if(((ElementUnion)e).getElements().isEmpty() || ((ElementPathBlock)((ElementUnion)e).getElements().get(0)).isEmpty()){
+//					iterator.remove();
+//				}
+//			} else if(e instanceof ElementOptional){
+//				ElementGroup eg = ((ElementGroup)((ElementOptional)e).getOptionalElement());
+//				if(eg.isEmpty() || ((ElementPathBlock)eg.getElements().get(0)).isEmpty()){
+//					iterator.remove();
+//				}
+//			} else {
+//				
+//			}
+			if(isEmptyElement(e) || isEmptyElement(((ElementGroup)e).getElements().get(0))){
 				iterator.remove();
 			}
-			
 		}
+	}
+	
+	private boolean isEmptyElement(Element e){
+		if(e instanceof ElementUnion){
+			if(((ElementUnion)e).getElements().isEmpty()){
+				return true;
+			}
+		} else if(e instanceof ElementOptional){
+			ElementGroup eg = ((ElementGroup)((ElementOptional)e).getOptionalElement());
+			if(eg.isEmpty()){
+				return true;
+			}
+		} else if(e instanceof ElementGroup){
+			return ((ElementGroup)e).isEmpty();
+		} else {
+			return ((ElementPathBlock)e).isEmpty();
+		}
+		return false;
 	}
 	
 	@Override

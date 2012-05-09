@@ -20,6 +20,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLG;
+import org.aksw.sparql2nl.queryprocessing.DisjunctiveNormalFormConverter;
 import org.aksw.sparql2nl.queryprocessing.QueryPreprocessor;
 import org.aksw.sparql2nl.queryprocessing.Similarity.SimilarityMeasure;
 import org.aksw.sparql2nl.smooth_nlg.CardBox;
@@ -50,7 +51,7 @@ public class Evaluation {
 //	private static final String QUERIES_FILE = "resources/qald2-dbpedia-test.xml";
 	private static final int NR_OF_REPRESENTATIONS = 10;
 	
-        private static int testme = -1;
+        private static int testme = 63;
 	
 	private SortedMap<Integer, String> id2Question = new TreeMap<Integer, String>();
 	private SortedMap<Integer, String> id2Query = new TreeMap<Integer, String>();
@@ -356,10 +357,12 @@ public class Evaluation {
 				continue;
 			}
 			Query query = QueryFactory.create(queryString, Syntax.syntaxARQ);
-			logger.info(query.toString());
-			query = qPre.replaceVariablesWithTypes(query);
 			logger.info("-------------------------------------------------");
 			logger.info("Query " + entry.getKey() + ":\n");
+			logger.info(query.toString());
+			logger.info("VARS REPLACED:");
+			query = qPre.replaceVariablesWithTypes(query);
+			query = new DisjunctiveNormalFormConverter().getDisjunctiveNormalForm(query);
 			logger.info(query.toString());
 			String nlr = null;
 			try {

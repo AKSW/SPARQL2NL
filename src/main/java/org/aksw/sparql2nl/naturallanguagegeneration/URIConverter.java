@@ -61,6 +61,17 @@ public class URIConverter {
             if(label == null){
             	label = sfp.getShortForm(IRI.create(uri));
             }
+            //if it is a number we attach "Number"
+            if(uri.equals(XSD.nonNegativeInteger.getURI()) || uri.equals(XSD.integer.getURI())
+            		|| uri.equals(XSD.negativeInteger.getURI()) || uri.equals(XSD.decimal.getURI())
+            		|| uri.equals(XSD.xdouble.getURI()) || uri.equals(XSD.xfloat.getURI())
+            		|| uri.equals(XSD.xint.getURI()) || uri.equals(XSD.xshort.getURI())
+            		|| uri.equals(XSD.xbyte.getURI()) || uri.equals(XSD.xlong.getURI())
+            		){
+            	label += "Value";
+            }
+            	
+            
             if(label == null){
             	label = uri;
             }

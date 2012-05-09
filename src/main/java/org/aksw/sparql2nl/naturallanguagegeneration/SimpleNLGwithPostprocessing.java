@@ -121,6 +121,19 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 		this.useBOA = useBOA;
 	}
 
+    public String realiseDocument(DocumentElement d) {
+        String output = "";
+        for (NLGElement s : d.getComponents()) {
+            String sentence = realiser.realiseSentence(s);
+            if (!sentence.endsWith(".")) {
+                sentence = sentence + ".";
+            }
+            output = output + " " + sentence;
+        }
+        output = output.substring(1);
+        return output;
+    }
+
     /**
      * Converts the representation of the query as Natural Language Element into
      * free text.
@@ -129,27 +142,30 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
      * @return Text representation
      */
     @Override
-    public String getNLR(Query query) {
+    public String getNLR(Query inputQuery) {
+    	//we copy the query object here, because during the NLR generation it will be modified 
+    	Query query = QueryFactory.create(inputQuery);
 
-        String output;
+        String output = "";
 
         // 1. run convert2NLE and in parallel assemble postprocessor
         POSTPROCESSING = false;
         SWITCH = false;
         UNIONSWITCH = false;
-        output = realiser.realiseSentence(convert2NLE(query));
-        
+        output = realiseDocument(convert2NLE(query));
         System.out.println("SimpleNLG:\n" + output);
-        if (VERBOSE) post.print();
+        if (VERBOSE) {
+            post.print();
+        }
 
         // 2. run postprocessor
         post.postprocess();
 
         // 3. run convert2NLE again, but this time use body generations from postprocessor
         POSTPROCESSING = true;
-        output = realiser.realiseSentence(convert2NLE(query));
+        output = realiseDocument(convert2NLE(query));
 //        output = post.finalPolishing(convert2NLE(query)).getRealisation();
-        output = output.replace(",,",",").replace("..","."); // wherever this duplicate punctuation comes from...
+        output = output.replace(",,", ",").replace("..", "."); // wherever this duplicate punctuation comes from...
         System.out.println("After postprocessing:\n" + output);
         //System.out.println("After postprocessing:");
 
@@ -159,9 +175,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         if (!output.endsWith(".")) {
             output = output + ".";
         }
-
         return output;
     }
+    
 
     /**
      * Generates a natural language representation for a query
@@ -814,6 +830,13 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             } else {
                 object = getNPPhrase(t.getObject().toString(), false);
             }
+            
+         // if the predicate is rdf:type
+            if (t.getPredicate().hasURI(RDF.type.getURI())) {
+                p.setSubject(subj);
+                p.setVerb("be a");
+                p.setObject(object);
+            } else
 
             // now if the predicate is a noun
             if (type == Type.NOUN) {
