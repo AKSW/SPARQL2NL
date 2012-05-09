@@ -37,7 +37,7 @@ public class Postprocessor {
     Set<SPhraseSpec> currentlystored;
     boolean ask;
     
-    boolean TRACE = true;
+    boolean TRACE = false;
     
     public Postprocessor() {
         lexicon = Lexicon.getDefaultLexicon();
