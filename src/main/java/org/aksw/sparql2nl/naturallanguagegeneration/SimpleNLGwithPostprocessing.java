@@ -415,6 +415,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     order.addComplement("with respect to "+ev.toString()+"");
                 }
             }
+            post.orderbylimit.add(order);
             sentences.add(nlgFactory.createSentence(order));
         }
         if (query.hasLimit()) {

@@ -33,10 +33,11 @@ public class Postprocessor {
     Set<Set<Set<SPhraseSpec>>> optionalunions;
     NLGElement optionaloutput;
     Set<NLGElement> filter;
+    Set<SPhraseSpec> orderbylimit;
     Set<SPhraseSpec> currentlystored;
     boolean ask;
     
-    boolean TRACE = false;
+    boolean TRACE = true;
     
     public Postprocessor() {
         lexicon = Lexicon.getDefaultLexicon();
@@ -52,6 +53,7 @@ public class Postprocessor {
         optionalunions = new HashSet<Set<Set<SPhraseSpec>>>();
         optionaloutput = null;    
         filter = new HashSet<NLGElement>();
+        orderbylimit = new HashSet<SPhraseSpec>();
         currentlystored = new HashSet<SPhraseSpec>();
         ask = false;
     }
@@ -67,6 +69,7 @@ public class Postprocessor {
         optionalunions = new HashSet<Set<Set<SPhraseSpec>>>();
         optionaloutput = null;
         filter = new HashSet<NLGElement>();
+        orderbylimit = new HashSet<SPhraseSpec>();
         currentlystored = new HashSet<SPhraseSpec>();
         ask = false;
     }
@@ -933,12 +936,12 @@ public class Postprocessor {
                             if (rest != null) keepuri = true;
                             else {
                                 for (NLGElement b : bodyparts) {
-                                    if (!b.equals(bodypart) && realiser.realiseSentence(b).matches("(\\A|(.*\\s))\\"+m.group(1)+"(\\s|\\z).*")) { 
+                                    if (!b.equals(bodypart) && realiser.realiseSentence(b).matches("(\\A|(.*\\s))\\"+m.group(1)+"(\\s|\\z|').*")) { 
                                         keepuri = true;
                                         break;
                                     }
                                 }
-                                if (realiser.realiseSentence(optionaloutput).matches("(\\A|(.*\\s))\\"+m.group(1)+"(\\s|\\z).*")) keepuri = true;
+                                if (realiser.realiseSentence(optionaloutput).matches("(\\A|(.*\\s))\\"+m.group(1)+"(\\s|\\z|').*")) keepuri = true;
                             }
                             if (!keepuri) sel.setHead("");
                             String pron = "their";
@@ -984,7 +987,7 @@ public class Postprocessor {
         }
         
         NLGElement bodypart = null;
-        if (bodyparts.size() == 1) {
+        if (bodyparts.size() == 1 && orderbylimit.isEmpty()) {
             NLGElement bp = new ArrayList<NLGElement>(bodyparts).get(0);
             String b = removeDots(realiser.realise(bp).toString());
             if (!b.contains(" and ") && !b.contains(" or ") && !b.contains(" not ")) {
@@ -1089,6 +1092,10 @@ public class Postprocessor {
             if (!s.equals(sent) && realiser.realiseSentence(s).contains("?"+var)) 
                 return true;
         }
+        for (SPhraseSpec s : orderbylimit) {
+            if (realiser.realiseSentence(s).contains("?"+var)) 
+                return true;
+        }
         return false;
     }
     
@@ -1116,6 +1123,12 @@ public class Postprocessor {
         }
         for (NLGElement f : filter) {
             if (realiser.realise(f).toString().contains("?"+var)) n++;
+        }
+        for (SPhraseSpec s : orderbylimit) {
+            if (realiser.realise(s).toString().contains("?"+var)) n++;
+        }
+        for (SPhraseSpec s : currentlystored) {
+            if (realiser.realise(s).toString().contains("?"+var)) n++;
         }
         return n;
     }
@@ -1235,6 +1248,10 @@ public class Postprocessor {
             if (s.equals(maxS)) System.out.print("!");
             System.out.print(s + "("+numberOfOccurrences(s)+") ");
         }
+        System.out.println("\nSelects:"); 
+        for (NPPhraseSpec sel : selects) {
+            System.out.println(" -- " + realiser.realise(sel).toString());
+        }
         System.out.println("\nSentences: ");
         for (SPhraseSpec s : sentences) {
             System.out.println(" -- " + realiser.realiseSentence(s));
@@ -1268,7 +1285,11 @@ public class Postprocessor {
         for (NLGElement f : filter ) {
             System.out.print(" -- " + realiser.realise(f).toString() + "\n");
         }
-        System.out.println("Currently stored: ");
+        System.out.println("Orderbylimits: ");
+        for (SPhraseSpec s : orderbylimit) {
+            System.out.print(" -- " + realiser.realise(s).toString() + "\n");
+        }
+        System.out.println("\nCurrently stored: ");
         for (NLGElement cs : currentlystored) System.out.println(" -- " + realiser.realiseSentence(cs));
         System.out.println(" >> output: " + realiser.realiseSentence(output));
         System.out.println(" >> optiontaloutput: " + realiser.realiseSentence(optionaloutput));
