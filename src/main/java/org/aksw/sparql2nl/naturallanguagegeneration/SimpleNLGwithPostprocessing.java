@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 import org.aksw.sparql2nl.naturallanguagegeneration.PropertyProcessor.Type;
 import org.aksw.sparql2nl.nlp.relation.BoaPatternSelector;
 import org.aksw.sparql2nl.nlp.stemming.PlingStemmer;
+import org.aksw.sparql2nl.queryprocessing.DisjunctiveNormalFormConverter;
 import org.aksw.sparql2nl.queryprocessing.GenericType;
 import org.aksw.sparql2nl.queryprocessing.TypeExtractor;
 import org.dllearner.kb.sparql.SparqlEndpoint;
@@ -145,6 +146,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     public String getNLR(Query inputQuery) {
     	//we copy the query object here, because during the NLR generation it will be modified 
     	Query query = QueryFactory.create(inputQuery);
+    	query = new DisjunctiveNormalFormConverter().getDisjunctiveNormalForm(query);
 
         String output = "";
 
@@ -532,6 +534,33 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
        
         return object;
     }
+    
+    public NPPhraseSpec getNPPhrase(String uri, boolean plural, boolean isClass) {
+        NPPhraseSpec object = null;
+        if (uri.equals(OWL.Thing.getURI())) {
+            object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
+        } else if (uri.equals(RDFS.Literal.getURI())) {
+            object = nlgFactory.createNounPhrase(GenericType.VALUE.getNlr());
+        } else if (uri.equals(RDF.Property.getURI())) {
+            object = nlgFactory.createNounPhrase(GenericType.RELATION.getNlr());
+        } else if (uri.equals(RDF.type.getURI())) {
+            object = nlgFactory.createNounPhrase(GenericType.TYPE.getNlr());
+        } else {
+            String label = uriConverter.convert(uri);
+            if (label != null) {
+            	if(isClass){
+            		label = PlingStemmer.stem(label);
+            	}
+                object = nlgFactory.createNounPhrase(nlgFactory.createInflectedWord(label, LexicalCategory.NOUN));
+            } else {
+                object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
+            }
+          
+        }
+        object.setPlural(plural);
+       
+        return object;
+    }
 
     private NLGElement processTypes(Map<String, Set<String>> typeMap, Set<String> vars, boolean count, boolean distinct) {
         List<NPPhraseSpec> objects = new ArrayList<NPPhraseSpec>();
@@ -717,7 +746,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             {
                 cpe = nlgFactory.createCoordinatedPhrase(list.get(0), list.get(1));
                 for(int i=2; i<list.size(); i++)
-                    cpe.addComplement(list.get(i));
+                    cpe.addCoordinate(list.get(i));
                 cpe.setConjunction("or");
             }
             
@@ -749,7 +778,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 				}
 				cpe = nlgFactory.createCoordinatedPhrase(list.get(0), list.get(1));
 				for(int i=2; i<list.size(); i++)
-                    cpe.addComplement(list.get(i));
+                    cpe.addCoordinate(list.get(i));
                 cpe.setConjunction("and");
                 return cpe;
 			}			
@@ -829,11 +858,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             } else if (t.getObject().isLiteral()) {
                 object = t.getObject().getLiteralLexicalForm();
             } else {
-                object = getNPPhrase(t.getObject().toString(), false);
+                object = getNPPhrase(t.getObject().toString(), false, t.getPredicate().matches(RDF.type.asNode()));
             }
             
          // if the predicate is rdf:type
-            if (t.getPredicate().hasURI(RDF.type.getURI())) {
+            if (t.getPredicate().matches(RDF.type.asNode())) {
                 p.setSubject(subj);
                 p.setVerb("be a");
                 p.setObject(object);
@@ -1001,7 +1030,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             CoordinatedPhraseElement cpe;
             cpe = nlgFactory.createCoordinatedPhrase(nlgs.get(0), nlgs.get(1));
             for (int i = 2; i < nlgs.size(); i++) {
-                cpe.addComplement(nlgs.get(i));
+                cpe.addCoordinate(nlgs.get(i));
             }
             cpe.setConjunction("and");
             return cpe;

@@ -60,6 +60,8 @@ public class TypeExtractor extends ElementVisitorBase {
 	
 	private boolean isCount = false;
 	
+	private int unionDepth = 0;
+	
 	public TypeExtractor(SparqlEndpoint endpoint) {
 		this.endpoint = endpoint;
 	}
@@ -226,6 +228,7 @@ public class TypeExtractor extends ElementVisitorBase {
 	
 	@Override
 	public void visit(ElementUnion el) {
+		unionDepth++;
 		for (Iterator<Element> iterator = el.getElements().iterator(); iterator.hasNext();) {
 			Element e = iterator.next();
 			e.visit(this);
@@ -245,6 +248,7 @@ public class TypeExtractor extends ElementVisitorBase {
 				iterator.remove();
 			}
 		}
+		unionDepth--;
 	}
 	
 	private boolean isEmptyElement(Element e){
@@ -279,7 +283,9 @@ public class TypeExtractor extends ElementVisitorBase {
 	private boolean processTriple(Triple triple){
 		Node subject = triple.getSubject();
 		Node object = triple.getObject();
-		
+		if(unionDepth != 0){
+			return false;
+		}
 		if (triple.predicateMatches(TYPE_NODE)) {//process rdf:type triples	
 			if(subject.isVariable()){
 				Var subjectVar = Var.alloc(subject.getName());
