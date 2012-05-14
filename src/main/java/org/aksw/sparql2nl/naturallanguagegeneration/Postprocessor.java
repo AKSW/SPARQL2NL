@@ -85,7 +85,7 @@ public class Postprocessor {
       
         // 1. 
         if (!ask) fuseWithSelects();
-        else {}
+        else { } // TODO
         
         if (TRACE) { System.out.println("\n--1-------------------------"); this.print(); }
         
@@ -103,6 +103,9 @@ public class Postprocessor {
           for (String var : secondaries) aggregateTypeAndLabelInformation("?"+var);
           while (!primaries.isEmpty() || !secondaries.isEmpty()) {
               bodyparts.add(talkAboutMostImportant());
+          }
+          if (!sentences.isEmpty() || !unions.isEmpty()) {
+              bodyparts.add(verbalise(sentences,new HashSet<SPhraseSpec>(),unions)); 
           }
         }
         
@@ -242,11 +245,12 @@ public class Postprocessor {
         // verbalise unions 
         for (Set<Set<SPhraseSpec>> union : unionStore) {
             
+            removeDuplicatesInUnion(union);
+            
             Set<NLGElement> unionsentences = new HashSet<NLGElement>();
             for (Set<SPhraseSpec> un : union) {
                 CoordinatedPhraseElement uncoord = nlg.createCoordinatedPhrase();
                 uncoord.setConjunction("and");
-                removeDuplicateRealisations(un);
                 Set<SPhraseSpec> fusedunions = fuseSubjects(fuseObjects(un,"and"),"and");
                 for (SPhraseSpec s : fusedunions) {
                     addFilterInformation(s);
@@ -271,14 +275,31 @@ public class Postprocessor {
         Set<SPhraseSpec> duplicates = new HashSet<SPhraseSpec>();
         Set<String> realisations = new HashSet<String>();
         
-        String realisation;
         for (SPhraseSpec s : sentences) {
-            realisation = realiser.realiseSentence(s);
+            String realisation = realiser.realiseSentence(s);
             if (realisations.contains(realisation)) duplicates.add(s);
-            else realisations.add(realisation);
+            else realisations.add(realisation);     
         }
         
         sentences.removeAll(duplicates);
+    }
+    private void removeDuplicatesInUnion(Set<Set<SPhraseSpec>> union) {
+        
+        Set<SPhraseSpec> duplicates = new HashSet<SPhraseSpec>();
+        Set<String> realisations = new HashSet<String>();
+        
+        // collect duplicates
+        for (Set<SPhraseSpec> un : union) {
+            for (SPhraseSpec s : un) {
+                String realisation = realiser.realiseSentence(s);
+                if (realisations.contains(realisation)) duplicates.add(s); 
+                else realisations.add(realisation); 
+            }
+        }
+        // remove duplicates
+        for (Set<SPhraseSpec> un : union) {
+            un.removeAll(duplicates);
+        }
     }
     
     private NLGElement coordinate(CoordinatedPhraseElement coord) {
@@ -749,7 +770,7 @@ public class Postprocessor {
         Pattern p = Pattern.compile(".*(\\?([\\w]*))(\\s|\\z)");
         
         String[] comparison = {" is greater than or equal to ",
-                                           " is greather than ",
+                                           " is greater than ",
                                            " is less than ",
                                            " is less than or equal to "};
         
@@ -791,15 +812,22 @@ public class Postprocessor {
                     usedFilters.add(f);
                 }
                 else {
+                    boolean compmatch = false;
                     for (String comp : comparison) {
                         if (fstring.startsWith(var + comp)) {
-                            String match = fstring.replace(var+comp,"");
-                            newhead = obj.replace(m.group(1),m.group(1) + comp.replace(" is ","") + match);
+                            compmatch = true;
+                            String match = fstring.replace(var + comp,"");
+                            if (!occursAnyWhereElse(obj,sentence)
+                                && ((WordElement) sentence.getVerb()).getBaseForm().equals("be")) {
+                                newhead = obj.replace(m.group(1),comp.replace(" is ","") + match);
+                            } else {
+                                newhead = obj.replace(m.group(1),m.group(1) + " which" + comp + match);
+                            }
                             usedFilters.add(f);
                             break;
                         }
                     }
-                    if (fstring.split(" ")[0].equals(obj)) {
+                    if (!compmatch && fstring.split(" ")[0].equals(obj)) {
                         // SUBJ is ?x . ?x V OBJ -> SUBJ V OBJ
                         if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")
                                 && !sentence.getFeatureAsBoolean("negated")
@@ -863,7 +891,8 @@ public class Postprocessor {
                 SPhraseSpec del = null;
                 for (SPhraseSpec s : sentences) {
                     // selects TYPE ?x such that ?x is OBJECT -> selects OBJECT
-                    if (((WordElement) s.getVerb()).getBaseForm().equals("be")) {
+                    if (((WordElement) s.getVerb()).getBaseForm().equals("be")
+                            && realiser.realiseSentence(s).matches(".* (is)|(are) \\?"+var+"\\.")) {
                         NPPhraseSpec repl = null;
                         if (realiser.realise(s.getSubject()).toString().equals("?"+var)) 
                             repl = nlg.createNounPhrase(s.getObject());
@@ -894,30 +923,48 @@ public class Postprocessor {
         NLGElement info = null;
         NLGElement rest = null;
         for (NLGElement bodypart : bodyparts) {
+        if (bodypart != null) {
             String bstring = removeDots(realiser.realiseSentence(bodypart));
             Matcher m = p.matcher(bstring);
             if (m.matches() && inSelects(m.group(1)) && inSelects(m.group(15))) {
                 boolean labelvarfree = true;
                 for (NLGElement b : bodyparts) {
-                    if (!b.equals(bodypart) && realiser.realiseSentence(b).matches("(\\A|(.*\\s))\\"+m.group(15)+"(\\s|\\z).*")) {
+                    if (b != null && !b.equals(bodypart)) {
+                        if (realiser.realiseSentence(b).matches("(\\A|(.*\\s))\\"+m.group(15)+"(\\s|\\z).*")) {
                         labelvarfree = false;
                         break;
-                    }
+                    }}
                 }
                 if (labelvarfree) {
                     info = bodypart; 
                     String restrealization = "";
+                    String part2 = null;
+//                    boolean part2sel = false;
+//                    boolean part2postmod = false;
                     if (m.group(2) != null) {
-                        String part2 = m.group(2);
+                        part2 = m.group(2);
                         if (m.group(2).endsWith(" and "+m.group(1))) part2 = part2.substring(0,part2.lastIndexOf(" and "));
-                        restrealization += m.group(1)+part2;
+                        if (part2.endsWith(" and")) part2 = part2.substring(0,part2.length()-4);
+//                        if (m.group(16) == null) {
+//                            if (part2.matches(".* is ([\\w,\\s])+ by .*")) {
+//                                part2 = part2.replace(" is "," are ");
+//                                part2 = "that"+part2;
+//                                part2postmod = true;
+//                            }
+//                            else if (part2.matches(".* is .*")) {
+//                                part2 = part2.replace(" is ","");
+//                                part2sel = true;
+//                            }
+//                        }
+//                        else 
+                            restrealization += m.group(1)+part2;
                     }
                     if (m.group(16) != null) { 
                         if (restrealization.isEmpty()) { 
                             if (m.group(17).trim().startsWith(m.group(1))) restrealization += m.group(17);
                             else restrealization += m.group(1) + m.group(17);
                         }
-                        else restrealization += " and "+m.group(16);
+                        else restrealization += " and "+m.group(17);
                     }    
                     else if (!restrealization.isEmpty()) { // conjunction before label info will miss an 'and', unless we add it again
                         String[] restrelparts = restrealization.split(", ");
@@ -928,7 +975,10 @@ public class Postprocessor {
                             else if (i < restrelparts.length-2) restrealization += ", ";
                         }
                     }
-                    if (!restrealization.isEmpty()) rest = nlg.createNLGElement(restrealization);
+                    if (!restrealization.isEmpty()) {
+                        if (restrealization.endsWith(" and")) restrealization = restrealization.substring(0,restrealization.length()-4);
+                        rest = nlg.createNLGElement(restrealization);
+                    }
                     removeFromSelects(m.group(15));
                     for (NPPhraseSpec sel : selects) {
                         if (sel.getFeatureAsString("head").equals(m.group(1))) {
@@ -936,14 +986,22 @@ public class Postprocessor {
                             if (rest != null) keepuri = true;
                             else {
                                 for (NLGElement b : bodyparts) {
-                                    if (!b.equals(bodypart) && realiser.realiseSentence(b).matches("(\\A|(.*\\s))\\"+m.group(1)+"(\\s|\\z|').*")) { 
-                                        keepuri = true;
-                                        break;
-                                    }
+                                    if (b != null && !b.equals(bodypart)) {
+                                        if (realiser.realiseSentence(b).matches("(\\A|(.*\\s))\\"+m.group(1)+"(\\s|\\z|').*")) {
+                                            keepuri = true;
+                                            break;
+                                    }}
                                 }
                                 if (realiser.realiseSentence(optionaloutput).matches("(\\A|(.*\\s))\\"+m.group(1)+"(\\s|\\z|').*")) keepuri = true;
                             }
                             if (!keepuri) sel.setHead("");
+//                            if (part2postmod) sel.addPostModifier(part2);
+//                            else if (part2sel) {
+//                                NPPhraseSpec part2head = nlg.createNounPhrase(part2);
+//                                part2head.setPlural(true);
+//                                sel.setHead(part2head);
+//                                if (sel.hasFeature("premodifiers")) sel.setFeature("premodifiers",new HashSet<NLGElement>());
+//                            }
                             String pron = "their";
                             if (sel.hasFeature("premodifiers")) {
                                 List<NLGElement> premods = new ArrayList<NLGElement>((Collection) sel.getFeature("premodifiers"));
@@ -958,7 +1016,7 @@ public class Postprocessor {
                     }
                 }
             }
-        }
+        }}
         bodyparts.remove(info);
         if (rest != null) bodyparts.add(rest);
     }
@@ -993,12 +1051,14 @@ public class Postprocessor {
             if (!b.contains(" and ") && !b.contains(" or ") && !b.contains(" not ")) {
                 // Case 1: is-sentence
                 Pattern p1 = Pattern.compile("(\\?[\\w]*) is (.*)(\\.)?");
+                Pattern p1_exclude = Pattern.compile("(\\?[\\w]*) is (\\w)+ed by (.*)(\\.)?"); // except for when passive
                 Pattern p2 = Pattern.compile("(.*) is (\\?[\\w]*)(\\.)?");
-                Matcher m1 = p1.matcher(b); Matcher m2 = p2.matcher(b);
+                Matcher m1 = p1.matcher(b); Matcher m1_exclude = p1_exclude.matcher(b); Matcher m2 = p2.matcher(b);
                 String var = null; String other = null;
-                if (m1.matches()) { var = m1.group(1); other = m1.group(2); }
+                if (m1.matches() && !m1_exclude.matches()) { var = m1.group(1); other = m1.group(2); }
                 else if (m2.matches()) { var = m2.group(2); other = m2.group(1); }
                 if (var != null && other != null) {
+                    if (other.matches(".*(\\s)and\\z")) other = other.substring(0,other.length()-4);
                     NPPhraseSpec oldspec = null;
                     NPPhraseSpec newspec = null;              
                     for (NPPhraseSpec sel : selects) {
@@ -1008,6 +1068,7 @@ public class Postprocessor {
                             newspec.setFeature("head",removeDots(other));
                             if (realiser.realise(oldspec).toString().contains(" number of ")) {
                                 newspec.addPreModifier("the number of");
+                                newspec.setPlural(true);
                             }
                             if (oldspec.hasFeature("postmodifiers")) {
                                 newspec.addPostModifier(oldspec.getFeatureAsStringList("postmodifiers").get(0).replace("their","its")); // TODO check whether their or its
@@ -1031,10 +1092,14 @@ public class Postprocessor {
                             oldspec = sel;
                             newspec = nlg.createNounPhrase();
                             String nsp = removeDots(realiser.realise(sel).toString()); 
-                            newspec.setFeature("head",nsp.replace(m.group(1),""));
+                            nsp = nsp.replace(m.group(1),"");
+                            Pattern labelstuff = Pattern.compile("(.*)( and their (\\w)?((label)||(name)).*)");
+                            Matcher mstuff = labelstuff.matcher(nsp);
+                            String addme = "that" + removeDots(realiser.realise(bp).toString().replace(m.group(1),"").replace(" is "," are "));
+                            if (mstuff.matches()) nsp = mstuff.group(1) + addme + mstuff.group(2); 
+                            else newspec.addPostModifier(addme);
+                            newspec.setFeature("head",nsp);
                             boolean oldPlural = bp.isPlural();
-                            bp.setPlural(true);
-                            newspec.addComplement("that" + removeDots(realiser.realise(bp).toString().replace(m.group(1),"")));
                             bp.setPlural(oldPlural);
                         }
                     }
@@ -1087,7 +1152,7 @@ public class Postprocessor {
     
     private boolean occursAnyWhereElse(String var,SPhraseSpec sent) { 
         // anywhere else than in sent, that is
-        if (numberOfOccurrences(var.replace("?","")) > 1) return true; // > 1 because it occurs in filter 
+        if (numberOfOccurrences(var.replace("?",""))-numberOfOccurrencesInCurrentlyStored(var.replace("?","")) > 1) { return true; } // > 1 because it occurs in filter 
         for (SPhraseSpec s : currentlystored) {
             if (!s.equals(sent) && realiser.realiseSentence(s).contains("?"+var)) 
                 return true;
@@ -1136,6 +1201,13 @@ public class Postprocessor {
         int n = 0;
         for (NLGElement f : filter) {
             if (realiser.realise(f).toString().contains("?"+var)) n++;
+        }
+        return n;
+    }
+    private int numberOfOccurrencesInCurrentlyStored(String var) {
+        int n = 0;
+        for (SPhraseSpec s : currentlystored) {
+            if (realiser.realise(s).toString().contains("?"+var)) n++;
         }
         return n;
     }
