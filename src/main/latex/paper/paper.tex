@@ -1,0 +1,103 @@
+
+\documentclass[runningheads,a4paper]{llncs}
+
+\usepackage{amssymb}
+\setcounter{tocdepth}{3}
+\usepackage{graphicx}
+
+\usepackage{url}
+%\urldef{\mailsa}\path|{alfred.hofmann, ursula.barth, ingrid.haas, frank.holzwarth,|
+%\urldef{\mailsb}\path|anna.kramer, leonie.kunz, christine.reiss, nicole.sator,|
+%\urldef{\mailsc}\path|erika.siebert-cole, peter.strasser, lncs}@springer.com|    
+
+\newcommand{\keywords}[1]{\par\addvspace\baselineskip
+\noindent\keywordname\enspace\ignorespaces#1}
+
+\newcommand{\sparql}[2]{{\tt #1 \{\\[0.1cm] \hspace*{2em} \parbox{8cm}{#2}\\ \} }}
+
+\begin{document}
+
+\mainmatter  % start of an individual contribution
+
+% first the title is needed
+\title{Do you speak SPARQL?\\ No? Me neither.}
+
+% a short form should be given in case it is too long for the running head
+\titlerunning{Do you speak SPARQL? No? Me neither.}
+
+% the name(s) of the author(s) follow(s) next
+%
+% NB: Chinese authors should write their first names(s) in front of
+% their surnames. This ensures that the names appear correctly in
+% the running heads and the author index.
+%
+\author{Jens Lehmann%
+%\thanks{Please note that the LNCS Editorial assumes that all authors have used
+%the western naming convention, with given names preceding surnames. This determines
+%the structure of the names in the running heads and the author index.}%
+\and Axel Ngonga\and Lorenz B\"uhmann \and Daniel Gerber \and Christina Unger}
+%
+\authorrunning{J. Lehmann, A. Ngona, L. B\"uhmann, D. Gerber, C. Unger}
+% (feature abused for this document to repeat the title also on left hand pages)
+
+% the affiliations are given next; don't give your e-mail address
+% unless you accept that it will be published
+\institute{AKSW, University of Leipzig, Germany\\ CITEC, Bielefeld University, Germany\\
+{\tt \{lehmann|ngonga|buehmann|gerber\}@informatik.uni-leipzig.de//cunger@cit-ec.uni-bielefeld.de}}
+
+%
+% NB: a more complex sample for affiliations and the mapping to the
+% corresponding authors can be found in the file "llncs.dem"
+% (search for the string "\mainmatter" where a contribution starts).
+% "llncs.dem" accompanies the document class "llncs.cls".
+%
+
+\toctitle{Do you speak SPARQL? No? Me neither.}
+\tocauthor{J. Lehmann, A. Ngona, L. B\"uhmann, D. Gerber, C. Unger}
+
+\maketitle
+
+
+\begin{abstract}
+Most semantic applications use SPARQL queries to access the background data upon which they operate. While Semantic Web experts can assign an exact interpretation to these queries, lay users often stand before black boxes when using semantic applications. In this paper, we present a novel approach that allow converting SPARQL queries into natural language. Our approach combines graph similarity and natural language processing approaches to map SPARQL queries to question templates and subsequently to natural language questions. We evaluate our approach on two different data sets and show that we can generate accurate natural language representations of SPARQL queries independent of the size of the queries.
+\keywords{SPARQL, verbalization}
+\end{abstract}
+
+
+\section{Introduction}
+
+\input{introduction}
+
+\section{Verbalizing SPARQL queries} \label{sec:approach}
+
+\subsection{General approach}
+\input{approach}
+
+\subsection{Verbalizing SPARQL queries}
+\input{verbalization}
+
+\subsection{Postprocessing}
+\input{postprocessing}
+
+\section{Evaluation} \label{sec:evaluation}
+
+\subsection{Set up}
+\input{experiments}
+
+\subsection{Results}
+\input{results}
+
+\section{Related Work} \label{sec:relatedwork}
+
+\input{relatedwork}
+
+\section{Conclusion} \label{sec:conclusion}
+
+\input{conclusion}
+
+%\begin{thebibliography}{4}
+% ...
+%\end{thebibliography}
+
+\end{document}
+ 
