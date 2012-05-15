@@ -168,8 +168,10 @@ public class Postprocessor {
             for (NLGElement b : bodyparts) System.out.println(" > " + realiser.realise(b).toString());
         }
         
-        // 6. put it all together        
-        for (NLGElement bodypart : fuseObjectWithSubject(bodyparts)) body.addCoordinate(bodypart);
+        // 6. put it all together    
+        for (NLGElement bodypart : fuseObjectWithSubject(bodyparts)) {
+            body.addCoordinate(bodypart);
+        }
         output = coordinate(body);
         
         if (TRACE) {
@@ -239,8 +241,27 @@ public class Postprocessor {
         Set<SPhraseSpec> fusedsents = fuseSubjects(fuseObjects(sents,"and"),"and");
         for (SPhraseSpec s : fusedsents) {
             addFilterInformation(s);
-            coord.addCoordinate(s);
+        }      
+        Set<NLGElement> newfusedsents = new HashSet<NLGElement>();
+        newfusedsents.addAll(fusedsents);
+        newfusedsents = fuseObjectWithSubject(newfusedsents);
+        Set<NLGElement> fusedfusedsents = new HashSet<NLGElement>();
+        Set<NLGElement> usedsents = new HashSet<NLGElement>();
+        for (NLGElement nfs1 : newfusedsents) {
+            boolean skip = false;
+            for (NLGElement nfs2 : newfusedsents) {
+                if (nfs1 != nfs2 && !usedsents.contains(nfs1) && !usedsents.contains(nfs2) && fuuuse(nfs1,nfs2,"and") != null) {
+                    fusedfusedsents.add(fuuuse(nfs1,nfs2,"and"));                  
+                    usedsents.add(nfs2);
+                    skip = true; break;
+                }
+            }
+            if (!skip && !usedsents.contains(nfs1)) {                
+                usedsents.add(nfs1); 
+                fusedfusedsents.add(nfs1); 
+            }
         }
+        for (NLGElement nfs : fusedfusedsents) coord.addCoordinate(nfs);       
             
         // verbalise unions 
         for (Set<Set<SPhraseSpec>> union : unionStore) {
@@ -402,7 +423,7 @@ public class Postprocessor {
                 }
             }
         }
-        
+
         if (objsent == null || subjsent == null || object == null || subject == null) return sentences;
         
         sentences.remove(objsent);
@@ -554,6 +575,66 @@ public class Postprocessor {
                 }        
             }
         }
+        
+        return null;
+    }
+    private NLGElement fuuuse(NLGElement e1,NLGElement e2,String conjunction) {
+                
+            String[] real1 = realiser.realise(e1).toString().split(" ");
+            String[] real2 = realiser.realise(e2).toString().split(" ");
+                        
+            // forwards
+                String prefix = "";
+                int lf = 0;
+                for (int i = 0; i < Math.min(real1.length,real2.length); i++) {
+                    if (real1[i].toLowerCase().equals(real2[i].toLowerCase())) prefix += " " + real1[i];
+                    else { lf = i; break; }
+                } 
+                prefix = prefix.trim();
+
+                if (lf != 0) {
+                    String newhead1 = ""; 
+                    String newhead2 = "";
+                    String newhead = prefix + " ";
+                    for (int i = lf; i < real1.length; i++) newhead1 += real1[i] + " ";
+                    for (int i = lf; i < real2.length; i++) newhead2 += " " + real2[i];
+                    if (!newhead1.trim().toLowerCase().equals(newhead2.trim().toLowerCase())) {
+                        if (prefix.endsWith("'s")) newhead2 = " its" + newhead2;
+                        newhead += newhead1 + conjunction + newhead2;
+                    } else newhead += newhead1;
+                    //e1.setRealisation(newhead);
+                    e1 = nlg.createSentence(newhead);
+                    return e1;
+                }        
+            
+            // backwards   
+            if (real1.length == real2.length) {
+                String postfix = "";
+                int lb = 0;
+                for (int i = real1.length-1; i >= 0; i--) {
+                    if (real1[i].toLowerCase().equals(real2[i].toLowerCase())) {
+                        postfix = real1[i] + " " + postfix;
+                        lb++;
+                    }
+                    else break;
+                } 
+                postfix = postfix.trim();
+
+                if (lb != 0) {
+                    String newhead1 = "";
+                    String newhead2 = "";
+                    String newhead = "";
+                    for (int i = 0; i < real1.length-lb; i++) newhead1 += real1[i] + " ";
+                    for (int i = 0; i < real2.length-lb; i++) newhead2 += " " + real2[i];
+                    if (!newhead1.trim().toLowerCase().equals(newhead2.trim().toLowerCase())) {
+                        newhead += newhead1 + conjunction + newhead2;
+                    } else newhead += newhead1;
+                    newhead += " " + postfix;
+                    //e1.setRealisation(newhead);
+                    e1 = nlg.createSentence(newhead);
+                    return e1;
+                }        
+            }
         
         return null;
     }
@@ -1051,7 +1132,7 @@ public class Postprocessor {
             if (!b.contains(" and ") && !b.contains(" or ") && !b.contains(" not ")) {
                 // Case 1: is-sentence
                 Pattern p1 = Pattern.compile("(\\?[\\w]*) is (.*)(\\.)?");
-                Pattern p1_exclude = Pattern.compile("(\\?[\\w]*) is (\\w)+ed by (.*)(\\.)?"); // except for when passive
+                Pattern p1_exclude = Pattern.compile("(\\?[\\w]*) is (\\w)+((ed)||t) by (.*)(\\.)?"); // except for when passive
                 Pattern p2 = Pattern.compile("(.*) is (\\?[\\w]*)(\\.)?");
                 Matcher m1 = p1.matcher(b); Matcher m1_exclude = p1_exclude.matcher(b); Matcher m2 = p2.matcher(b);
                 String var = null; String other = null;
@@ -1227,7 +1308,8 @@ public class Postprocessor {
         return out;
     }
     
-    private String removeDots(String s) {
+    public String removeDots(String s) {
+        s = s.replaceAll("\\.\\,",",").replaceAll("\\. and"," and");
         if (s.endsWith(".")) 
             return removeDots(s.substring(0,s.length()-1));
         else if (s.endsWith(". ")) 

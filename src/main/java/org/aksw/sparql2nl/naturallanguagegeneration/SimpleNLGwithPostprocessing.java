@@ -168,15 +168,12 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         output = realiseDocument(convert2NLE(query));
 //        output = post.finalPolishing(convert2NLE(query)).getRealisation();
         output = output.replace(",,", ",").replace("..", "."); // wherever this duplicate punctuation comes from...
+        output = post.removeDots(output)+".";
         System.out.println("After postprocessing:\n" + output);
-        //System.out.println("After postprocessing:");
 
         post.flush();
 
         output = output.replaceAll(Pattern.quote("\n"), "");
-        if (!output.endsWith(".")) {
-            output = output + ".";
-        }
         return output;
     }
     
