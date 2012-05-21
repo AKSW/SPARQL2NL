@@ -6,8 +6,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 
+import org.apache.commons.collections15.map.LRUMap;
 import org.dllearner.kb.sparql.SparqlEndpoint;
-import org.dllearner.kb.sparql.SparqlQuery;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.util.SimpleIRIShortFormProvider;
 
@@ -26,6 +26,7 @@ public class URIConverter {
 	
 	private SimpleIRIShortFormProvider sfp = new SimpleIRIShortFormProvider();
 	private SparqlEndpoint endpoint;
+	private LRUMap<String, String> uri2LabelCache = new LRUMap<String, String>(50);
 	
 	public URIConverter(SparqlEndpoint endpoint) {
 		this.endpoint = endpoint;
@@ -37,49 +38,55 @@ public class URIConverter {
         } else if (uri.equals(RDFS.label.getURI())) {
             return "label";
         }
-        try {
-            String labelQuery = "SELECT ?label WHERE {<" + uri + "> "
-                    + "<http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' )}";
+		
+		String label = uri2LabelCache.get(uri);
+		if(label == null){
+	        try {
+	            String labelQuery = "SELECT ?label WHERE {<" + uri + "> "
+	                    + "<http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' )}";
 
-            // take care of graph issues. Only takes one graph. Seems like some sparql endpoint do
-            // not like the FROM option.
-            ResultSet results = executeSelect(labelQuery);
+	            // take care of graph issues. Only takes one graph. Seems like some sparql endpoint do
+	            // not like the FROM option.
+	            ResultSet results = executeSelect(labelQuery);
 
-            //get label from knowledge base
-            String label = null;
-            QuerySolution soln;
-            while (results.hasNext()) {
-                soln = results.nextSolution();
-                // process query here
-                {
-                    label = soln.getLiteral("label").getLexicalForm();
-                }
-            }
-            if(label == null && !uri.startsWith(XSD.getURI())){
-            	label = dereferenceURI(uri);
-            }
-            if(label == null){
-            	label = sfp.getShortForm(IRI.create(uri));
-            }
-            //if it is a number we attach "Number"
-            if(uri.equals(XSD.nonNegativeInteger.getURI()) || uri.equals(XSD.integer.getURI())
-            		|| uri.equals(XSD.negativeInteger.getURI()) || uri.equals(XSD.decimal.getURI())
-            		|| uri.equals(XSD.xdouble.getURI()) || uri.equals(XSD.xfloat.getURI())
-            		|| uri.equals(XSD.xint.getURI()) || uri.equals(XSD.xshort.getURI())
-            		|| uri.equals(XSD.xbyte.getURI()) || uri.equals(XSD.xlong.getURI())
-            		){
-            	label += "Value";
-            }
-            	
-            
-            if(label == null){
-            	label = uri;
-            }
-            return label;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+	            //get label from knowledge base
+	            QuerySolution soln;
+	            while (results.hasNext()) {
+	                soln = results.nextSolution();
+	                // process query here
+	                {
+	                    label = soln.getLiteral("label").getLexicalForm();
+	                }
+	            }
+	            if(label == null && !uri.startsWith(XSD.getURI())){
+	            	label = dereferenceURI(uri);
+	            }
+	            if(label == null){
+	            	label = sfp.getShortForm(IRI.create(uri));
+	            }
+	            //if it is a number we attach "Number"
+	            if(uri.equals(XSD.nonNegativeInteger.getURI()) || uri.equals(XSD.integer.getURI())
+	            		|| uri.equals(XSD.negativeInteger.getURI()) || uri.equals(XSD.decimal.getURI())
+	            		|| uri.equals(XSD.xdouble.getURI()) || uri.equals(XSD.xfloat.getURI())
+	            		|| uri.equals(XSD.xint.getURI()) || uri.equals(XSD.xshort.getURI())
+	            		|| uri.equals(XSD.xbyte.getURI()) || uri.equals(XSD.xlong.getURI())
+	            		){
+	            	label += "Value";
+	            }
+	            	
+	            
+	            if(label == null){
+	            	label = uri;
+	            }
+	            uri2LabelCache.put(uri, label);
+	            return label;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+	        return uri;
+		}
+		return label;
+		
 	}
 	
 	 /**
@@ -87,8 +94,7 @@ public class URIConverter {
      * @param uri
      * @return
      */
-    private String dereferenceURI(String uri){
-    	//TODO add caching for vocabulary
+    private String dereferenceURI(String uri){System.out.println("Dereferencing URI: " + uri);
     	String label = null;
     	try {
 			URLConnection conn = new URL(uri).openConnection();
@@ -112,6 +118,11 @@ public class URIConverter {
     	qexec.setDefaultGraphURIs(endpoint.getDefaultGraphURIs());
     	ResultSet rs = qexec.execSelect();
     	return rs;
+    }
+    
+    public static void main(String[] args) {
+		String label = new URIConverter(SparqlEndpoint.getEndpointDBpediaLiveAKSW()).convert("http://dbpedia.org/resource/Nuclear_Reactor_Technology");
+		System.out.println(label);
     }
 
 }

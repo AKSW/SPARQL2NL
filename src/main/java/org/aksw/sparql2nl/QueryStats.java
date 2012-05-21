@@ -17,6 +17,7 @@ import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.Syntax;
 
 /**
  * 
@@ -35,7 +36,7 @@ public class QueryStats {
 	
 	public QueryStats(String queryString) {
 		this.queryString = queryString;
-		Query query = QueryFactory.create(queryString);
+		Query query = QueryFactory.create(queryString, Syntax.syntaxARQ);
 		this.tpe = new TriplePatternExtractor();
 		this.triples = tpe.extractTriplePattern(query);
 		
