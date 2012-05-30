@@ -403,9 +403,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             order.setVerb("be in");
             List<SortCondition> sc = query.getOrderBy();
             if (sc.size() == 1) {
-                if (sc.get(0).direction < 0) {
+            	int direction = sc.get(0).getDirection();
+                if (direction == Query.ORDER_DESCENDING) {
                     order.setObject("descending order");
-                } else {
+                } else if (direction == Query.ORDER_ASCENDING || direction == Query.ORDER_DEFAULT){
                     order.setObject("ascending order");
                 }
                 Expr expr = sc.get(0).getExpression();
@@ -798,48 +799,22 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
             // predicate is variable, thus simply use variable label
             p.setVerb("be related via " + t.getPredicate().toString() + " to");
+            
+            
+            //then process the object
+            Object object;
             if (t.getObject().isVariable()) {
-                p.setObject(t.getObject().toString());
-            } //process literal objects
-            else if (t.getObject().isLiteral()) {//TODO implement LiteralConverter
-                //System.out.println(t.getObject().getLiteralDatatype());
-                if (t.getObject().getLiteralDatatype() != null && (t.getObject().getLiteralDatatype().equals(XSDDatatype.XSDdate) || t.getObject().getLiteralDatatype().equals(XSDDatatype.XSDdateTime))) {
-                    try {
-                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("YYYY-MM-DD");
-                        Date date = simpleDateFormat.parse(t.getObject().getLiteralLexicalForm());
-                        DateFormat format = DateFormat.getDateInstance(DateFormat.LONG);
-                        String newDate = format.format(date);
-                        p.setObject(newDate);
-                    } catch (ParseException e) {
-                        e.printStackTrace();
-                        p.setObject(t.getObject().getLiteralLexicalForm());
-                    }
-                } else {
-                    p.setObject(t.getObject().getLiteralLexicalForm());
-                }
-            } // if object is not literal, then get string representation
-            else {
-                p.setObject(getNPPhrase(t.getObject().toString(), false));
+                object = t.getObject().toString();
+            } else if (t.getObject().isLiteral()) {
+                object = t.getObject().getLiteralLexicalForm();
+            } else {
+                object = getNPPhrase(t.getObject().toString(), false);
             }
+            p.setObject(object);
         } //more interesting case. Predicate is not a variable
         //then check for noun and verb. If the predicate is a noun or a verb, then
         //use possessive or verbal form, else simply get the boa pattern
         else {
-            String predicateAsString = uriConverter.convert(t.getPredicate().toString());
-
-            //convert camelcase to single words
-            String regex = "([a-z])([A-Z])";
-            String replacement = "$1 $2";
-            predicateAsString = predicateAsString.replaceAll(regex, replacement).toLowerCase();
-            if(predicateAsString.contains("(")) predicateAsString = predicateAsString.substring(0, predicateAsString.indexOf("("));
-            //System.out.println(predicateAsString);
-            Type type;
-            if(t.getPredicate().matches(RDFS.label.asNode())){
-            	type = Type.NOUN;
-            } else {
-            	type = pp.getType(predicateAsString);
-            }
-
             // first get the string representation for the subject
             NLGElement subj;
             if (t.getSubject().isVariable()) {
@@ -857,6 +832,23 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             } else {
                 object = getNPPhrase(t.getObject().toString(), false, t.getPredicate().matches(RDF.type.asNode()));
             }
+            
+            //handle the predicate
+            String predicateAsString = uriConverter.convert(t.getPredicate().toString());
+
+            //convert camelcase to single words
+            String regex = "([a-z])([A-Z])";
+            String replacement = "$1 $2";
+            predicateAsString = predicateAsString.replaceAll(regex, replacement).toLowerCase();
+            if(predicateAsString.contains("(")) predicateAsString = predicateAsString.substring(0, predicateAsString.indexOf("("));
+            //System.out.println(predicateAsString);
+            Type type;
+            if(t.getPredicate().matches(RDFS.label.asNode())){
+            	type = Type.NOUN;
+            } else {
+            	type = pp.getType(predicateAsString);
+            }
+            
             
          // if the predicate is rdf:type
             if (t.getPredicate().matches(RDF.type.asNode())) {
@@ -909,16 +901,31 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         return p;
     } 
     
+    private NLGElement processSubject(Node node){
+    	NLGElement subj;
+        if (node.isVariable()) {
+            subj = nlgFactory.createWord(node.toString(), LexicalCategory.NOUN);
+        } else if(node.isURI()){
+            subj = nlgFactory.createWord(uriConverter.convert(node.getURI()), LexicalCategory.NOUN);
+        } else {
+        	throw new UnsupportedOperationException("Blank nodes are not supported yet.");
+        }
+        return subj;
+    }
+    
+    private void processPredicate(Node node){
+    	
+    }
+
+    private void processObject(Node node){
+	
+    }
+    
     private String normalizeVerb(String verb){
     	if(verb.startsWith("to ")){
     		verb = verb.replace("to ", "");
     	}
     	return verb;
-    }
-
-    private String getVerbFrom(Node predicate) {
-        return "test";
-        //throw new UnsupportedOperationException("Not yet implemented");
     }
 
     private Set<String> getVars(List<Element> elements, Set<String> projectionVars) {
@@ -934,68 +941,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     }
 
     private NLGElement getNLFromSingleExpression(Expr expr) {
-        SPhraseSpec p = nlgFactory.createClause();
         return expressionConverter.convert(expr);
-        //process REGEX
-        /*
-         * if (expr instanceof E_Regex) { E_Regex expression; expression =
-         * (E_Regex) expr; String text = expression.toString(); text =
-         * text.substring(6, text.length() - 1); String var = text.substring(0,
-         * text.indexOf(",")); String pattern = text.substring(text.indexOf(",")
-         * + 1); p.setSubject(var); p.setVerb("match"); p.setObject(pattern); }
-         * else if (expr instanceof ExprFunction1) { boolean negated = false; if
-         * (expr instanceof E_LogicalNot) { expr = ((E_LogicalNot)
-         * expr).getArg(); negated = true; } if (expr instanceof E_Bound) {
-         * p.setSubject(((E_Bound) expr).getArg().toString());
-         * p.setVerb("exist"); } if (negated) { p.setFeature(Feature.NEGATED,
-         * true); } } //process language filter else if (expr instanceof
-         * E_Equals) { E_Equals expression; expression = (E_Equals) expr; String
-         * text = expression.toString(); text = text.substring(1, text.length()
-         * - 1); String[] split = text.split("="); String arg1 =
-         * split[0].trim(); String arg2 = split[1].trim(); if
-         * (arg1.startsWith("lang")) { String var = arg1.substring(5,
-         * arg1.length() - 1); p.setSubject(var); p.setVerb("be in"); if
-         * (arg2.contains("en")) { p.setObject("English"); } } else {
-         * p.setSubject(arg1); p.setVerb("equal"); p.setObject(arg2); } } else
-         * if (expr instanceof ExprFunction2) { Expr left = ((ExprFunction2)
-         * expr).getArg1(); Expr right = ((ExprFunction2) expr).getArg2();
-         *
-         * //invert if right is variable or aggregation and left side not
-         * boolean inverted = false; if (!left.isVariable() &&
-         * (right.isVariable() || right instanceof ExprAggregator)) { Expr tmp =
-         * left; left = right; right = tmp; inverted = true; }
-         *
-         * //handle subject NLGElement subject = null; if (left instanceof
-         * ExprAggregator) { subject = getNLGFromAggregation((ExprAggregator)
-         * left); } else { if (left.isFunction()) { ExprFunction function =
-         * left.getFunction(); if (function.getArgs().size() == 1) { left =
-         * function.getArg(1); } } subject =
-         * nlgFactory.createNounPhrase(left.toString()); }
-         * p.setSubject(subject); //handle object if (right.isFunction()) {
-         * ExprFunction function = right.getFunction(); if
-         * (function.getArgs().size() == 1) { right = function.getArg(1); } } if
-         * (right.isVariable()) { p.setObject(right.toString()); } else if
-         * (right.isConstant()) { if (right.getConstant().isIRI()) {
-         * p.setObject(getEnglishLabel(right.getConstant().getNode().getURI()));
-         * } else if (right.getConstant().isLiteral()) {
-         * p.setObject(right.getConstant().asNode().getLiteralLexicalForm()); }
-         * } //handle verb resp. predicate String verb = null; if (expr
-         * instanceof E_GreaterThan) { if (inverted) { verb = "be less than"; }
-         * else { verb = "be greater than"; } } else if (expr instanceof
-         * E_GreaterThanOrEqual) { if (inverted) { verb = "be less than or equal
-         * to"; } else { verb = "be greater than or equal to"; } } else if (expr
-         * instanceof E_LessThan) { if (inverted) { verb = "be greater than"; }
-         * else { verb = "be less than"; } } else if (expr instanceof
-         * E_LessThanOrEqual) { if (inverted) { verb = "be greater than or equal
-         * to"; } else { verb = "be less than or equal to"; } } else if (expr
-         * instanceof E_NotEquals) { if (left instanceof E_Lang) { verb = "be
-         * in"; if (right.isConstant() &&
-         * right.getConstant().asString().equals("en")) {
-         * p.setObject("English"); }
-         *
-         * } else { verb = "be equal to"; } p.setFeature(Feature.NEGATED, true);
-         * } p.setVerb(verb); } //not equals else { return null; } return p;
-         */
     }
 
     private NLGElement getNLGFromAggregation(ExprAggregator aggregationExpr) {
@@ -1134,7 +1080,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 + "OPTIONAL { ?uri rdfs:label ?string "
                 + "FILTER ( lang(?string) = \'en\' )} } "
                 + "GROUP BY ?uri ?string "
-                + "ORDER BY DESC(?language) "
+                + "ORDER BY ?language "
                 + "LIMIT 10 OFFSET 20";
 
         String query9 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
@@ -1162,14 +1108,14 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 + "{ ?uri rdf:type dbo:President."
                 + "?uri dbp:title res:President_of_the_United_States. }"
                 + "?uri rdfs:label ?string."
-                + "FILTER (?string >\"1970-01-01\"^^xsd:date && lang(?string) = 'en' && !regex(?string,'Presidency','i') && !regex(?string,'and the')) ."
+                + "FILTER (lang(?string) = 'en' && !regex(?string,'Presidency','i') && !regex(?string,'and the')) ."
                 + "}";
 
 
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(ep);
-            Query sparqlQuery = QueryFactory.create(querya, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query8, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
