@@ -659,7 +659,11 @@ public class Postprocessor {
                     else if (((WordElement) sentence.getVerb()).getBaseForm().equals("have")) {
                         sentencesLeft.add(sentence);
                     } 
-                    else { 
+                    else if (numberOfOccurrences(sentence.getSubject().getFeatureAsString("head").replace("?","")) 
+                            > numberOfOccurrences(sentence.getObject().getFeatureAsString("head").replace("?",""))) {
+                        sentencesLeft.add(sentence);
+                    }
+                    else {
                         sentence.setFeature(Feature.PASSIVE,true);
                         passiveStore.add(sentence);
                     }

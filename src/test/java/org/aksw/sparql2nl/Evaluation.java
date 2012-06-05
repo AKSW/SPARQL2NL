@@ -46,9 +46,9 @@ public class Evaluation {
 	
 //	private static final String QUERIES_FILE = "resources/queries.txt";
 //	private static final String QUERIES_FILE = "resources/GoodQALD.xml";
-	private static final String QUERIES_FILE = "resources/qald2-dbpedia-test.xml";
+//	private static final String QUERIES_FILE = "resources/qald2-dbpedia-test.xml";
 //	private static final String QUERIES_FILE = "resources/qald2-musicbrainz-train.xml";
-//	private static final String QUERIES_FILE = "resources/qald2-dbpedia-train.xml";
+	private static final String QUERIES_FILE = "resources/qald2-dbpedia-train.xml";
 	private static final int NR_OF_REPRESENTATIONS = 10;
 	
         private static int testme = -1;
@@ -359,11 +359,11 @@ public class Evaluation {
 			Query query = QueryFactory.create(queryString, Syntax.syntaxARQ);
 			logger.info("-------------------------------------------------");
 			logger.info("Query " + entry.getKey() + ":\n");
-			logger.info(query.toString());
-			logger.info("VARS REPLACED:");
+//			logger.info(query.toString());
+//			logger.info("VARS REPLACED:");
 			query = qPre.replaceVariablesWithTypes(query);
 			query = new DisjunctiveNormalFormConverter().getDisjunctiveNormalForm(query);
-			logger.info(query.toString());
+//			logger.info(query.toString());
 			String nlr = null;
 			try {
 				nlr = nlg.getNLR(query);
