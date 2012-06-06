@@ -646,21 +646,31 @@ public class Postprocessor {
         Set<Set<Set<SPhraseSpec>>> unionsLeft = new HashSet<Set<Set<SPhraseSpec>>>();
         
         for (SPhraseSpec sentence : sentences) {
-                if (sentence.getSubject().getFeatureAsString("head").contains("?"+var)) {
-                    activeStore.add(sentence);
-                }
-                else if (sentence.getObject().getFeatureAsString("head").contains("?"+var)) {
+            
+            String subjvar = sentence.getSubject().getFeatureAsString("head");
+            String objvar  = sentence.getObject().getFeatureAsString("head");           
+            Pattern p = Pattern.compile(".*(\\?\\w+)(\\s|'|:).*");
+            Matcher m = p.matcher(subjvar); 
+            if (m.find()) subjvar = m.group(1);
+            m = p.matcher(objvar); 
+            if (m.find()) objvar = m.group(1);
+            
+                if (subjvar.contains("?"+var)) activeStore.add(sentence);
+                else if (objvar.contains("?"+var)) {
                     if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")) {
-                        NLGElement obj = sentence.getObject();
-                        sentence.setObject(sentence.getSubject());
-                        sentence.setSubject(obj);
-                        activeStore.add(sentence);
+                        if (numberOfOccurrences(objvar.replace("?","")) > numberOfOccurrences(subjvar.replace("?",""))) {
+                            NLGElement obj = sentence.getObject();
+                            sentence.setObject(sentence.getSubject());
+                            sentence.setSubject(obj);
+                            activeStore.add(sentence);
+                        }
+                        else sentencesLeft.add(sentence);
                     } 
                     else if (((WordElement) sentence.getVerb()).getBaseForm().equals("have")) {
-                        sentencesLeft.add(sentence);
+                        activeStore.add(sentence);
                     } 
-                    else if (numberOfOccurrences(sentence.getSubject().getFeatureAsString("head").replace("?","")) 
-                            > numberOfOccurrences(sentence.getObject().getFeatureAsString("head").replace("?",""))) {
+                    else if (numberOfOccurrences(subjvar.replace("?","")) 
+                            > numberOfOccurrences(objvar.replace("?",""))) {
                         sentencesLeft.add(sentence);
                     }
                     else {
@@ -672,22 +682,45 @@ public class Postprocessor {
         }
         for (Set<Set<SPhraseSpec>> union : unions) {
             boolean takeit = false;
-            for (Set<SPhraseSpec> un : union) {
+            Hashtable<String,SPhraseSpec> unionsents = new Hashtable<String,SPhraseSpec>();
+            for (Set<SPhraseSpec> un : union) {          
                 for (SPhraseSpec sentence : un) {
                     takeit = false;
-                    if (sentence.getSubject().getFeatureAsString("head").contains("?"+var)) takeit = true;
-                    else if (sentence.getObject().getFeatureAsString("head").contains("?"+var)) {
-                        if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")) {
-                            NLGElement obj = sentence.getObject();
-                            sentence.setObject(sentence.getSubject());
-                            sentence.setSubject(obj);
-                        } 
-                        else sentence.setFeature(Feature.PASSIVE,true);
+                    
+                    String subjvar = sentence.getSubject().getFeatureAsString("head");
+                    String objvar  = sentence.getObject().getFeatureAsString("head");           
+                    Pattern p = Pattern.compile(".*(\\?\\w+)(\\s|'|:).*");
+                    Matcher m = p.matcher(subjvar); 
+                    if (m.find()) subjvar = m.group(1);
+                    m = p.matcher(objvar); 
+                    if (m.find()) objvar = m.group(1);
+                    
+                    if (subjvar.contains("?"+var)) {
                         takeit = true;
+                        if (!unionsents.containsKey(realiser.realiseSentence(sentence))) unionsents.put(realiser.realiseSentence(sentence),sentence);
+                    }
+                    else if (objvar.contains("?"+var)) {
+                        if (((WordElement) sentence.getVerb()).getBaseForm().equals("be")) { 
+                                if (numberOfOccurrences(objvar.replace("?","")) > numberOfOccurrences(subjvar.replace("?","")) ) {
+                                    NLGElement obj = sentence.getObject();
+                                    sentence.setObject(sentence.getSubject());
+                                    sentence.setSubject(obj);
+                                }
+                                else continue;
+                        } 
+                        else if (numberOfOccurrences(subjvar.replace("?","")) 
+                                < numberOfOccurrences(objvar.replace("?",""))) {
+                            sentence.setFeature(Feature.PASSIVE,true);
+                        }
+                        takeit = true;
+                        if (!unionsents.containsKey(realiser.realiseSentence(sentence))) unionsents.put(realiser.realiseSentence(sentence),sentence);
                     }
                 }
             }
-            if (takeit) unionStore.add(union);
+            if (takeit) {
+                if (unionsents.size() == 1) { for (String key : unionsents.keySet()) activeStore.add(unionsents.get(key)); }
+                else unionStore.add(union);
+            }
             else unionsLeft.add(union);
         }
          
