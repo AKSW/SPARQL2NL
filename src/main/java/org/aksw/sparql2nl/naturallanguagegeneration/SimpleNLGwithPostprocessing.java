@@ -37,6 +37,7 @@ import simplenlg.realiser.english.Realiser;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.graph.impl.LiteralLabel;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.SortCondition;
@@ -57,6 +58,7 @@ import com.hp.hpl.jena.sparql.syntax.ElementUnion;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
+import com.hp.hpl.jena.vocabulary.XSD;
 
 /**
  *
@@ -68,6 +70,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     NLGFactory nlgFactory;
     Realiser realiser;
     private URIConverter uriConverter;
+    private LiteralConverter literalConverter;
     private FilterExpressionConverter expressionConverter;
     Postprocessor post;
     public static final String ENTITY = "owl#thing";
@@ -96,7 +99,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         post = new Postprocessor();
 
         uriConverter = new URIConverter(endpoint);
-        expressionConverter = new FilterExpressionConverter(uriConverter);
+        literalConverter = new LiteralConverter(uriConverter);
+        expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
         
         pp = new PropertyProcessor("resources/wordnet/dict");
 
@@ -112,7 +116,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         post = new Postprocessor();
 
         uriConverter = new URIConverter(endpoint);
-        expressionConverter = new FilterExpressionConverter(uriConverter);
+        expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
         
         pp = new PropertyProcessor(wordnetDir);
 
@@ -806,7 +810,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             if (t.getObject().isVariable()) {
                 object = t.getObject().toString();
             } else if (t.getObject().isLiteral()) {
-                object = t.getObject().getLiteralLexicalForm();
+            	LiteralLabel lit = t.getObject().getLiteral();
+            	NPPhraseSpec np = nlgFactory.createNounPhrase(
+            			nlgFactory.createInflectedWord(literalConverter.convert(lit), LexicalCategory.NOUN));
+                np.setPlural(literalConverter.isPlural(lit));
+                object = np;
             } else {
                 object = getNPPhrase(t.getObject().toString(), false);
             }
@@ -828,7 +836,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             if (t.getObject().isVariable()) {
                 object = t.getObject().toString();
             } else if (t.getObject().isLiteral()) {
-                object = t.getObject().getLiteralLexicalForm();
+            	LiteralLabel lit = t.getObject().getLiteral();
+            	NPPhraseSpec np = nlgFactory.createNounPhrase(
+            			nlgFactory.createInflectedWord(literalConverter.convert(lit), LexicalCategory.NOUN));
+                np.setPlural(literalConverter.isPlural(lit));
+                object = np;
             } else {
                 object = getNPPhrase(t.getObject().toString(), false, t.getPredicate().matches(RDF.type.asNode()));
             }
@@ -1111,6 +1123,12 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 + "FILTER (lang(?string) = 'en' && !regex(?string,'Presidency','i') && !regex(?string,'and the')) ."
                 + "}";
 
+        query8 = "SELECT * WHERE {" +
+        		"?s <http://dbpedia.org/ontology/PopulatedPlace/areaTotal> ?lit. " +
+        		"FILTER(?lit = \"1.0\"^^<" + "http://dbpedia.org/datatypes/squareKilometre"/*XSD.integer.getURI()*/ + ">)}";
+        
+//        query8 = "SELECT * WHERE {" +
+//        		"?s <http://dbpedia.org/ontology/PopulatedPlace/areaTotal> \"12\"^^<http://dbpedia.org/datatypes/squareKilometre>.} ";
 
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));

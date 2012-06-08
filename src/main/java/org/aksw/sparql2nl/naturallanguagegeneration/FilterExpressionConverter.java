@@ -4,6 +4,7 @@ import java.util.Stack;
 
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
+import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
@@ -12,6 +13,7 @@ import simplenlg.realiser.english.Realiser;
 
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
+import com.hp.hpl.jena.graph.impl.LiteralLabel;
 import com.hp.hpl.jena.sparql.expr.E_Bound;
 import com.hp.hpl.jena.sparql.expr.E_Cast;
 import com.hp.hpl.jena.sparql.expr.E_Equals;
@@ -54,11 +56,13 @@ public class FilterExpressionConverter implements ExprVisitor{
 	private Stack<NLGElement> stack;
 	
 	private URIConverter uriConverter;
+	private LiteralConverter literalConverter;
 	
 	private boolean simplifyLanguageFilterConstructs = true;
 	
-	public FilterExpressionConverter(URIConverter uriConverter) {
+	public FilterExpressionConverter(URIConverter uriConverter, LiteralConverter literalConverter) {
 		this.uriConverter = uriConverter;
+		this.literalConverter = literalConverter;
 		
 		Lexicon lexicon = Lexicon.getDefaultLexicon();
 		nlgFactory = new NLGFactory(lexicon);
@@ -267,19 +271,18 @@ public class FilterExpressionConverter implements ExprVisitor{
 	@Override
 	public void visit(NodeValue nv) {
 		String label = null;
+		boolean isPlural = false;
 		if(nv.isVariable()){
 			label = nv.toString();
 		} else if(nv.isIRI()){
 			label = uriConverter.convert(nv.asNode().getURI());
 		} else if(nv.isLiteral()){
-			RDFDatatype datatype = nv.asNode().getLiteralDatatype();
-			if(datatype != null){
-				label = nv.asNode().getLiteralLexicalForm();
-			} else {
-				label = nv.toString();
-			}
+			LiteralLabel lit = nv.asNode().getLiteral();
+			label = literalConverter.convert(lit);
+			isPlural = literalConverter.isPlural(lit);
 		}
-		NLGElement element = nlgFactory.createNounPhrase(label);
+		NLGElement element = nlgFactory.createNounPhrase(nlgFactory.createWord(label, LexicalCategory.NOUN));
+		element.setPlural(isPlural);
 		stack.push(element);
 	}
 

@@ -33,6 +33,10 @@ public class URIConverter {
 	}
 	
 	public String convert(String uri){
+		return convert(uri, true);
+	}
+	
+	public String convert(String uri, boolean dereferenceURI){
 		if (uri.equals(RDF.type.getURI())) {
             return "type";
         } else if (uri.equals(RDFS.label.getURI())) {
@@ -58,7 +62,7 @@ public class URIConverter {
 	                    label = soln.getLiteral("label").getLexicalForm();
 	                }
 	            }
-	            if(label == null && !uri.startsWith(XSD.getURI())){
+	            if(dereferenceURI && label == null && !uri.startsWith(XSD.getURI())){
 	            	label = dereferenceURI(uri);
 	            }
 	            if(label == null){

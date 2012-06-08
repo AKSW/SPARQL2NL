@@ -62,6 +62,7 @@ public class SimpleNLG implements Sparql2NLConverter {
     NLGFactory nlgFactory;
     Realiser realiser;
     private URIConverter uriConverter;
+    private LiteralConverter literalConverter;
     private FilterExpressionConverter expressionConverter;
     
     public static final String ENTITY = "owl#thing";
@@ -78,7 +79,8 @@ public class SimpleNLG implements Sparql2NLConverter {
         realiser = new Realiser(lexicon);
         
         uriConverter = new URIConverter(endpoint);
-        expressionConverter = new FilterExpressionConverter(uriConverter);
+        literalConverter = new LiteralConverter(uriConverter);
+        expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
         
     }
 

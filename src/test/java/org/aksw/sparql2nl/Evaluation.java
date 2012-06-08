@@ -20,12 +20,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLG;
+import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.aksw.sparql2nl.queryprocessing.DisjunctiveNormalFormConverter;
 import org.aksw.sparql2nl.queryprocessing.QueryPreprocessor;
-import org.aksw.sparql2nl.queryprocessing.Similarity.SimilarityMeasure;
-import org.aksw.sparql2nl.smooth_nlg.CardBox;
-import org.aksw.sparql2nl.smooth_nlg.NLConstructor;
-import org.aksw.sparql2nl.smooth_nlg.SPARQLDeconstructor;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
@@ -38,7 +35,6 @@ import org.xml.sax.SAXException;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.Syntax;
-import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 
 public class Evaluation {
 	
@@ -306,21 +302,6 @@ public class Evaluation {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		}
-	}
-	
-	public void run(){
-		readSPARQLQueriesFromXML(new File(QUERIES_FILE));
-		SPARQL2NL nlGen = new SPARQL2NL();
-		nlGen.setMeasure(SimilarityMeasure.TYPE_AWARE_ISOMORPHY);
-		for(Entry<Integer, String> entry : id2Query.entrySet()){
-			String query = entry.getValue();
-			logger.info("Evaluating query\n" + query);
-			Set<String> nlRepresentations = nlGen.getNaturalLanguageRepresentations(query, NR_OF_REPRESENTATIONS);
-			logger.info(nlRepresentations);
-			createLSQFile(entry.getKey(), query, new ArrayList<String>(nlRepresentations));
-			
-//			if(entry.getKey() == 10)break;
 		}
 	}
 	
