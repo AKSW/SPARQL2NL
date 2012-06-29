@@ -59,6 +59,7 @@ public class FilterExpressionConverter implements ExprVisitor{
 	private LiteralConverter literalConverter;
 	
 	private boolean simplifyLanguageFilterConstructs = true;
+	private boolean inRegex = false;
 	
 	public FilterExpressionConverter(URIConverter uriConverter, LiteralConverter literalConverter) {
 		this.uriConverter = uriConverter;
@@ -231,6 +232,7 @@ public class FilterExpressionConverter implements ExprVisitor{
 	public void visit(ExprFunctionN func) {
 		SPhraseSpec phrase = nlgFactory.createClause();
 		if(func instanceof E_Regex){
+			inRegex = true;
 			Expr target = func.getArg(1);
 			target.visit(this);
 			phrase.setSubject(stack.pop());
@@ -250,6 +252,7 @@ public class FilterExpressionConverter implements ExprVisitor{
 			}
 			phrase.setVerb("match " + adverb);
 			stack.push(phrase);
+			inRegex = false;
 		} else if(func instanceof E_Function){
 			ExprFunction function = func.getFunction();
 			if(function.getFunctionIRI().equals(XSD.integer.getURI())){
@@ -279,7 +282,10 @@ public class FilterExpressionConverter implements ExprVisitor{
 		} else if(nv.isLiteral()){
 			LiteralLabel lit = nv.asNode().getLiteral();
 			label = literalConverter.convert(lit);
-			isPlural = literalConverter.isPlural(lit);
+			isPlural = literalConverter.isPlural(lit) && !inRegex;
+			if(inRegex){
+				label = "\"" + label + "\"";
+			}
 		}
 		NLGElement element = nlgFactory.createNounPhrase(nlgFactory.createWord(label, LexicalCategory.NOUN));
 		element.setPlural(isPlural);
@@ -320,9 +326,9 @@ public class FilterExpressionConverter implements ExprVisitor{
 	}
 	
 	private String getLanguageForAbbreviation(String abbreviation){
-		if(abbreviation.equals("\"en\"")){
+		if(abbreviation.equals("en")){
 			return "English";
-		} else if(abbreviation.equals("\"de\"")){
+		} else if(abbreviation.equals("de")){
 			return "German";
 		}
 		return null;

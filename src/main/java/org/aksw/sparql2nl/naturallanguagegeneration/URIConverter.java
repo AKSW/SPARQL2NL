@@ -6,7 +6,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 
-import org.apache.commons.collections15.map.LRUMap;
+import org.apache.commons.collections.map.LRUMap;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.util.SimpleIRIShortFormProvider;
@@ -26,7 +26,7 @@ public class URIConverter {
 	
 	private SimpleIRIShortFormProvider sfp = new SimpleIRIShortFormProvider();
 	private SparqlEndpoint endpoint;
-	private LRUMap<String, String> uri2LabelCache = new LRUMap<String, String>(50);
+	private LRUMap uri2LabelCache = new LRUMap(50);
 	
 	public URIConverter(SparqlEndpoint endpoint) {
 		this.endpoint = endpoint;
@@ -43,7 +43,7 @@ public class URIConverter {
             return "label";
         }
 		
-		String label = uri2LabelCache.get(uri);
+		String label = (String) uri2LabelCache.get(uri);
 		if(label == null){
 	        try {
 	            String labelQuery = "SELECT ?label WHERE {<" + uri + "> "

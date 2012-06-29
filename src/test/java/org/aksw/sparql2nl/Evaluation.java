@@ -9,7 +9,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
@@ -19,10 +22,13 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.aksw.sparql2nl.naturallanguagegeneration.PropertyProcessor;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLG;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
+import org.aksw.sparql2nl.naturallanguagegeneration.URIConverter;
 import org.aksw.sparql2nl.queryprocessing.DisjunctiveNormalFormConverter;
 import org.aksw.sparql2nl.queryprocessing.QueryPreprocessor;
+import org.aksw.sparql2nl.queryprocessing.TriplePatternExtractor;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
@@ -32,6 +38,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.Syntax;
@@ -305,6 +312,48 @@ public class Evaluation {
 		}
 	}
 	
+	public void bla(){
+		TriplePatternExtractor tp = new TriplePatternExtractor();
+		PropertyProcessor pp = new PropertyProcessor("resources/wordnet/dict");
+		 URIConverter c = new URIConverter(SparqlEndpoint.getEndpointDBpediaLiveAKSW());
+		 Map<String, Integer> uri2Count = new HashMap<String, Integer>();
+		readSPARQLQueriesFromXML(new File("resources/qald2-dbpedia-test.xml"));
+		
+		for(Entry<Integer, String> entry : id2Query.entrySet()){
+			if(entry.getValue().contains("OUT OF SCOPE")){
+				continue;
+			}
+			for(Triple t : tp.extractTriplePattern(QueryFactory.create(entry.getValue(), Syntax.syntaxARQ))){
+				Integer count = uri2Count.get(t.getPredicate().getURI());
+				if(count == null){
+					count = Integer.valueOf(0);
+				}
+				count = count + 1;
+				uri2Count.put(t.getPredicate().getURI(), count);
+			}
+		}
+		id2Query.clear();
+//		readSPARQLQueriesFromXML(new File("resources/qald2-dbpedia-test.xml"));
+		
+		for(Entry<Integer, String> entry : id2Query.entrySet()){
+			if(entry.getValue().contains("OUT OF SCOPE")){
+				continue;
+			}
+			for(Triple t : tp.extractTriplePattern(QueryFactory.create(entry.getValue(), Syntax.syntaxARQ))){
+				Integer count = uri2Count.get(t.getPredicate().getURI());
+				if(count == null){
+					count = Integer.valueOf(0);
+				}
+				count = count + 1;
+				uri2Count.put(t.getPredicate().getURI(), count);
+			}
+		}
+		
+        for(Entry<String, Integer> e : uri2Count.entrySet()){
+        	System.out.println(e.getKey() + "\t" + e.getValue()  + " \t" + pp.getType(c.convert(e.getKey(), false)));
+        }
+	}
+	
 	public void run_simple(SparqlEndpoint endpoint){
 		readSPARQLQueriesFromXML(new File(QUERIES_FILE));
 		SimpleNLG nlg = new SimpleNLG(endpoint);
@@ -362,7 +411,8 @@ public class Evaluation {
 		SparqlEndpoint endpoint = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
 //		endpoint = SparqlEndpoint.getEndpointDBpedia();
 //		new Evaluation().run_simple(endpoint);
-		new Evaluation().run_smooth(endpoint);
+//		new Evaluation().run_smooth(endpoint);
+		new Evaluation().bla();
 	}
 
 }

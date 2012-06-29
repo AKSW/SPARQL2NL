@@ -9,6 +9,8 @@ import edu.smu.tspell.wordnet.SynsetType;
 import edu.smu.tspell.wordnet.WordNetDatabase;
 import java.util.ArrayList;
 
+import opennlp.tools.coref.mention.PTBHeadFinder;
+
 import com.hp.hpl.jena.vocabulary.RDFS;
 
 /**
@@ -88,17 +90,18 @@ public class PropertyProcessor {
         Synset[] synsets = database.getSynsets(word, SynsetType.NOUN, true);
         for (int i = 0; i < synsets.length; i++) {
             String[] s = synsets[i].getWordForms();
-            for (int j = 0; j < s.length; j++) {
+            for (int j = 0; j < s.length; j++) {//System.out.println(s[j] + ":" + synsets[i].getTagCount(s[j]));
                 nounCount = nounCount + Math.log(synsets[i].getTagCount(s[j]) + 1.0);
             }
         }
 
         synsets = database.getSynsets(word, SynsetType.VERB, true);
         for (int i = 0; i < synsets.length; i++) {
+        	
             String[] s = synsets[i].getWordForms();
-            //for (int j = 0; j < s.length; j++) {
-                verbCount = verbCount + Math.log(synsets[i].getTagCount(s[0]) + 1.0);
-            //}
+            for (int j = 0; j < s.length; j++) {//System.out.println(s[j] + ":" + synsets[i].getTagCount(s[j]));
+                verbCount = verbCount + Math.log(synsets[i].getTagCount(s[j]) + 1.0);
+            }
         }
 //        System.out.println("Noun count = "+nounCount);
 //        System.out.println("Verb count = "+verbCount);

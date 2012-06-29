@@ -1,10 +1,21 @@
 package org.aksw.sparql2nl.queryprocessing;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import opennlp.tools.cmdline.parser.ParserTool;
+import opennlp.tools.parser.Parse;
+import opennlp.tools.parser.Parser;
+import opennlp.tools.parser.ParserFactory;
+import opennlp.tools.parser.ParserModel;
+import opennlp.tools.util.InvalidFormatException;
 
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.aksw.sparql2nl.naturallanguagegeneration.URIConverter;
@@ -17,6 +28,30 @@ public class QueryPreprocessor {
 	
 	private TypeExtractor2 typeExtr;
 	private URIConverter uriConverter;
+	private Parser parser;
+	
+	private String parseModelFile = "/home/lorenz/en-parser-chunking.bin";
+	
+	public QueryPreprocessor(SparqlEndpoint endpoint, String parseModelFile) {
+		typeExtr = new TypeExtractor2(endpoint);
+		typeExtr.setInferTypes(true);
+		typeExtr.setDomainExtractor(new SPARQLDomainExtractor(endpoint));
+		typeExtr.setRangeExtractor(new SPARQLRangeExtractor(endpoint));
+		
+		uriConverter = new URIConverter(endpoint);
+		
+		try {
+			InputStream modelIn = new FileInputStream(parseModelFile);
+			ParserModel model = new ParserModel(modelIn);
+			parser = ParserFactory.create(model);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (InvalidFormatException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 	
 	public QueryPreprocessor(SparqlEndpoint endpoint) {
 		typeExtr = new TypeExtractor2(endpoint);
@@ -25,6 +60,18 @@ public class QueryPreprocessor {
 		typeExtr.setRangeExtractor(new SPARQLRangeExtractor(endpoint));
 		
 		uriConverter = new URIConverter(endpoint);
+		
+		try {
+			InputStream modelIn = new FileInputStream(parseModelFile);
+			ParserModel model = new ParserModel(modelIn);
+			parser = ParserFactory.create(model);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (InvalidFormatException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public String replaceVariablesWithTypes(String queryString){
@@ -41,6 +88,7 @@ public class QueryPreprocessor {
 				String label = uriConverter.convert(uri);
 				//normalize label
 				label = processLabel(label);
+				label = getHead(label);
 				
 				if(label2ReplacedVars.containsKey(label)){
 					Set<String> oldReplacedVars = label2ReplacedVars.get(label);
@@ -82,7 +130,39 @@ public class QueryPreprocessor {
 		return nLabel;
 	}
 	
+	public String getHead(String phrase){
+		Parse topParses[] = ParserTool.parseLine(phrase, parser, 1);
+		  Parse top = topParses[0];
+		  top.show();
+		  if(top.getChildCount() == 1){
+			  return getHead(top.getChildren()[0]);
+		  } else {
+			  for(Parse child : top.getChildren()){
+				  return getHead(child);
+			  }
+		  }
+		return null;
+	}
+	
+	public String getHead(Parse parse){
+		parse.show();
+		for(Parse child : parse.getChildren()){
+			child.show();
+			  if(child.getType().equals("NP")){
+				  return child.toString();
+			  } else {
+				  return getHead(child);
+			  }
+		}
+		return parse.getText();
+	}
+	
 	public static void main(String[] args) {
+		QueryPreprocessor qp = new QueryPreprocessor(null);
+		System.out.println(qp.getHead("Host Cities of the Summer Olympic Games"));
+		System.out.println(qp.getHead("actors born in 1945"));
+		System.out.println(qp.getHead("soccer clubs in Premier League"));
+		
 		SimpleNLGwithPostprocessing nlg = new SimpleNLGwithPostprocessing(SparqlEndpoint.getEndpointDBpedia());
 		
 		String queryString = "PREFIX dbo: <http://dbpedia.org/ontology/> " +

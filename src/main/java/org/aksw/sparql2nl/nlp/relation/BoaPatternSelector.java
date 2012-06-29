@@ -17,6 +17,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 
+import org.aksw.sparql2nl.naturallanguagegeneration.PropertyProcessor;
+import org.aksw.sparql2nl.naturallanguagegeneration.URIConverter;
+import org.aksw.sparql2nl.queryprocessing.TriplePatternExtractor;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
@@ -24,6 +27,7 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.dllearner.kb.sparql.SparqlEndpoint;
 
 import edu.stanford.nlp.util.StringUtils;
 
@@ -233,9 +237,9 @@ public class BoaPatternSelector {
         // createPropertyDistribution();
 
         List<String> uris = Arrays.asList("http://dbpedia.org/property/accessioneudate", "http://dbpedia.org/property/awards", "http://dbpedia.org/property/borderingstates", "http://dbpedia.org/property/classis", "http://dbpedia.org/property/country", "http://dbpedia.org/property/currency", "http://dbpedia.org/property/currencyCode", "http://dbpedia.org/property/densityrank", "http://dbpedia.org/property/design", "http://dbpedia.org/property/designer", "http://dbpedia.org/property/elevationM", "http://dbpedia.org/property/foundation", "http://dbpedia.org/property/ground", "http://dbpedia.org/property/industry", "http://dbpedia.org/property/location", "http://dbpedia.org/property/locationCountry", "http://dbpedia.org/property/mineral", "http://dbpedia.org/property/museum", "http://dbpedia.org/property/numEmployees", "http://dbpedia.org/property/office", "http://dbpedia.org/property/officialLanguages", "http://dbpedia.org/property/populationTotal", "http://dbpedia.org/property/publisher", "http://dbpedia.org/property/rulingParty", "http://dbpedia.org/property/spouse", "http://dbpedia.org/property/starring", "http://dbpedia.org/property/title", "http://dbpedia.org/ontology/album", "http://dbpedia.org/ontology/areaCode", "http://dbpedia.org/ontology/author", "http://dbpedia.org/ontology/battle", "http://dbpedia.org/ontology/birthDate", "http://dbpedia.org/ontology/birthPlace", "http://dbpedia.org/ontology/capital", "http://dbpedia.org/ontology/child", "http://dbpedia.org/ontology/country", "http://dbpedia.org/ontology/creator", "http://dbpedia.org/ontology/crosses", "http://dbpedia.org/ontology/currency", "http://dbpedia.org/ontology/date", "http://dbpedia.org/ontology/deathCause", "http://dbpedia.org/ontology/deathDate", "http://dbpedia.org/ontology/deathPlace", "http://dbpedia.org/ontology/developer", "http://dbpedia.org/ontology/director", "http://dbpedia.org/ontology/elevation", "http://dbpedia.org/ontology/formationYear", "http://dbpedia.org/ontology/foundationPlace", "http://dbpedia.org/ontology/genre", "http://dbpedia.org/ontology/governmentType", "http://dbpedia.org/ontology/ground", "http://dbpedia.org/ontology/height", "http://dbpedia.org/ontology/highestPlace", "http://dbpedia.org/ontology/isPartOf", "http://dbpedia.org/ontology/keyPerson", "http://dbpedia.org/ontology/language", "http://dbpedia.org/ontology/largestCity", "http://dbpedia.org/ontology/leaderName", "http://dbpedia.org/ontology/league", "http://dbpedia.org/ontology/locatedInArea", "http://dbpedia.org/ontology/location", "http://dbpedia.org/ontology/numberOfEmployees", "http://dbpedia.org/ontology/numberOfEntrances", "http://dbpedia.org/ontology/officialLanguage", "http://dbpedia.org/ontology/orderInOffice", "http://dbpedia.org/ontology/owner", "http://dbpedia.org/ontology/producer", "http://dbpedia.org/ontology/programmingLanguage", "http://dbpedia.org/ontology/publisher", "http://dbpedia.org/ontology/seasonNumber", "http://dbpedia.org/ontology/series", "http://dbpedia.org/ontology/sourceCountry", "http://dbpedia.org/ontology/spokenIn", "http://dbpedia.org/ontology/spouse", "http://dbpedia.org/ontology/starring");
-
+        
         for (String uri : uris) {
-
+        	
             List<Pattern> patterns = BoaPatternSelector.getNaturalLanguageRepresentation(uri, 1);
 
             if (patterns.size() > 0) {

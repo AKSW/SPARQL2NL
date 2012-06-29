@@ -116,6 +116,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         post = new Postprocessor();
 
         uriConverter = new URIConverter(endpoint);
+        literalConverter = new LiteralConverter(uriConverter);
         expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
         
         pp = new PropertyProcessor(wordnetDir);
@@ -1127,13 +1128,30 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         		"?s <http://dbpedia.org/ontology/PopulatedPlace/areaTotal> ?lit. " +
         		"FILTER(?lit = \"1.0\"^^<" + "http://dbpedia.org/datatypes/squareKilometre"/*XSD.integer.getURI()*/ + ">)}";
         
+        query10 = "PREFIX  res:  <http://dbpedia.org/resource/> " +
+        		"PREFIX  dbo:  <http://dbpedia.org/ontology/> " +
+        		"PREFIX  yago: <http://dbpedia.org/class/yago/> " +
+        		"PREFIX  dbp:  <http://dbpedia.org/property/> " +
+        		"PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
+        		"PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> " +
+        		"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> " +
+        		"SELECT DISTINCT ?person WHERE {" +
+        		" ?person rdf:type dbo:Person.  " +
+        		"       { ?person dbo:occupation res:Writer. } " +
+        		"       UNION" +
+        		"        { ?person dbo:occupation res:Surfing. }" +
+        		"        ?person dbo:birthDate ?date." +
+        		"        FILTER(?date > \"1950\"^^xsd:date) ." +
+        		"        OPTIONAL {?person rdfs:label ?string" +
+        		"        FILTER ( lang(?string) = \"en\" ) } }";
+        
 //        query8 = "SELECT * WHERE {" +
 //        		"?s <http://dbpedia.org/ontology/PopulatedPlace/areaTotal> \"12\"^^<http://dbpedia.org/datatypes/squareKilometre>.} ";
 
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(ep);
-            Query sparqlQuery = QueryFactory.create(query8, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query10, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
