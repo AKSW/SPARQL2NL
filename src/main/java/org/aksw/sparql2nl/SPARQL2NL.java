@@ -26,6 +26,8 @@ import org.aksw.sparql2nl.queryprocessing.Similarity.SimilarityMeasure;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.dllearner.algorithm.tbsl.sparql.Template;
 
+import simplenlg.test.syntax.NounPhraseTest;
+
 import com.hp.hpl.jena.query.QueryFactory;
 import com.ibm.icu.util.Measure;
 

@@ -55,6 +55,7 @@ import com.hp.hpl.jena.sparql.syntax.ElementGroup;
 import com.hp.hpl.jena.sparql.syntax.ElementOptional;
 import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
 import com.hp.hpl.jena.sparql.syntax.ElementUnion;
+import com.hp.hpl.jena.sparql.syntax.PatternVars;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
@@ -251,7 +252,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             post.primaries = typeMap.keySet();
             List<String> nonoptionalVars = new ArrayList<String>();
             for (Element e : whereElements) {
-                for (Var var : e.varsMentioned()) {
+                for (Var var : PatternVars.vars(e)) {
                     String v = var.toString().replace("?", "");
                     if (!optionalVars.contains(v) && !typeMap.containsKey(v)) {
                         post.addSecondary(v);
