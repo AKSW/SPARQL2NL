@@ -613,12 +613,18 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     }
                     cpe.setConjunction("as well as");
                     if (distinct) {
-                        object.addPreModifier("distinct");
+                        object.addPreModifier("distinct entities");
                         //cpe.addPreModifier("distinct");
+                    }
+                    else
+                    {
+                        object.addPreModifier("entities");
                     }
                     cpe.addPreModifier("that are");
                     //object.addPreModifier(cpe);
+                    //object.addPreModifier(nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr()));
                     object.addComplement(cpe);
+                    
                 }
                 object.setFeature(Feature.CONJUNCTION, "or");
                 objects.add(object);
