@@ -96,7 +96,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
 
         if (isWindows()) {
-            pp = new PropertyProcessor("E:/Work/Data/WordNet-3.0/dict");
+            pp = new PropertyProcessor("/resources/wordnetWindows/dict");
         } else {
             pp = new PropertyProcessor("/resources/wordnet/dict");
         }
