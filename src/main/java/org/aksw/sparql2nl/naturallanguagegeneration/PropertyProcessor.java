@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import opennlp.tools.coref.mention.PTBHeadFinder;
 
 import com.hp.hpl.jena.vocabulary.RDFS;
+import org.apache.log4j.Logger;
 
 /**
  *
@@ -19,6 +20,7 @@ import com.hp.hpl.jena.vocabulary.RDFS;
  */
 public class PropertyProcessor {
 
+    private static final Logger logger = Logger.getLogger(LiteralConverter.class);
     public double THRESHOLD = 1.0;
     private Preposition preposition;
     WordNetDatabase database;
@@ -27,7 +29,6 @@ public class PropertyProcessor {
         System.setProperty("wordnet.database.dir", dictionary);
         database = WordNetDatabase.getFileInstance();
         preposition = new Preposition(this.getClass().getClassLoader().getResourceAsStream("preposition_list.txt"));
-        
     }
 
     public enum Type {
@@ -36,9 +37,9 @@ public class PropertyProcessor {
     }
 
     public Type getType(String property) {
-    	if(property.equals(RDFS.label.getURI())){
-    		return Type.NOUN;
-    	}
+        if (property.equals(RDFS.label.getURI())) {
+            return Type.NOUN;
+        }
         property = property.trim();
         //length is > 1
         //
@@ -86,8 +87,8 @@ public class PropertyProcessor {
     public double getScore(String word) {
         double nounCount = 0;
         double verbCount = 0;
-
-        Synset[] synsets = database.getSynsets(word, SynsetType.NOUN, true);
+        logger.info("Checking " + word);
+        Synset[] synsets = database.getSynsets(word, SynsetType.NOUN);
         for (int i = 0; i < synsets.length; i++) {
             String[] s = synsets[i].getWordForms();
             for (int j = 0; j < s.length; j++) {//System.out.println(s[j] + ":" + synsets[i].getTagCount(s[j]));
@@ -95,9 +96,9 @@ public class PropertyProcessor {
             }
         }
 
-        synsets = database.getSynsets(word, SynsetType.VERB, true);
+        synsets = database.getSynsets(word, SynsetType.VERB);
         for (int i = 0; i < synsets.length; i++) {
-        	
+
             String[] s = synsets[i].getWordForms();
             for (int j = 0; j < s.length; j++) {//System.out.println(s[j] + ":" + synsets[i].getTagCount(s[j]));
                 verbCount = verbCount + Math.log(synsets[i].getTagCount(s[j]) + 1.0);
@@ -167,6 +168,7 @@ public class PropertyProcessor {
         }
         return word;
     }
+
 
     public static void main(String args[]) {
         PropertyProcessor pp = new PropertyProcessor("resources/wordnet/dict");
