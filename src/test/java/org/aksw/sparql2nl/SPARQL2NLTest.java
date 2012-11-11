@@ -226,16 +226,17 @@ public class SPARQL2NLTest {
                 + "{ ?uri rdf:type dbo:City } UNION { ?uri rdf:type dbo:Town }"
                 + "?uri dbo:country res:Germany . ?uri dbo:populationTotal ?population . FILTER ( ?population > 250000 )"
                 + "OPTIONAL { ?uri rdfs:label ?string . FILTER ( lang(?string) = \"en\" ) } }";
-        String query21 = "PREFIX dbo: <http://dbpedia.org/ontology/> PREFIX dbp: <http://dbpedia.org/property/> PREFIX res: <http://dbpedia.org/resource/> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
-                + "SELECT DISTINCT ?uri ?string WHERE { ?x dbo:director res:William_Shatner . ?x dbo:starring res:William_Shatner ."
-                + "{ ?x dbo:starring ?uri . } UNION { ?x dbp:starring ?uri . } "
-                + "OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') } } ";
+        String query21 = "PREFIX  res:  <http://dbpedia.org/resource/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dbo:  <http://dbpedia.org/ontology/> PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
+                + "SELECT DISTINCT ?person ?date WHERE { ?person rdf:type dbo:Scientist. { ?person dbo:occupation dbo:Surfing .} UNION { ?person dbo:occupation res:Writer. } ?person dbo:birthDate ?date. FILTER(?date > \"1950\"^^xsd:date) . "
+                + "OPTIONAL { ?person rdfs:label ?string. FILTER (lang(?string) = 'en') } } ";
         String query25 = "PREFIX  res:  <http://dbpedia.org/resource/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dbp:  <http://dbpedia.org/property/> PREFIX  dbo:  <http://dbpedia.org/ontology/> PREFIX  yago: <http://dbpedia.org/class/yago/> PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
                 + "SELECT DISTINCT ?person WHERE { ?person rdf:type dbo:Person . { ?person rdf:type dbo:Scientist . } UNION { ?person dbo:occupation dbo:Music . }"
                 + "?person dbo:birthDate ?date . ?book dbo:author ?person .  FILTER (?date > \"1950\"^^xsd:date ) } GROUP BY ?person HAVING ( COUNT (?book ) > 2) ";
+        String query26 = "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX res:  <http://dbpedia.org/resource/> PREFIX dbo:  <http://dbpedia.org/ontology/> PREFIX dbp:  <http://dbpedia.org/property/> PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
+                + "SELECT DISTINCT  ?uri ?string  WHERE {  res:Bill_Clinton dbo:child ?child. ?child  dbp:spouse ?string. ?uri  rdfs:label ?string . }";
         
 //        String[] queries = {query,query2,query2b,query2c,query3,query3b,query4,query5,query6,query7,query8,query9,query10,query11,query14};
-      String[] queries = {query21};
+      String[] queries = {query18};
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             Lexicon lexicon = Lexicon.getDefaultLexicon();

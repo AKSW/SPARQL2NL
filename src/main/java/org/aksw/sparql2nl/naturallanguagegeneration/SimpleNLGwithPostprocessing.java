@@ -98,6 +98,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         realiser = new Realiser(lexicon);
 
         post = new Postprocessor();
+        post.id = 0;
 
         uriConverter = new URIConverter(endpoint);
         literalConverter = new LiteralConverter(uriConverter);
@@ -115,6 +116,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         realiser = new Realiser(lexicon);
 
         post = new Postprocessor();
+        post.id = 0;
 
         uriConverter = new URIConverter(endpoint);
         literalConverter = new LiteralConverter(uriConverter);
@@ -153,7 +155,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     	//we copy the query object here, because during the NLR generation it will be modified 
     	Query query = QueryFactory.create(inputQuery);
     	query = new DisjunctiveNormalFormConverter().getDisjunctiveNormalForm(query);
-
+        
         String output = "";
 
         // 1. run convert2NLE and in parallel assemble postprocessor
@@ -161,10 +163,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         SWITCH = false;
         UNIONSWITCH = false;
         output = realiseDocument(convert2NLE(query));
-        System.out.println("SimpleNLG:\n" + output);
-        if (VERBOSE) {
-            post.print();
-        }
+        System.out.println("\nSimpleNLG:\n" + output);
+        if (VERBOSE) post.TRACE = true;
 
         // 2. run postprocessor
         post.postprocess();
@@ -172,10 +172,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         // 3. run convert2NLE again, but this time use body generations from postprocessor
         POSTPROCESSING = true;
         output = realiseDocument(convert2NLE(query));
-//        output = post.finalPolishing(convert2NLE(query)).getRealisation();
-        output = output.replace(",,", ",").replace("..", "."); // wherever this duplicate punctuation comes from...
-        output = post.removeDots(output)+".";
-        System.out.println("After postprocessing:\n" + output);
+        output = output.replace(",,", ",").replace("..", ".").replace(".,",","); // wherever this duplicate punctuation comes from...
+//        output = post.removeDots(output)+".";
+        System.out.println("\nAfter postprocessing:\n" + output);
 
         post.flush();
 
@@ -268,14 +267,51 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             head.setSubject("This query");
             head.setVerb("ask whether");
             
-            if (POSTPROCESSING) head.setObject(post.output);
-            else // head.setObject(getNLFromElements(whereElements)) is correct but leads to a bug
+            if (POSTPROCESSING) {
+                if (!post.selects.isEmpty()) {
+                    if (post.selects.size() == 1 && post.output == null) {
+                        head.setVerb("ask whether there is such a thing as");
+                        head.setObject(post.selects.get(0));
+                        sentences.add(nlgFactory.createSentence(head));
+                    }
+                    else if (post.selects.size() > 1 && post.output == null) {
+                        head.setVerb("ask whether there are such things as");
+                        CoordinatedPhraseElement obj = nlgFactory.createCoordinatedPhrase();
+                        obj.setConjunction("and");
+                        for (NPPhraseSpec np : post.selects) obj.addCoordinate(np);
+                        head.setObject(obj);
+                        sentences.add(nlgFactory.createSentence(head));
+                    }
+                    else if (post.output != null) {
+                        head.setVerb("ask whether there are");
+                        if (post.selects.size() == 1)
+                            head.setObject(post.selects.get(0));
+                        else {
+                            CoordinatedPhraseElement obj = nlgFactory.createCoordinatedPhrase();
+                            obj.setConjunction("and");
+                            for (NPPhraseSpec np : post.selects) obj.addCoordinate(np);
+                            head.setObject(obj);
+                        }
+                        CoordinatedPhraseElement p = nlgFactory.createCoordinatedPhrase(head,post.output);
+                        if (post.relativeClause) p.setConjunction("");
+                        else p.setConjunction("such that");
+                        sentences.add(nlgFactory.createSentence(p));
+                    }
+                }
+                else {
+                    if (!realiser.realise(post.output).toString().trim().isEmpty()) {
+                        head.setObject(post.output);
+                        sentences.add(nlgFactory.createSentence(head));
+                    }                    
+                }
+            }
+            else { // head.setObject(getNLFromElements(whereElements)) is correct but leads to a bug
                 head.setObject(realiser.realise(getNLFromElements(whereElements)));
-            
-            head.getObject().setFeature(Feature.SUPRESSED_COMPLEMENTISER,true);
-            
-            sentences.add(nlgFactory.createSentence(realiser.realise(head)));
+                head.getObject().setFeature(Feature.SUPRESSED_COMPLEMENTISER,true);
+                sentences.add(nlgFactory.createSentence(realiser.realise(head)));
+            }
             if (typeMap.isEmpty()) return nlgFactory.createParagraph(sentences);
+            
         }
         else {
         //process SELECT queries
@@ -298,7 +334,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 }
                 //now add conjunction
                 CoordinatedPhraseElement phrase1 = nlgFactory.createCoordinatedPhrase(head, body);
-                phrase1.setConjunction("such that");
+                if (POSTPROCESSING && post.relativeClause) phrase1.setConjunction("");
+                else phrase1.setConjunction("such that");
                 // add as first sentence
                 sentences.add(nlgFactory.createSentence(phrase1));
                 //this concludes the first sentence.
@@ -328,14 +365,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
          */
 
         // The second sentence deals with the optional clause (if it exists)
-        boolean optionalexists;
-        if (POSTPROCESSING) {
-            optionalexists = post.optionaloutput != null; // !post.optionalsentences.isEmpty() || !post.optionalunions.isEmpty();
-        } else {
-            optionalexists = optionalElements != null && !optionalElements.isEmpty();
-        }
-
-        if (optionalexists) {
+        if (!POSTPROCESSING && optionalElements != null && !optionalElements.isEmpty()) {
             SWITCH = true;
             //the optional clause exists
             //if no supplementary projection variables are used in the clause
@@ -346,11 +376,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 optionalHead.setObject("data");
                 optionalHead.setFeature(Feature.CUE_PHRASE, "Additionally, ");
                 NLGElement optionalBody;
-                if (POSTPROCESSING) {
-                    optionalBody = post.optionaloutput;
-                } else {
-                    optionalBody = getNLFromElements(optionalElements);
-                }
+                optionalBody = getNLFromElements(optionalElements);
                 CoordinatedPhraseElement optionalPhrase = nlgFactory.createCoordinatedPhrase(optionalHead, optionalBody);
                 optionalPhrase.setConjunction("such that");
                 optionalPhrase.addComplement("if such exist");
@@ -361,19 +387,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 SPhraseSpec optionalHead = nlgFactory.createClause();
                 optionalHead.setSubject("it");
                 optionalHead.setVerb("retrieve");
-                if (POSTPROCESSING) {
-                    optionalHead.setObject(select);
-                } else {
-                    optionalHead.setObject(processTypes(typeMap, optionalVars, tEx.isCount(), query.isDistinct()));
-                }
+                optionalHead.setObject(processTypes(typeMap, optionalVars, tEx.isCount(), query.isDistinct()));
                 optionalHead.setFeature(Feature.CUE_PHRASE, "Additionally, ");
                 if (!optionalElements.isEmpty()) {
                     NLGElement optionalBody;
-                    if (POSTPROCESSING) {
-                        optionalBody = post.optionaloutput;
-                    } else {
-                        optionalBody = getNLFromElements(optionalElements);
-                    }
+                    optionalBody = getNLFromElements(optionalElements);
                     //now add conjunction
                     CoordinatedPhraseElement optionalPhrase = nlgFactory.createCoordinatedPhrase(optionalHead, optionalBody);
                     optionalPhrase.setConjunction("such that");
@@ -390,80 +408,95 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         }
 
         //The last sentence deals with the result modifiers
-        if (query.hasHaving()) {
-            SPhraseSpec modifierHead = nlgFactory.createClause();
-            modifierHead.setSubject("it");
-            modifierHead.setVerb("return exclusively");
-            modifierHead.setObject("results");
-            modifierHead.getObject().setPlural(true);
-            modifierHead.setFeature(Feature.CUE_PHRASE, "Moreover, ");
-            List<Expr> expressions = query.getHavingExprs();
-            CoordinatedPhraseElement phrase = nlgFactory.createCoordinatedPhrase(modifierHead, getNLFromExpressions(expressions));
-            phrase.setConjunction("such that");
-            sentences.add(nlgFactory.createSentence(phrase));
+        if (POSTPROCESSING && post.additionaloutput != null) {
+            sentences.add(nlgFactory.createSentence(post.additionaloutput));
         }
-        if (query.hasOrderBy()) {
-            SPhraseSpec order = nlgFactory.createClause();
-            order.setSubject("The results");
-            order.getSubject().setPlural(true);
-            order.setVerb("be in");
-            List<SortCondition> sc = query.getOrderBy();
-            if (sc.size() == 1) {
-            	int direction = sc.get(0).getDirection();
-                if (direction == Query.ORDER_DESCENDING) {
-                    order.setObject("descending order");
-                } else if (direction == Query.ORDER_ASCENDING || direction == Query.ORDER_DEFAULT){
-                    order.setObject("ascending order");
-                }
-                Expr expr = sc.get(0).getExpression();
-                if (expr instanceof ExprVar) {
-                    ExprVar ev = (ExprVar) expr;
-                    order.addComplement("with respect to "+ev.toString()+"");
-                }
+        else if (!POSTPROCESSING) {
+            if (query.hasHaving()) {
+                SPhraseSpec modifierHead = nlgFactory.createClause();
+                modifierHead.setSubject("it");
+                modifierHead.setVerb("return exclusively");
+                modifierHead.setObject("results");
+                modifierHead.getObject().setPlural(true);
+                modifierHead.setFeature(Feature.CUE_PHRASE, "Moreover, ");
+                List<Expr> expressions = query.getHavingExprs();
+    //            CoordinatedPhraseElement phrase = nlgFactory.createCoordinatedPhrase(modifierHead, getNLFromExpressions(expressions));
+                NLGElement phrase = getNLFromExpressions(expressions);
+                phrase.setFeature("premodifier","such that");
+                modifierHead.addComplement(phrase);
+                if (!POSTPROCESSING) {
+                    post.orderbylimit.add(new Sentence(modifierHead,false,post.id)); post.id++;
+                    sentences.add(nlgFactory.createSentence(modifierHead));
+                }   
             }
-            post.orderbylimit.add(order);
-            sentences.add(nlgFactory.createSentence(order));
-        }
-        if (query.hasLimit()) {
-            SPhraseSpec limitOffset = nlgFactory.createClause();
-            long limit = query.getLimit();
-            if (query.hasOffset()) {
-                long offset = query.getOffset();
-                limitOffset.setSubject("The query");
-                limitOffset.setVerb("return");
-                if(limit == 1){
-                	String ending;
-                	switch ((int)offset+1){
-                		case 1: ending = "st"; break;
-                		case 2: ending = "nd"; break;
-                		case 3: ending = "rd"; break;
-                		default: ending = "th"; 
-                	}
-                	limitOffset.setObject("the " + (limit + offset) + ending + " result");
-                	
-                } else {
-                	limitOffset.setObject("results between number " + (offset+1) + " and " + (offset + limit));
-                }
-                	
-                
-            } else {
-                limitOffset.setSubject("The query");
-                limitOffset.setVerb("return");
-                if (limit > 1) {
-                    if (query.hasOrderBy()) {
-                        limitOffset.setObject("the first " + limit + " results");
-                    } else {
-                        limitOffset.setObject( limit + " results");
+            if (query.hasOrderBy()) {
+                SPhraseSpec order = nlgFactory.createClause();
+                order.setSubject("The results");
+                order.getSubject().setPlural(true);
+                order.setVerb("be in");
+                List<SortCondition> sc = query.getOrderBy();
+                if (sc.size() == 1) {
+                    int direction = sc.get(0).getDirection();
+                    if (direction == Query.ORDER_DESCENDING) {
+                        order.setObject("descending order");
+                    } else if (direction == Query.ORDER_ASCENDING || direction == Query.ORDER_DEFAULT){
+                        order.setObject("ascending order");
                     }
-                } else {
-                    if (query.hasOrderBy()) {
-                        limitOffset.setObject("the first result");
-                    } else {
-                        limitOffset.setObject("one result");
+                    Expr expr = sc.get(0).getExpression();
+                    if (expr instanceof ExprVar) {
+                        ExprVar ev = (ExprVar) expr;
+                        order.addComplement("with respect to "+ev.toString()+"");
                     }
                 }
+                if (!POSTPROCESSING) {
+                    post.orderbylimit.add(new Sentence(order,false,post.id)); post.id++;
+                    sentences.add(nlgFactory.createSentence(order));
+                } 
             }
-            sentences.add(nlgFactory.createSentence(limitOffset));
+            if (query.hasLimit()) {
+                SPhraseSpec limitOffset = nlgFactory.createClause();
+                long limit = query.getLimit();
+                if (query.hasOffset()) {
+                    long offset = query.getOffset();
+                    limitOffset.setSubject("The query");
+                    limitOffset.setVerb("return");
+                    if(limit == 1){
+                            String ending;
+                            switch ((int)offset+1){
+                                    case 1: ending = "st"; break;
+                                    case 2: ending = "nd"; break;
+                                    case 3: ending = "rd"; break;
+                                    default: ending = "th"; 
+                            }
+                            limitOffset.setObject("the " + (limit + offset) + ending + " result");
+
+                    } else {
+                            limitOffset.setObject("results between number " + (offset+1) + " and " + (offset + limit));
+                    }
+
+
+                } else {
+                    limitOffset.setSubject("The query");
+                    limitOffset.setVerb("return");
+                    if (limit > 1) {
+                        if (query.hasOrderBy()) {
+                            limitOffset.setObject("the first " + limit + " results");
+                        } else {
+                            limitOffset.setObject( limit + " results");
+                        }
+                    } else {
+                        if (query.hasOrderBy()) {
+                            limitOffset.setObject("the first result");
+                        } else {
+                            limitOffset.setObject("one result");
+                        }
+                    }
+                }
+                if (!POSTPROCESSING) {
+                    post.orderbylimit.add(new Sentence(limitOffset,false,post.id)); post.id++;
+                    sentences.add(nlgFactory.createSentence(limitOffset));
+                } 
+            }
         }
 
         DocumentElement result = nlgFactory.createParagraph(sentences);
@@ -672,8 +705,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 union.add(p);
                 UNION.add(union);
             } else {
-                if (SWITCH) addTo(post.optionalsentences,p);
-                else addTo(post.sentences,p);
+                if (SWITCH) { addTo(post.sentences,new Sentence(p,true,post.id)); post.id++; }
+                else { addTo(post.sentences,new Sentence(p,false,post.id)); post.id++; }
             }
             return p;
         } else { // the following code is a bit redundant...
@@ -684,8 +717,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 p = getNLForTriple(triples.get(i));
                 if (UNIONSWITCH) union.add(p);
                 else {
-                    if (SWITCH) addTo(post.optionalsentences,p);
-                    else addTo(post.sentences,p);
+                    if (SWITCH) { addTo(post.sentences,new Sentence(p,true,post.id)); post.id++; }
+                    else { addTo(post.sentences,new Sentence(p,false,post.id)); post.id++; }
                 }
             }
             if (UNIONSWITCH) UNION.add(union);
@@ -731,14 +764,17 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             }
             
             // for POSTPROCESSOR
-            Set<Set<SPhraseSpec>> UNIONclone = new HashSet<Set<SPhraseSpec>>();
+            Set<Set<Sentence>> UNIONclone = new HashSet<Set<Sentence>>();
             for (Set<SPhraseSpec> UN : UNION) {
-                Set<SPhraseSpec> UNclone = new HashSet<SPhraseSpec>();
-                UNclone.addAll(UN);
-                UNIONclone.add(UN);
+                Set<Sentence> UNclone = new HashSet<Sentence>();
+                for (SPhraseSpec s : UN) {
+                    UNclone.add(new Sentence(s,SWITCH,post.id));
+                    post.id++;
+                }
+                UNIONclone.add(UNclone);
             }
-            if (SWITCH) post.optionalunions.add(UNIONclone);
-            else post.unions.add(UNIONclone);
+            if (SWITCH) post.unions.add(new Union(UNIONclone,true));
+            else post.unions.add(new Union(UNIONclone,false));
                         
             UNIONSWITCH = false;
             UNION = new HashSet<Set<SPhraseSpec>>();
@@ -762,11 +798,17 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             Expr expr = filter.getExpr();
             NLGElement el = getNLFromSingleExpression(expr);
             if (!POSTPROCESSING) { 
-                boolean duplicate = false;;
-                for (NLGElement f : post.filter) {
-                    if (realiser.realise(f).toString().equals(realiser.realise(el).toString())) duplicate = true; 
-                }
-                if (!duplicate) post.filter.add(el);
+                  if (el.getClass().toString().endsWith("SPhraseSpec")) {
+                      post.filters.add(new Filter(new Sentence(((SPhraseSpec) el),false,post.id)));
+                      post.id++;
+                  }
+                  else if (el.getClass().toString().endsWith("CoordinatedPhraseElement")) {
+                      String coord = ((CoordinatedPhraseElement) el).getConjunction();
+                      for (NLGElement compl : ((CoordinatedPhraseElement) el).getComplements()) {
+                        post.filters.add(new Filter(new Sentence(((SPhraseSpec) compl),false,post.id)));
+                        post.id++;
+                      }
+                  }
             }
             return el;
         }
@@ -994,10 +1036,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         }
     }
     
-    private void addTo(Set<SPhraseSpec> sentences, SPhraseSpec sent) {
-        boolean duplicate = false;;
-        for (SPhraseSpec s : sentences) {
-            if (realiser.realise(s).toString().equals(realiser.realise(sent).toString())) 
+    private void addTo(Set<Sentence> sentences, Sentence sent) {
+        boolean duplicate = false;
+        for (Sentence s : sentences) {
+            if (realiser.realise(s.sps).toString().equals(realiser.realise(sent.sps).toString())) 
                 duplicate = true; 
          }
          if (!duplicate) sentences.add(sent);
