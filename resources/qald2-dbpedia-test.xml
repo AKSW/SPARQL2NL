@@ -1175,7 +1175,7 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 ASK WHERE
 {
 	res:Aristotle dbo:influencedBy res:Socrates .
-	OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') }
+
 }
 ]]></query>
 </question>
