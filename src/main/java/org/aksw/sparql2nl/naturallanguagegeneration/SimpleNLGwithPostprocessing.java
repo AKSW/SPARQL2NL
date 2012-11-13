@@ -82,6 +82,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     private boolean SWITCH;
     private boolean UNIONSWITCH;
     private Set<Set<SPhraseSpec>> UNION;
+    private Set<SPhraseSpec> union;
     private NLGElement select;
     
     private boolean useBOA = false;
@@ -700,28 +701,23 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         
         if (triples.size() == 1) {
             SPhraseSpec p = getNLForTriple(triples.get(0));
-            if (UNIONSWITCH) {
-                Set<SPhraseSpec> union = new HashSet<SPhraseSpec>();
-                union.add(p);
-                UNION.add(union);
-            } else {
+            if (UNIONSWITCH) union.add(p);
+            else {
                 if (SWITCH) { addTo(post.sentences,new Sentence(p,true,post.id)); post.id++; }
                 else { addTo(post.sentences,new Sentence(p,false,post.id)); post.id++; }
             }
             return p;
         } else { // the following code is a bit redundant...
             // feed the postprocessor
-            Set<SPhraseSpec> union = new HashSet<SPhraseSpec>();
             SPhraseSpec p;
             for (int i = 0; i < triples.size(); i++) {
                 p = getNLForTriple(triples.get(i));
-                if (UNIONSWITCH) union.add(p);
+                if (UNIONSWITCH) union.add(p); 
                 else {
                     if (SWITCH) { addTo(post.sentences,new Sentence(p,true,post.id)); post.id++; }
                     else { addTo(post.sentences,new Sentence(p,false,post.id)); post.id++; }
                 }
             }
-            if (UNIONSWITCH) UNION.add(union);
 
             // do simplenlg
             CoordinatedPhraseElement cpe;
@@ -748,7 +744,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             }
             return getNLForTripleList(triples, "and");
         } // if clause is union clause then we generate or statements
-        else if (e instanceof ElementUnion) {                 
+        else if (e instanceof ElementUnion) { 
             CoordinatedPhraseElement cpe;
             //cast to union
             ElementUnion union = (ElementUnion) e;
@@ -812,23 +808,29 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             }
             return el;
         }
-		if (e instanceof ElementGroup) {
-			if (((ElementGroup) e).getElements().size() == 1)
-				return getNLFromSingleClause(((ElementGroup) e).getElements()
-						.get(0));
-			else {
-				CoordinatedPhraseElement cpe;
-				List<NLGElement> list = new ArrayList<NLGElement>();
-				for (Element elt : ((ElementGroup) e).getElements()) {
-					list.add(getNLFromSingleClause(elt));
-				}
-				cpe = nlgFactory.createCoordinatedPhrase(list.get(0), list.get(1));
-				for(int i=2; i<list.size(); i++)
-                    cpe.addCoordinate(list.get(i));
-                cpe.setConjunction("and");
-                return cpe;
-			}			
-		}
+	if (e instanceof ElementGroup) {
+            System.out.println("Creating new union."); // DEBUG
+            if (UNIONSWITCH) union = new HashSet<SPhraseSpec>();
+            
+            if (((ElementGroup) e).getElements().size() == 1) {
+		NLGElement el = getNLFromSingleClause(((ElementGroup) e).getElements().get(0));
+                if (UNIONSWITCH) UNION.add(union);
+                return el;
+            } else {
+	          CoordinatedPhraseElement cpe;
+		  List<NLGElement> list = new ArrayList<NLGElement>();
+		  for (Element elt : ((ElementGroup) e).getElements()) {
+		       list.add(getNLFromSingleClause(elt));
+		  }
+                  if (UNIONSWITCH) UNION.add(union);
+                  
+		  cpe = nlgFactory.createCoordinatedPhrase(list.get(0), list.get(1));
+		  for(int i=2; i<list.size(); i++) 
+                      cpe.addCoordinate(list.get(i));
+                  cpe.setConjunction("and");
+                  return cpe;
+	    }  
+	}
         return null;
     }
 

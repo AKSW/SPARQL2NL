@@ -408,8 +408,7 @@ public class Evaluation {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception{
-		SparqlEndpoint endpoint = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
-//		endpoint = SparqlEndpoint.getEndpointDBpedia();
+		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpediaAKSW();
 		new Evaluation().run_simple(endpoint);
 //		new Evaluation().run_smooth(endpoint);
 //		new Evaluation().bla();
