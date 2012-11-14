@@ -42,7 +42,7 @@ public class Postprocessor {
     HashMap<String,String> equalities;
     boolean ask;
     // Debug
-    boolean TRACE = true;
+    boolean TRACE = false;
     
     
     public Postprocessor() {
@@ -139,11 +139,14 @@ public class Postprocessor {
             
             // STAGE 2: String level ("A.I. is for people who not have regex skill." (@DEVOPS_BORAT))
             
-            fuseWithSelectsAgain(bodyParts); 
+            fuseWithSelectsAgain(bodyParts);             
             addRemainingStuffToEqualities(bodyParts);
             replaceEqualities(bodyParts);
             
-            List<String> final_bodyParts = replaceVarOccurrencesByPronouns(bodyParts);
+            List<String> final_bodyParts;
+            final_bodyParts = replaceVarOccurrencesByPronouns(bodyParts);
+            final_bodyParts = replaceVarOccurencesByIndefinites(final_bodyParts);
+            final_bodyParts = replaceVarOccurrencesByPronouns(new HashSet<String>(final_bodyParts));
             final_bodyParts = order(final_bodyParts);
            
             if (TRACE) { System.out.println("\n--4-------------------------"); 
@@ -162,6 +165,14 @@ public class Postprocessor {
             polish();
                     
             if (ask) checkSelects();
+            
+            if (TRACE) {
+                System.out.println("\n");
+                if (output == null) System.out.println("Output: null");  
+                else System.out.println("Output: " + realiser.realiseSentence(output)); 
+                if (additionaloutput == null) System.out.println("Additional output: null");
+                else System.out.println("Additional output: " + realiser.realiseSentence(additionaloutput)); 
+            }
             
 //        }
         
@@ -392,7 +403,7 @@ public class Postprocessor {
         if (!orderbylimit.isEmpty()) {
             String addo = "";
             for (Sentence s : orderbylimit) 
-                addo += realiser.realise(s.sps).toString();
+                addo += realiser.realise(s.sps).toString()+". ";
             additionaloutput = nlg.createNLGElement(addo);
         }
         
@@ -812,10 +823,10 @@ public class Postprocessor {
                      }
                      equalities.put(v,value.replace(var,equalities.get(var)));
                      used_keys.add(var);
-                     indirectly_used.put(v,value.replace(var,"this "+equalities.get(var)));
+                     indirectly_used.put(v,value.replace(var,"this "+equalities.get(var).replace("this a ","this ")));
                  }
             }
-                                    
+                                                
             // then in selects
             for (NPPhraseSpec sel : selects) {
                 String head = sel.getFeatureAsString("head");
@@ -827,7 +838,7 @@ public class Postprocessor {
             }
             
             // and finally in bodyParts
-            Pattern p = Pattern.compile("(\\?"+var.substring(1)+")(\\s|\\z|\\.|\\,)");
+            Pattern p = Pattern.compile("(\\?"+var.substring(1)+")(\\s|\\z|\\.|\\,|\\')");
             for (String s : bodyParts) {
                  Matcher m = p.matcher(s);
                  String old_s = s;
@@ -835,12 +846,15 @@ public class Postprocessor {
                  while (m.find()) {
                      if (!s.matches(".* has the \\w*\\s?((label)|(title)|(name)) .*")) {
                         found = true;
-                        if (used_keys.contains(var)) {                        
-                            s = s.replace(m.group(1),"this "+equalities.get(var)); }
-                        else if (indirectly_used.keySet().contains(var)) {                        
-                            s = s.replace(m.group(1),indirectly_used.get(var)); }
+                        if (used_keys.contains(var)) { 
+                            String repl = equalities.get(var);
+                            if (repl.startsWith("a ") || repl.startsWith("an ")) repl = repl.replace("a ","").replace("an ","");
+                            s = s.replace(m.group(1),"this "+repl); }
+                        else if (indirectly_used.keySet().contains(var)) {    
+                            String repl = indirectly_used.get(var);
+                            if (repl.startsWith("a ") || repl.startsWith("an ")) repl = "this "+repl.replace("a ","").replace("an ","");
+                            s = s.replace(m.group(1),repl); }
                         else {
-                            System.out.println(var);
                             s = s.replace(m.group(1),equalities.get(var));}
                      }
                  }
@@ -876,7 +890,15 @@ public class Postprocessor {
                 else {
                     m = p.matcher(o);
                     if (m.find()) {
-                        additionaloutput = nlg.createNLGElement(o.replace(m.group(1),equalities.get(var))); 
+                        String repl;
+                        if (indirectly_used.containsKey(var)) repl = indirectly_used.get(var);
+                        else repl = equalities.get(var);
+                        if (used_keys.contains(var)) {
+                            if (repl.startsWith("a ") || repl.startsWith("an ")) repl = repl.replace("a ","").replace("an ","");
+                            else repl = "this "+repl;
+                        }
+                        o = o.replace(m.group(1),repl);
+                        additionaloutput = nlg.createNLGElement(o); 
                         used_keys.add(var);
                     }
                 }
@@ -946,7 +968,7 @@ public class Postprocessor {
         String followup = "(\\s|\\z|\\.|\\,)";
         if (vars.size() == 1) {
             for (String var : vars) {
-            String p_var_s = "\\?"+var.substring(1)+"'(s)?"+followup;
+            String p_var_s = "\\?"+var.substring(1)+"'(s)? ";
             String p_var   = "\\?"+var.substring(1)+followup;
             boolean inSelects = false;
             for (NPPhraseSpec sel : selects) {
@@ -960,15 +982,21 @@ public class Postprocessor {
             }
             for (int i = 0; i < bp_list.size(); i++) {
                  String b = bp_list.get(i);
+                 Matcher m_p_var   = Pattern.compile(p_var).matcher(b);
+                 Matcher m_p_var_s = Pattern.compile(p_var_s).matcher(b);
                  if (i == 0 && !inSelects) {
-                     if      (b.contains(p_var_s)) b = b.replaceFirst(p_var_s,"");
-                     else if (b.contains(p_var))   b = b.replaceFirst(p_var,"");
+                     if      (m_p_var_s.find()) b = b.replaceFirst(p_var_s,"");
+                     else if (m_p_var.find())   b = b.replaceFirst(p_var,"");
                  }
-                 if (b.startsWith(p_var_s) || b.startsWith(p_var)) {
-                    b = b.replaceAll(p_var_s,"their ").replaceAll(p_var,"they ");
-                    b = b.replaceAll("they is ","they are ").replaceAll("they has ","they have ");
-//                  b = b.replaceAll("they (\\w+)e?s ","they \\1");
-                    b = b.replaceAll("they\\s?\\.?\\z","them");
+                 m_p_var   = Pattern.compile(p_var).matcher(b);
+                 m_p_var_s = Pattern.compile(p_var_s).matcher(b);
+                 if (m_p_var.find()) {
+                     b = b.replaceAll(p_var,"they ");
+                     b = b.replaceAll("they is ","they are ").replaceAll("they has ","they have ");
+                 } 
+                 if (m_p_var_s.find()) { 
+                     b = b.replaceAll(p_var_s,"their ");
+                     b = b.replaceAll("they\\s?\\.?\\z","them");
                  }
                  result.add(b);
             }
@@ -980,6 +1008,47 @@ public class Postprocessor {
                 
         return result;
     }
+    
+    private List<String> replaceVarOccurencesByIndefinites(List<String> bodyParts) {
+        
+            List<String> result  = new ArrayList<String>();
+            List<String> changed = new ArrayList<String>();
+            
+            for (String s : secondaries) {
+                 String var = "?"+s;
+            if (!realiser.realise(additionaloutput).toString().contains(var)) {
+                 int count = 0;
+                 for (String b : bodyParts) if (b.contains(var)) count++;
+                 if (count > 0) {
+                     boolean firstOccurence = false;
+                     boolean initial = true;
+                     for (String b : bodyParts) {
+                          if (b.contains(var)) {
+                              if (initial && !firstOccurence) { firstOccurence = true; initial = false; }
+                              else if (!initial && firstOccurence) { firstOccurence = false; }
+                              if (count == 1) {
+                                  changed.add(b);
+                                  if (var.length() > 2) b = b.replace(var,"some "+var.substring(1));
+                                  else                  b = b.replace(var,"some entity");
+                              }
+                              else if (count > 1 && secondaries.size() == 1) {
+                                  String det;
+                                  if (firstOccurence) det = "some"; else det = "this";
+                                  changed.add(b);
+                                  if (var.length() > 2) b = b.replace(var,det+" "+var.substring(1));
+                                  else                  b = b.replace(var,det+" entity");
+                              }
+                              result.add(b);
+                          }
+                     }
+                 }
+            }}
+            
+            for (String b : bodyParts) if (!result.contains(b) && !changed.contains(b)) result.add(b);
+            
+            return result;
+    }
+    
     
     private void polish() {
                 
@@ -1002,6 +1071,7 @@ public class Postprocessor {
             if (m.find()) out = out.replace(m.group(1),"an");
             m = wrong_n.matcher(out);
             if (m.find()) out = out.replace(m.group(1),"a");
+            out = out.replace("  "," ");
             output = nlg.createNLGElement(out);
         }
         
@@ -1018,6 +1088,7 @@ public class Postprocessor {
             if (m.find()) addout = addout.replace(m.group(1),"an");
             m = wrong_n.matcher(addout);
             if (m.find()) addout = addout.replace(m.group(1),"a");
+            addout = addout.replace("  "," ");
             additionaloutput = nlg.createNLGElement(addout);
         }
         
@@ -1550,46 +1621,47 @@ public class Postprocessor {
         }
 
         if (var != null && type != null && value != null) {
-            if (!isNeeded(value,bodyParts,1)) {               
-                NPPhraseSpec delete = null;
-                for (NPPhraseSpec sel : selects) {
-                     if (sel.getFeatureAsString("head").equals(var)) {
-                         String new_head = var;
-                         String[] rests = null;
-                         Set<String> used = new HashSet<String>();
-                         if (rest != null) {
-                             rests = rest.split("and ");
-                             for (String r : rests) {
-                                  if (r.startsWith("is ")) {
-                                      new_head += r.replace("is "," ");
-                                      used.add(r);
-                                  }
-                             }
+            NPPhraseSpec delete = null;
+            for (NPPhraseSpec sel : selects) {
+                 if (sel.getFeatureAsString("head").equals(var)) {
+                     String new_head = var;
+                     String[] rests = null;
+                     Set<String> used = new HashSet<String>();
+                     if (rest != null) {
+                         rests = rest.split("and ");
+                         for (String r : rests) {
+                              if (r.startsWith("is ")) {
+                                  new_head += r.replace("is "," ");
+                                  used.add(r);
+                              }
                          }
-                         new_head += " and their "+type;
-                         if (rests != null) {
-                             for (String r : rests) {
-                                  if (!used.contains(r)) new_head += r;
-                             }
+                     }
+                     new_head += " and their "+type;
+                     if (isNeeded(value,bodyParts,1)) new_head += " "+value;
+                     if (rests != null) {
+                         for (String r : rests) {
+                              if (!used.contains(r)) new_head += r;
                          }
-                         sel.setFeature("head",new_head);
-                         bodyParts.remove(part);
                      }
-                     else if (sel.getFeatureAsString("head").equals(value)) {
-                         delete = sel;
-                     }
-                }
-                if (delete != null) selects.remove(delete);
-            }
-        }
+
+                     sel.setFeature("head",new_head);
+                     bodyParts.remove(part);
+                 }
+                 else if (sel.getFeatureAsString("head").equals(value)) {
+                      delete = sel;
+                 }
+             }
+             if (delete != null) selects.remove(delete);
+        }        
         
         if (selects.size() == 1) {
-                String head = selects.get(0).getFeatureAsString("head");
-                if (!head.contains("'"))
-                    m = Pattern.compile("(\\?\\w+)(\\s|\\z|\\')").matcher(head);
-                    if (m.find() && !isNeeded(m.group(1),bodyParts,0)) {
-                        selects.get(0).setFeature("head",head.replace(m.group(1),"")); 
-                    }
+            String head = selects.get(0).getFeatureAsString("head");
+            if (!head.contains("'")) {
+                 m = Pattern.compile("(\\?\\w+)(\\s|\\z|\\')").matcher(head);
+                 if (m.find() && !isNeeded(m.group(1),bodyParts,0)) {
+                     selects.get(0).setFeature("head",head.replace(m.group(1),"")); 
+                 }
+            }
         }
     }
     
@@ -1745,8 +1817,6 @@ public class Postprocessor {
         for (Sentence s : orderbylimit) {
             System.out.print(" -- " + s.optional + " -- " + realiser.realiseSentence(s.sps) + "\n");
         }
-        if (output != null) System.out.println(" >> output: " + realiser.realise(output));
-        if (additionaloutput != null) System.out.println(" >> additionaloutput: " + realiser.realise(additionaloutput));
     }
     
     private void printHash(HashMap<String,Set<Sentence>> hash) {

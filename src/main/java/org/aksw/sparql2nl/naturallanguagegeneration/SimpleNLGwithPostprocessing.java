@@ -140,7 +140,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             }
             output = output + " " + sentence;
         }
-        output = output.substring(1);
+        if (!output.isEmpty()) output = output.substring(1);
         return output;
     }
 
@@ -300,7 +300,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     }
                 }
                 else {
-                    if (!realiser.realise(post.output).toString().trim().isEmpty()) {
+                    if (post.output != null && !realiser.realise(post.output).toString().trim().isEmpty()) {
                         head.setObject(post.output);
                         sentences.add(nlgFactory.createSentence(head));
                     }                    
@@ -617,7 +617,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     if (distinct) {
                         np.addModifier("distinct");
                     }
-                    object.addPreModifier(np);
+                    np.setPlural(true);
+                    object.addPreModifier(np);                   
                 } else {
                     Iterator<String> typeIterator = types.iterator();
                     String type0 = typeIterator.next();
@@ -800,16 +801,17 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                   }
                   else if (el.getClass().toString().endsWith("CoordinatedPhraseElement")) {
                       String coord = ((CoordinatedPhraseElement) el).getConjunction();
-                      for (NLGElement compl : ((CoordinatedPhraseElement) el).getComplements()) {
-                        post.filters.add(new Filter(new Sentence(((SPhraseSpec) compl),false,post.id)));
+                      Set<Sentence> csents = new HashSet<Sentence>();
+                      for (NLGElement compl : ((CoordinatedPhraseElement) el).getChildren()) {
+                        csents.add(new Sentence(((SPhraseSpec) compl),false,post.id));
                         post.id++;
                       }
+                      post.filters.add(new Filter(csents,coord));
                   }
             }
             return el;
         }
 	if (e instanceof ElementGroup) {
-            System.out.println("Creating new union."); // DEBUG
             if (UNIONSWITCH) union = new HashSet<SPhraseSpec>();
             
             if (((ElementGroup) e).getElements().size() == 1) {

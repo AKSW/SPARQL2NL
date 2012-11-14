@@ -49,9 +49,9 @@ public class Evaluation {
 	
 //	private static final String QUERIES_FILE = "resources/queries.txt";
 //	private static final String QUERIES_FILE = "resources/GoodQALD.xml";
-	private static final String QUERIES_FILE = "resources/qald2-dbpedia-test.xml";
+//	private static final String QUERIES_FILE = "resources/qald2-dbpedia-test.xml";
 //	private static final String QUERIES_FILE = "resources/qald2-musicbrainz-train.xml";
-//	private static final String QUERIES_FILE = "resources/qald2-dbpedia-train.xml";
+	private static final String QUERIES_FILE = "resources/qald2-dbpedia-train.xml";
 	private static final int NR_OF_REPRESENTATIONS = 10;
 	
         private static int testme = -1;
@@ -408,7 +408,7 @@ public class Evaluation {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception{
-		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpediaAKSW();
+		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
 		new Evaluation().run_simple(endpoint);
 //		new Evaluation().run_smooth(endpoint);
 //		new Evaluation().bla();

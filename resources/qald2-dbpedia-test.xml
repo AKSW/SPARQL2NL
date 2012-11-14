@@ -1795,7 +1795,6 @@ SELECT ?num WHERE
 {
 	res:Pilsner_Urquell dbp:brewery ?uri .
 	?uri dbp:foundation ?num .
-	OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') }
 }
 ]]></query>
 </question>
