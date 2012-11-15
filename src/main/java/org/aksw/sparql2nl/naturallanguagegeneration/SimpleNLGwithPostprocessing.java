@@ -803,8 +803,19 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                       String coord = ((CoordinatedPhraseElement) el).getConjunction();
                       Set<Sentence> csents = new HashSet<Sentence>();
                       for (NLGElement compl : ((CoordinatedPhraseElement) el).getChildren()) {
-                        csents.add(new Sentence(((SPhraseSpec) compl),false,post.id));
-                        post.id++;
+                          if (compl.getClass().toString().endsWith("SPhraseSpec")) {
+                              csents.add(new Sentence(((SPhraseSpec) compl),false,post.id));
+                              post.id++;
+                          }
+                          else if (compl.getClass().toString().endsWith("CoordinatePhraseElement")) {
+                              for (NLGElement c : ((CoordinatedPhraseElement) compl).getChildren()) {
+                                   if (c.getClass().toString().endsWith("SPhraseSpec")) {
+                                       csents.add(new Sentence(((SPhraseSpec) compl),false,post.id));
+                                       post.id++;
+                                   } 
+                                   else System.out.println("[WARNING] This filter is too deep nested for me... Tell Christina to implement me recursively!");
+                              }
+                          }
                       }
                       post.filters.add(new Filter(csents,coord));
                   }

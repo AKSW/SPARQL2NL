@@ -42,7 +42,7 @@ public class Postprocessor {
     HashMap<String,String> equalities;
     boolean ask;
     // Debug
-    boolean TRACE = false;
+    boolean TRACE = true;
     
     
     public Postprocessor() {
@@ -145,9 +145,9 @@ public class Postprocessor {
             
             List<String> final_bodyParts;
             final_bodyParts = replaceVarOccurrencesByPronouns(bodyParts);
+            final_bodyParts = order(final_bodyParts);
             final_bodyParts = replaceVarOccurencesByIndefinites(final_bodyParts);
             final_bodyParts = replaceVarOccurrencesByPronouns(new HashSet<String>(final_bodyParts));
-            final_bodyParts = order(final_bodyParts);
            
             if (TRACE) { System.out.println("\n--4-------------------------"); 
                          for (String s : final_bodyParts) System.out.println(s);
@@ -984,19 +984,19 @@ public class Postprocessor {
                  String b = bp_list.get(i);
                  Matcher m_p_var   = Pattern.compile(p_var).matcher(b);
                  Matcher m_p_var_s = Pattern.compile(p_var_s).matcher(b);
-                 if (i == 0 && !inSelects) {
-                     if      (m_p_var_s.find()) b = b.replaceFirst(p_var_s,"");
-                     else if (m_p_var.find())   b = b.replaceFirst(p_var,"");
-                 }
-                 m_p_var   = Pattern.compile(p_var).matcher(b);
-                 m_p_var_s = Pattern.compile(p_var_s).matcher(b);
+//                 if (i == 0 && !inSelects) {
+//                     if      (m_p_var_s.find()) b = b.replaceFirst(p_var_s,"");
+//                     else if (m_p_var.find())   b = b.replaceFirst(p_var,"");
+//                 }
+//                 m_p_var   = Pattern.compile(p_var).matcher(b);
+//                 m_p_var_s = Pattern.compile(p_var_s).matcher(b);
                  if (m_p_var.find()) {
                      b = b.replaceAll(p_var,"they ");
                      b = b.replaceAll("they is ","they are ").replaceAll("they has ","they have ");
                  } 
                  if (m_p_var_s.find()) { 
                      b = b.replaceAll(p_var_s,"their ");
-                     b = b.replaceAll("they\\s?\\.?\\z","them");
+                     b = b.replaceAll(" by they"," by them").replaceAll("they(\\s)?(\\.)?\\z","them");
                  }
                  result.add(b);
             }
@@ -1016,33 +1016,36 @@ public class Postprocessor {
             
             for (String s : secondaries) {
                  String var = "?"+s;
-            if (!realiser.realise(additionaloutput).toString().contains(var)) {
-                 int count = 0;
-                 for (String b : bodyParts) if (b.contains(var)) count++;
-                 if (count > 0) {
-                     boolean firstOccurence = false;
-                     boolean initial = true;
-                     for (String b : bodyParts) {
-                          if (b.contains(var)) {
-                              if (initial && !firstOccurence) { firstOccurence = true; initial = false; }
-                              else if (!initial && firstOccurence) { firstOccurence = false; }
-                              if (count == 1) {
-                                  changed.add(b);
-                                  if (var.length() > 2) b = b.replace(var,"some "+var.substring(1));
-                                  else                  b = b.replace(var,"some entity");
-                              }
-                              else if (count > 1 && secondaries.size() == 1) {
-                                  String det;
-                                  if (firstOccurence) det = "some"; else det = "this";
-                                  changed.add(b);
-                                  if (var.length() > 2) b = b.replace(var,det+" "+var.substring(1));
-                                  else                  b = b.replace(var,det+" entity");
-                              }
-                              result.add(b);
-                          }
-                     }
-                 }
-            }}
+                 if (!realiser.realise(additionaloutput).toString().contains(var)) {
+                    int count = 0;
+                    for (String b : bodyParts) if (b.contains(var)) count++;
+                    if (count > 0) {
+                        boolean firstOccurence = false;
+                        boolean initial = true;
+                        for (String b : bodyParts) {
+                            if (b.contains(var)) {
+                                if (initial && !firstOccurence) { firstOccurence = true; initial = false; }
+                                else if (!initial && firstOccurence) { firstOccurence = false; }
+                                if (count == 1) {
+                                    changed.add(b);
+                                    if (var.length() > 2) b = b.replace(var,"some "+var.substring(1));
+                                    else                  b = b.replace(var,"some entity");
+                                }
+                                else if (count > 1 && secondaries.size() == 1) {                                   
+                                    changed.add(b);
+                                    if (firstOccurence)  {
+                                        if (var.length() > 2) b = b.replaceFirst("\\?"+s,"some "+s);
+                                        else                  b = b.replaceFirst("\\?"+s,"some entity");
+                                    }
+                                    if (var.length() > 2) b = b.replaceAll("\\?"+s,"this "+s);
+                                    else                  b = b.replaceAll("\\?"+s,"this entity");
+                                }
+                                result.add(b);
+                            }
+                        }
+                    }
+                }
+            }
             
             for (String b : bodyParts) if (!result.contains(b) && !changed.contains(b)) result.add(b);
             
@@ -1058,11 +1061,16 @@ public class Postprocessor {
         Pattern wrong_n   = Pattern.compile(" (an) (?! [i,I,o,O,u,U,a,A,e,E])");
         Matcher m;
 
+        for (NPPhraseSpec sel : selects) {
+             String head = sel.getFeatureAsString("head");
+             if (head.contains("ignorecase")) sel.setHead(head.replace("ignorecase","(ignoring case)"));
+        }
         if (output != null) {
             String out = realiser.realise(output).toString();
-            out = out.replace(" this a "," this ").replace(" this an "," this ").replace(" this the "," this ");
-            out = out.replace(" they is "," they are ").replace(" they has "," they have ");
+            out = out.replace(" this a "," this ").replace(" this an "," this ").replace(" this the "," this ").replace(" this their "," their ");
+            out = out.replace(" they is "," they are ").replace(" they has "," they have ").replace(" is they "," is them ");
             out = out.replace("ignorecase","(ignoring case)");
+            out = out.replace("%28","(").replace("%29",")").replace(". and"," and").replace(". or"," or");
             m = missing_s.matcher(out);
             if (m.find()) out = out.replace(m.group(1),"s");
             m = wrong_s.matcher(out);
@@ -1077,8 +1085,8 @@ public class Postprocessor {
         
         if (additionaloutput != null) {
             String addout = realiser.realise(additionaloutput).toString();
-            addout = addout.replace(" this a "," this ").replace(" this an "," this ").replace(" this the "," this ");
-            addout = addout.replace(" they is "," they are ").replace(" they has "," they have ");
+            addout = addout.replace(" this a "," this ").replace(" this an "," this ").replace(" this the "," this ").replace(" this their "," their ");
+            addout = addout.replace(" they is "," they are ").replace(" they has "," they have ").replace(" is they "," is them ");
             addout = addout.replace("ignorecase","(ignoring case)");
             m = missing_s.matcher(addout);
             if (m.find()) addout = addout.replace(m.group(1),"s");
@@ -1105,17 +1113,6 @@ public class Postprocessor {
             }
         }
         selects.removeAll(unnecessary);
-    }
-    
-    
-    private NLGElement coordinate(CoordinatedPhraseElement coord) {
-        
-        NLGElement phrase; 
-        ForwardConjunctionReductionRule fccr = new ForwardConjunctionReductionRule();        
-        if (coord.getChildren().isEmpty()) phrase = null;
-        else if (coord.getChildren().size() == 1) phrase = coord.getChildren().get(0);
-        else phrase = fccr.apply(coord);
-        return phrase;
     }
     
 
@@ -1628,7 +1625,7 @@ public class Postprocessor {
                      String[] rests = null;
                      Set<String> used = new HashSet<String>();
                      if (rest != null) {
-                         rests = rest.split("and ");
+                         rests = rest.split(" and ");
                          for (String r : rests) {
                               if (r.startsWith("is ")) {
                                   new_head += r.replace("is "," ");
