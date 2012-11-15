@@ -40,7 +40,7 @@ public class LiteralConverter {
 			if (dt instanceof XSDDatatype) {// built-in XSD datatype
 				if (dt.equals(XSDDatatype.XSDdate) || dt.equals(XSDDatatype.XSDdateTime)) {
 					try {
-						SimpleDateFormat simpleDateFormat = new SimpleDateFormat("YYYY-MM-DD");
+						SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-DD");
 						Date date = simpleDateFormat.parse(s);
 						DateFormat format = DateFormat.getDateInstance(DateFormat.LONG);
 						String newDate = format.format(date);

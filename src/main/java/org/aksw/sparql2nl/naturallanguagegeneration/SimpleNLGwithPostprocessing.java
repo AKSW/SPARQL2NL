@@ -1189,7 +1189,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 //        		"?s <http://dbpedia.org/ontology/PopulatedPlace/areaTotal> \"12\"^^<http://dbpedia.org/datatypes/squareKilometre>.} ";
 
         try {
-            SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
+            SparqlEndpoint ep = new SparqlEndpoint(new URL("http://live.dbpedia.org/sparql"));
             SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(ep);
             Query sparqlQuery = QueryFactory.create(query7, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
