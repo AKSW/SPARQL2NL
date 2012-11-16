@@ -154,6 +154,7 @@ public class Postprocessor {
                          this.print(); }
             
             buildRelativeClause(final_bodyParts);
+            contractAdditionalOutput();
             
             if (final_bodyParts.size() >= 1) {
                 CoordinatedPhraseElement body = nlg.createCoordinatedPhrase();
@@ -482,6 +483,43 @@ public class Postprocessor {
                 }
             }
         }
+    }
+    
+    private void contractAdditionalOutput() {
+        
+        String addout = realiser.realise(additionaloutput).toString();
+        String new_addout = null;
+        
+        Pattern order     = Pattern.compile("The results are in ((descending)|(ascending)) order\\.");
+        Pattern order_wrt = Pattern.compile("The results are in ((descending)|(ascending)) order with respect to (.*)\\.");
+        Pattern number    = Pattern.compile("The query returns the (.*) result(s)?\\.");
+        Matcher m_order_wrt = order_wrt.matcher(addout);
+        Matcher m_order     = order.matcher(addout);
+        Matcher m_number    = number.matcher(addout);
+        if (m_order_wrt.find() && m_number.find()) {
+            new_addout = "The query returns the "; 
+            if (m_number.group(1).equals("1st") || m_number.group(1).equals("first")) new_addout += "result ";
+            else new_addout += m_number.group(1).replace("st","").replace("nd","").replace("rd","") + " results ";
+            new_addout += "with the";
+            if      (m_order_wrt.group(1).equals("descending")) new_addout += " highest ";
+            else if (m_order_wrt.group(1).equals("ascending"))  new_addout += " lowest ";
+            String wrt = m_order_wrt.group(4);
+            if (wrt.startsWith("this their ")) wrt = wrt.replace("this their ","");
+            if (wrt.startsWith("their "))      wrt = wrt.replace("their ","");
+            if (wrt.startsWith("this "))       wrt = wrt.replace("this ","");
+            if (wrt.startsWith("the "))        wrt = wrt.replace("the ","");
+            if (wrt.contains("."))             wrt = wrt.substring(0,wrt.indexOf("."));
+            new_addout += wrt;
+        }
+        else if (m_order.find() && m_number.find()) {
+            new_addout = "The query returns the "; 
+            if      (m_order.group(1).equals("descending")) new_addout += "highest ";
+            else if (m_order.group(1).equals("ascending"))  new_addout += "lowest ";
+            if (m_number.group(1).equals("1st") || m_number.group(1).equals("first")) new_addout += " result.";
+            else new_addout += m_number.group(1).replace("st","").replace("nd","").replace("rd","") + " results.";
+        }
+        
+        if (new_addout != null) additionaloutput = nlg.createNLGElement(new_addout);
     }
     
     
