@@ -42,7 +42,7 @@ public class Postprocessor {
     HashMap<String,String> equalities;
     boolean ask;
     // Debug
-    boolean TRACE = true;
+    boolean TRACE = false;
     
     
     public Postprocessor() {
@@ -143,11 +143,11 @@ public class Postprocessor {
             addRemainingStuffToEqualities(bodyParts);
             replaceEqualities(bodyParts);
             
-            List<String> final_bodyParts;
-            final_bodyParts = replaceVarOccurrencesByPronouns(bodyParts);
+            List<String> final_bodyParts = new ArrayList<String>(bodyParts);
+            final_bodyParts = replaceVarOccurrencesByPronouns(final_bodyParts);
             final_bodyParts = order(final_bodyParts);
             final_bodyParts = replaceVarOccurencesByIndefinites(final_bodyParts);
-            final_bodyParts = replaceVarOccurrencesByPronouns(new HashSet<String>(final_bodyParts));
+            final_bodyParts = replaceVarOccurrencesByPronouns(final_bodyParts);
            
             if (TRACE) { System.out.println("\n--4-------------------------"); 
                          for (String s : final_bodyParts) System.out.println(s);
@@ -162,10 +162,10 @@ public class Postprocessor {
                 for (String b : final_bodyParts) body.addCoordinate(b);
                 output = body;
             }
+                               
+            if (ask) checkSelects();
             
             polish();
-                    
-            if (ask) checkSelects();
             
             if (TRACE) {
                 System.out.println("\n");
@@ -497,10 +497,8 @@ public class Postprocessor {
         Matcher m_order     = order.matcher(addout);
         Matcher m_number    = number.matcher(addout);
         if (m_order_wrt.find() && m_number.find()) {
-            new_addout = "The query returns the "; 
-            if (m_number.group(1).equals("1st") || m_number.group(1).equals("first")) new_addout += "result ";
-            else new_addout += m_number.group(1).replace("st","").replace("nd","").replace("rd","") + " results ";
-            new_addout += "with the";
+            new_addout = "The query returns the result with the ";
+            if (!m_number.group(1).equals("1st") && !m_number.group(1).equals("first")) new_addout += m_number.group(1);
             if      (m_order_wrt.group(1).equals("descending")) new_addout += " highest ";
             else if (m_order_wrt.group(1).equals("ascending"))  new_addout += " lowest ";
             String wrt = m_order_wrt.group(4);
@@ -513,10 +511,10 @@ public class Postprocessor {
         }
         else if (m_order.find() && m_number.find()) {
             new_addout = "The query returns the "; 
+            if (!m_number.group(1).equals("1st") && !m_number.group(1).equals("first")) new_addout += m_number.group(1);
             if      (m_order.group(1).equals("descending")) new_addout += "highest ";
             else if (m_order.group(1).equals("ascending"))  new_addout += "lowest ";
-            if (m_number.group(1).equals("1st") || m_number.group(1).equals("first")) new_addout += " result.";
-            else new_addout += m_number.group(1).replace("st","").replace("nd","").replace("rd","") + " results.";
+            new_addout += " result.";
         }
         
         if (new_addout != null) additionaloutput = nlg.createNLGElement(new_addout);
@@ -862,6 +860,8 @@ public class Postprocessor {
                      equalities.put(v,value.replace(var,equalities.get(var)));
                      used_keys.add(var);
                      indirectly_used.put(v,value.replace(var,"this "+equalities.get(var).replace("this a ","this ")));
+//                     Matcher m = Pattern.compile(".*( with the (.*)?((label)|(title)|(name)).*)\\z").matcher(equalities.get(var));
+//                     if (m.find()) equalities.put(var,equalities.get(var).replace(m.group(1),""));
                  }
             }
                                                 
@@ -872,6 +872,8 @@ public class Postprocessor {
                     sel.setFeature("head",head.replace(var,equalities.get(var)).replace(" their "," its "));
                     sel.setPreModifier("");
                     used_keys.add(var);
+//                    Matcher m = Pattern.compile(".*( with the (.*)?((label)|(title)|(name)).*)\\z").matcher(equalities.get(var));
+//                    if (m.find()) equalities.put(var,equalities.get(var).replace(m.group(1),""));
                 }
             }
             
@@ -882,7 +884,8 @@ public class Postprocessor {
                  String old_s = s;
                  boolean found = false;
                  while (m.find()) {
-                     if (!s.matches(".* has the \\w*\\s?((label)|(title)|(name)) .*")) {
+                     if (!s.matches(".* has the \\w*\\s?((label)|(title)|(name)) .*")
+                             && !(equalities.get(var).matches(".* with the \\w*\\s?((label)|(title)|(name)) .*") && s.contains("'"))) {
                         found = true;
                         if (used_keys.contains(var)) { 
                             String repl = equalities.get(var);
@@ -900,6 +903,8 @@ public class Postprocessor {
                      addThese.add(s);
                      deleteThese.add(old_s);
                      used_keys.add(var);
+//                     m = Pattern.compile(".*( with the (.*)?((label)|(title)|(name)).*)\\z").matcher(equalities.get(var));
+//                     if (m.find()) equalities.put(var,equalities.get(var).replace(m.group(1),""));
                      NPPhraseSpec delete = null;
                      for (NPPhraseSpec sel : selects) {
                           if (sel.getFeatureAsString("head").equals(var)) {
@@ -959,9 +964,10 @@ public class Postprocessor {
         
         for (String v : primaries) {
             for (String s : bodyParts) {
-                if (s.startsWith(v+" is ") || s.startsWith("they are ")) {
-                    primary_declaratives.add(s); }
-                else if (s.contains(v)) primary_others.add(s);
+                if (s.startsWith("?"+v+" is ") || s.startsWith("they are ")) 
+                    primary_declaratives.add(s); 
+                else if (s.contains("?"+v)) 
+                    primary_others.add(s); 
             }
             bodyParts.removeAll(primary_declaratives);
             bodyParts.removeAll(primary_others);
@@ -969,8 +975,8 @@ public class Postprocessor {
                
         for (String v : secondaries) {
             for (String s : bodyParts) {
-                 if (s.startsWith(v+" is ")) secondary_declaratives.add(s);
-                 else if (s.contains(v))     secondary_others.add(s);
+                 if (s.startsWith("?"+v+" is ")) secondary_declaratives.add(s); 
+                 else if (s.contains("?"+v))     secondary_others.add(s); 
             }
             bodyParts.removeAll(secondary_declaratives);
             bodyParts.removeAll(secondary_others);
@@ -986,10 +992,9 @@ public class Postprocessor {
         return ordered_bodyParts;
     }
     
-    private List<String> replaceVarOccurrencesByPronouns(Set<String> bodyParts) {
+    private List<String> replaceVarOccurrencesByPronouns(List<String> bodyParts) {
         
         List<String> result  = new ArrayList<String>();
-        List<String> bp_list = new ArrayList<String>(bodyParts);
         
         Set<String> vars = new HashSet<String>();
         Pattern p = Pattern.compile("(^|.*)(\\?([\\w]*))(\\s|\\z|\\.|\\,|\\')");
@@ -998,7 +1003,7 @@ public class Postprocessor {
             m = p.matcher(realiser.realise(sel).toString());
             if (m.find()) vars.add(m.group(2));
         }
-        for (String s : bp_list) {
+        for (String s : bodyParts) {
             m = p.matcher(s);
             while (m.find()) vars.add(m.group(2));
         }
@@ -1018,8 +1023,8 @@ public class Postprocessor {
                      break;
                  }
             }
-            for (int i = 0; i < bp_list.size(); i++) {
-                 String b = bp_list.get(i);
+            for (int i = 0; i < bodyParts.size(); i++) {
+                 String b = bodyParts.get(i);
                  Matcher m_p_var   = Pattern.compile(p_var).matcher(b);
                  Matcher m_p_var_s = Pattern.compile(p_var_s).matcher(b);
 //                 if (i == 0 && !inSelects) {
@@ -1042,7 +1047,7 @@ public class Postprocessor {
                 additionaloutput = nlg.createNLGElement(realiser.realise(additionaloutput).toString().replaceAll(p_var_s,"their ").replaceAll(p_var,"they "));
             }
         }
-        else result.addAll(bp_list);
+        else result.addAll(bodyParts);
                 
         return result;
     }
@@ -1051,6 +1056,12 @@ public class Postprocessor {
         
             List<String> result  = new ArrayList<String>();
             List<String> changed = new ArrayList<String>();
+            HashMap<String,Integer> order = new HashMap<String,Integer>();
+            for (int i = 0; i < bodyParts.size(); i++) {
+                 order.put(bodyParts.get(i),i);
+                 result.add(i,null);
+            }
+            HashMap<String,Boolean> descriptions = new HashMap<String,Boolean>();
             
             for (String s : secondaries) {
                  String var = "?"+s;
@@ -1061,33 +1072,61 @@ public class Postprocessor {
                         boolean firstOccurence = false;
                         boolean initial = true;
                         for (String b : bodyParts) {
+                            int pos = order.get(b);
                             if (b.contains(var)) {
                                 if (initial && !firstOccurence) { firstOccurence = true; initial = false; }
                                 else if (!initial && firstOccurence) { firstOccurence = false; }
                                 if (count == 1) {
                                     changed.add(b);
-                                    if (var.length() > 2) b = b.replace(var,"some "+var.substring(1));
-                                    else                  b = b.replace(var,"some entity");
+                                    String d;
+                                    if (var.length() > 2) d = var.substring(1);
+                                    else                  d = "entity";
+                                    if (!descriptions.containsKey(d)) {
+                                        b = b.replace(var,"some "+d);
+                                        descriptions.put(d,false);
+                                    }
+                                    else if (!descriptions.get(d)) {
+                                        descriptions.put(d,true);
+                                        b = b.replace(var,"some other "+d);
+                                    }
                                 }
                                 else if (count > 1 && secondaries.size() == 1) {                                   
                                     changed.add(b);
+                                    String d;
+                                    if (var.length() > 2) d = var.substring(1);
+                                    else                  d = "entity";
                                     if (firstOccurence)  {
-                                        if (var.length() > 2) b = b.replaceFirst("\\?"+s,"some "+s);
-                                        else                  b = b.replaceFirst("\\?"+s,"some entity");
+                                        if (!descriptions.containsKey(d)) {
+                                            b = b.replaceAll("\\?"+s,"some "+d);
+                                            descriptions.put(var,false);
+                                        }
+                                        else if (!descriptions.get(d)) {
+                                            descriptions.put(d,true);
+                                            b = b.replaceAll("\\?"+s,"some other "+d);
+                                        }
                                     }
-                                    if (var.length() > 2) b = b.replaceAll("\\?"+s,"this "+s);
-                                    else                  b = b.replaceAll("\\?"+s,"this entity");
+                                    if (!descriptions.containsKey(d)) {
+                                        b = b.replaceAll("\\?"+s,"this "+d);
+                                        descriptions.put(var,false);
+                                        }
+                                    else if (!descriptions.get(d)) {
+                                        descriptions.put(d,true);
+                                        b = b.replaceAll("\\?"+s,"this other "+d);
+                                    }
                                 }
-                                result.add(b);
+                                result.add(pos,b);
                             }
                         }
                     }
                 }
             }
             
-            for (String b : bodyParts) if (!result.contains(b) && !changed.contains(b)) result.add(b);
+            for (String b : bodyParts) if (!result.contains(b) && !changed.contains(b)) result.add(order.get(b),b);
             
-            return result;
+            List<String> resultresult = new ArrayList<String>();
+            for (String r : result) if (r != null) resultresult.add(r);
+            
+            return resultresult;
     }
     
     
@@ -1106,9 +1145,10 @@ public class Postprocessor {
         if (output != null) {
             String out = realiser.realise(output).toString();
             out = out.replace(" this a "," this ").replace(" this an "," this ").replace(" this the "," this ").replace(" this their "," their ");
-            out = out.replace(" they is "," they are ").replace(" they has "," they have ").replace(" is they "," is them ");
+            out = out.replace(" they is "," they are ").replace(" they has "," they have ").replace(" is they "," is them ").replace(" by they"," by them").replace(" on they"," on them").replace(" they,"," them,").replace(" they."," them.");
             out = out.replace("ignorecase","(ignoring case)");
             out = out.replace("%28","(").replace("%29",")").replace(". and"," and").replace(". or"," or");
+            out = out.replace("  "," ");
             m = missing_s.matcher(out);
             if (m.find()) out = out.replace(m.group(1),"s");
             m = wrong_s.matcher(out);

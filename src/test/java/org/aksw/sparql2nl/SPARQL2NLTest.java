@@ -236,7 +236,7 @@ public class SPARQL2NLTest {
                 + "SELECT DISTINCT  ?uri ?string  WHERE {  res:Bill_Clinton dbo:child ?child. ?child  dbp:spouse ?string. ?uri  rdfs:label ?string . }";
         
 //        String[] queries = {query,query2,query2b,query2c,query3,query3b,query4,query5,query6,query7,query8,query9,query10,query11,query14};
-      String[] queries = {query18};
+      String[] queries = {query21};
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             Lexicon lexicon = Lexicon.getDefaultLexicon();
