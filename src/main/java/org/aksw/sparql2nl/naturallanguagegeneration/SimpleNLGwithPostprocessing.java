@@ -125,6 +125,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         pp = new PropertyProcessor(wordnetDir);
 
     }
+    
+    public void setPropertyDistinctionThreshold(double threshold){
+    	pp.setThreshold(threshold);
+    }
 
     public void setUseBOA(boolean useBOA) {
         this.useBOA = useBOA;
