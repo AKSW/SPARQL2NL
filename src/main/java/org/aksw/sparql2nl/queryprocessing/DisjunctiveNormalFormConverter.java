@@ -75,7 +75,7 @@ public class DisjunctiveNormalFormConverter extends ElementVisitorBase {
 //				if(((ElementGroup) e).getElements().size() == 1){
 //					elements.add(((ElementGroup) e).getElements().get(0));
 //				}
-				elements.add(e);
+				elements.add(((ElementGroup) e).getElements().get(0));
 			} else {
 				elements.add(e);
 			}

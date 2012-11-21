@@ -100,7 +100,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         if (isWindows()) {
             pp = new PropertyProcessor("/resources/wordnetWindows/dict");
         } else {
-            pp = new PropertyProcessor("/resources/wordnet/dict");
+            pp = new PropertyProcessor("resources/wordnet/dict");
         }
     }
 
@@ -124,6 +124,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
         pp = new PropertyProcessor(wordnetDir);
 
+    }
+    
+    public void setPropertyDistinctionThreshold(double threshold){
+    	pp.setThreshold(threshold);
     }
 
     public void setUseBOA(boolean useBOA) {

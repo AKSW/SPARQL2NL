@@ -21,7 +21,7 @@ import org.apache.log4j.Logger;
 public class PropertyProcessor {
 
     private static final Logger logger = Logger.getLogger(LiteralConverter.class);
-    public double THRESHOLD = 1.0;
+    private double threshold = 2.0;
     private Preposition preposition;
     WordNetDatabase database;
 
@@ -67,15 +67,21 @@ public class PropertyProcessor {
             {
                 return Type.UNKNOWN;
             }
-            if (score >= THRESHOLD) {
+            if (score >= threshold) {
                 return Type.NOUN;
-            } else if (score < 1 / THRESHOLD) {
+            } 
+            else if (score < 1 / threshold) {
                 return Type.VERB;
-            } else {
-                return Type.UNKNOWN;
+            } 
+            else {
+                return Type.NOUN;
             }
         }
     }
+    
+    public void setThreshold(double threshold) {
+		this.threshold = threshold;
+	}
 
     /**
      * Returns log(nounCount/verbCount), i.e., positive for noun, negative for
@@ -172,7 +178,7 @@ public class PropertyProcessor {
 
     public static void main(String args[]) {
         PropertyProcessor pp = new PropertyProcessor("resources/wordnet/dict");
-        String token = "date";
+        String token = "birth place";
         System.out.println(pp.getScore(token));
         System.out.println(pp.getType(token));
         System.out.println(pp.getAllSynsets(token));
