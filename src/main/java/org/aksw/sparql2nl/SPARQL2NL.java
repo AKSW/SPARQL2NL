@@ -1,11 +1,9 @@
 package org.aksw.sparql2nl;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
@@ -16,8 +14,8 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.aksw.sparql2nl.naturallanguagegeneration.NaturalLanguageGenerator;
 import org.aksw.sparql2nl.queryprocessing.Query;
@@ -26,10 +24,7 @@ import org.aksw.sparql2nl.queryprocessing.Similarity.SimilarityMeasure;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.dllearner.algorithm.tbsl.sparql.Template;
 
-import simplenlg.test.syntax.NounPhraseTest;
-
 import com.hp.hpl.jena.query.QueryFactory;
-import com.ibm.icu.util.Measure;
 
 public class SPARQL2NL {
 	

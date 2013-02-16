@@ -93,7 +93,7 @@ public class PropertyProcessor {
     public double getScore(String word) {
         double nounCount = 0;
         double verbCount = 0;
-        logger.info("Checking " + word);
+        logger.debug("Checking " + word);
         Synset[] synsets = database.getSynsets(word, SynsetType.NOUN);
         for (int i = 0; i < synsets.length; i++) {
             String[] s = synsets[i].getWordForms();

@@ -54,7 +54,7 @@ public class Evaluation {
 //	private static final String QUERIES_FILE = "resources/qald2-dbpedia-train.xml";
 	private static final int NR_OF_REPRESENTATIONS = 10;
 	
-        private static int testme = 39;
+        private static int testme = 99;
 	
 	private SortedMap<Integer, String> id2Question = new TreeMap<Integer, String>();
 	private SortedMap<Integer, String> id2Query = new TreeMap<Integer, String>();

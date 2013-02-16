@@ -7,12 +7,15 @@ import java.net.URL;
 import java.net.URLConnection;
 
 import org.apache.commons.collections.map.LRUMap;
+import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.util.SimpleIRIShortFormProvider;
 
+import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
@@ -24,12 +27,20 @@ import com.hp.hpl.jena.vocabulary.XSD;
 
 public class URIConverter {
 	
+	
+	private static final Logger logger = Logger.getLogger(URIConverter.class.getName());
+	
 	private SimpleIRIShortFormProvider sfp = new SimpleIRIShortFormProvider();
 	private SparqlEndpoint endpoint;
+	private Model model;
 	private LRUMap uri2LabelCache = new LRUMap(50);
 	
 	public URIConverter(SparqlEndpoint endpoint) {
 		this.endpoint = endpoint;
+	}
+	
+	public URIConverter(Model model) {
+		this.model = model;
 	}
 	
 	public String convert(String uri){
@@ -49,19 +60,23 @@ public class URIConverter {
 	            String labelQuery = "SELECT ?label WHERE {<" + uri + "> "
 	                    + "<http://www.w3.org/2000/01/rdf-schema#label> ?label. FILTER (lang(?label) = 'en' )}";
 
-	            // take care of graph issues. Only takes one graph. Seems like some sparql endpoint do
-	            // not like the FROM option.
-	            ResultSet results = executeSelect(labelQuery);
+	            try {
+					// take care of graph issues. Only takes one graph. Seems like some sparql endpoint do
+					// not like the FROM option.
+					ResultSet results = executeSelect(labelQuery);
 
-	            //get label from knowledge base
-	            QuerySolution soln;
-	            while (results.hasNext()) {
-	                soln = results.nextSolution();
-	                // process query here
-	                {
-	                    label = soln.getLiteral("label").getLexicalForm();
-	                }
-	            }
+					//get label from knowledge base
+					QuerySolution soln;
+					while (results.hasNext()) {
+					    soln = results.nextSolution();
+					    // process query here
+					    {
+					        label = soln.getLiteral("label").getLexicalForm();
+					    }
+					}
+				} catch (Exception e) {
+					logger.warn("Getting label from SPARQL endpoint failed.", e);
+				}
 	            if(dereferenceURI && label == null && !uri.startsWith(XSD.getURI())){
 	            	label = dereferenceURI(uri);
 	            }
@@ -98,7 +113,8 @@ public class URIConverter {
      * @param uri
      * @return
      */
-    private String dereferenceURI(String uri){System.out.println("Dereferencing URI: " + uri);
+    private String dereferenceURI(String uri){
+    	logger.debug("Dereferencing URI: " + uri);
     	String label = null;
     	try {
 			URLConnection conn = new URL(uri).openConnection();
@@ -107,7 +123,11 @@ public class URIConverter {
 			InputStream in = conn.getInputStream();
 			model.read(in, null);
 			for(Statement st : model.listStatements(model.getResource(uri), RDFS.label, (RDFNode)null).toList()){
-				label = st.getObject().asLiteral().getLexicalForm();
+				Literal literal = st.getObject().asLiteral();
+				String language = literal.getLanguage();
+				if(language != null && language.equals("en")){
+					label = literal.getLexicalForm();
+				}
 			}
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
@@ -118,14 +138,22 @@ public class URIConverter {
     }
     
     private ResultSet executeSelect(String query){
-    	QueryEngineHTTP qexec = new QueryEngineHTTP(endpoint.getURL().toString(), query);
-    	qexec.setDefaultGraphURIs(endpoint.getDefaultGraphURIs());
-    	ResultSet rs = qexec.execSelect();
+    	ResultSet rs;
+    	if(endpoint != null){
+    		QueryEngineHTTP qexec = new QueryEngineHTTP(endpoint.getURL().toString(), query);
+        	qexec.setDefaultGraphURIs(endpoint.getDefaultGraphURIs());
+        	rs = qexec.execSelect();
+    	} else {
+    		rs = QueryExecutionFactory.create(query, model).execSelect();
+    	}
+    	
     	return rs;
     }
     
     public static void main(String[] args) {
 		String label = new URIConverter(SparqlEndpoint.getEndpointDBpediaLiveAKSW()).convert("http://dbpedia.org/resource/Nuclear_Reactor_Technology");
+		System.out.println(label);
+		label = new URIConverter(SparqlEndpoint.getEndpointDBpediaLiveAKSW()).convert("http://dbpedia.org/ontology/birthDate");
 		System.out.println(label);
     }
 

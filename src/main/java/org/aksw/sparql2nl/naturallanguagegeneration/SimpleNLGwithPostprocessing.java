@@ -1,5 +1,8 @@
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,12 +40,15 @@ import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.SortCondition;
 import com.hp.hpl.jena.query.Syntax;
+import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.sparql.core.TriplePath;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.ExprAggregator;
 import com.hp.hpl.jena.sparql.expr.ExprVar;
+import com.hp.hpl.jena.sparql.expr.aggregate.AggAvg;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggCountVar;
+import com.hp.hpl.jena.sparql.expr.aggregate.AggSum;
 import com.hp.hpl.jena.sparql.expr.aggregate.Aggregator;
 import com.hp.hpl.jena.sparql.syntax.Element;
 import com.hp.hpl.jena.sparql.syntax.ElementFilter;
@@ -54,7 +60,6 @@ import com.hp.hpl.jena.sparql.syntax.PatternVars;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
-import simplenlg.phrasespec.PPPhraseSpec;
 
 /**
  *
@@ -81,6 +86,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     private NLGElement select;
     private boolean useBOA = false;
     private SparqlEndpoint endpoint;
+    private Model model;
     private PropertyProcessor pp;
 
     public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint) {
@@ -110,6 +116,24 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
     public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint, String wordnetDir) {
         this.endpoint = endpoint;
+
+        lexicon = Lexicon.getDefaultLexicon();
+        nlgFactory = new NLGFactory(lexicon);
+        realiser = new Realiser(lexicon);
+
+        post = new Postprocessor();
+        post.id = 0;
+
+        uriConverter = new URIConverter(endpoint);
+        literalConverter = new LiteralConverter(uriConverter);
+        expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
+
+        pp = new PropertyProcessor(wordnetDir);
+
+    }
+    
+    public SimpleNLGwithPostprocessing(Model model, String wordnetDir) {
+        this.model = model;
 
         lexicon = Lexicon.getDefaultLexicon();
         nlgFactory = new NLGFactory(lexicon);
@@ -222,7 +246,14 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         List<DocumentElement> sentences = new ArrayList<DocumentElement>();
 //        System.out.println("Input query = " + query);
         // preprocess the query to get the relevant types
-        TypeExtractor tEx = new TypeExtractor(endpoint);
+        
+        TypeExtractor tEx;
+        if(endpoint != null){
+        	tEx = new TypeExtractor(endpoint);
+        } else {
+        	tEx = new TypeExtractor(model);
+        }
+        
         Map<String, Set<String>> typeMap = tEx.extractTypes(query);
 //        System.out.println("Processed query = " + query);
         // contains the beginning of the query, e.g., "this query returns"
@@ -952,9 +983,33 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 } else {
                     realisedsubj += "\'s ";
                 }
-                p.setSubject(realisedsubj + PlingStemmer.stem(predicateAsString));
+               
+                if(t.getObject().isVariable()){
+                	 NLGElement nnp = nlgFactory.createInflectedWord(predicateAsString, LexicalCategory.NOUN);
+                     nnp.setPlural(true);
+                     p.setSubject(realisedsubj + realiser.realise(nnp).getRealisation());
+                } else {
+                	p.setSubject(realisedsubj +predicateAsString);// + PlingStemmer.stem(predicateAsString));
+                }
+            	
                 p.setVerb("be");
                 p.setObject(object);
+                FileOutputStream fos = null;
+                try {
+                	String out = realiser.realise(p).toString() + "\n";
+					fos = new FileOutputStream("prop.test", true);
+					fos.write(out.getBytes());
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				} finally {
+					try {
+						fos.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
             } // if the predicate is a verb
             else if (type == Type.VERB) {
                 p.setSubject(subj);
@@ -1035,6 +1090,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         Expr expr = aggregator.getExpr();
         if (aggregator instanceof AggCountVar) {
             p.setSubject("the number of " + expr);
+        } else if (aggregator instanceof AggSum) {
+            p.setSubject("the number of " + expr);
+        } else if(aggregator instanceof AggAvg){
+        	
         }
         return p.getSubject();
     }
@@ -1079,8 +1138,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         String query2 = "PREFIX res: <http://dbpedia.org/resource/> "
                 + "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "SELECT DISTINCT ?height "
-                + "WHERE { res:Claudia_Schiffer dbo:height ?height . "
-                + "FILTER(\"1.0e6\"^^<http://www.w3.org/2001/XMLSchema#double> <= ?height)}";
+                + "WHERE { res:Claudia_Schiffer dbo:height ?height .} ";
+//                + "FILTER(\"1.0e6\"^^<http://www.w3.org/2001/XMLSchema#double> <= ?height)}";
 
         String query = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
@@ -1089,11 +1148,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 + "WHERE { "
                 + "{res:Abraham_Lincoln dbo:deathPlace ?uri} "
                 + "UNION {res:Abraham_Lincoln dbo:birthPlace ?uri} . "
-                + "?uri rdf:type dbo:Place. "
-                + "FILTER regex(?uri, \"France\").  "
-                + "FILTER (lang(?uri) = 'en')"
-                + "OPTIONAL { ?uri dbo:Name ?x }. "
-                + "}";
+                + "?uri rdf:type dbo:Place. }";
+//                + "FILTER regex(?uri, \"France\").  "
+//                + "FILTER (lang(?uri) = 'en')"
+//                + "OPTIONAL { ?uri dbo:Name ?x }. "
+//                + "}";
         String query3 = "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
                 + "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
@@ -1167,7 +1226,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 + "FILTER ( lang(?string) = \'en\' )} } "
                 + "GROUP BY ?uri ?string "
                 + "ORDER BY ?language "
-                + "LIMIT 10 OFFSET 20";
+                + "LIMIT 5 OFFSET 2";
 
         String query9 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> "
                 + "PREFIX foaf: <http://xmlns.com/foaf/0.1/> "
@@ -1197,11 +1256,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 + "FILTER (lang(?string) = 'en' && !regex(?string,'Presidency','i') && !regex(?string,'and the')) ."
                 + "}";
 
-        query8 = "SELECT * WHERE {"
-                + "?s <http://dbpedia.org/ontology/PopulatedPlace/areaTotal> ?lit. "
-                + "FILTER(?lit = \"1.0\"^^<" + "http://dbpedia.org/datatypes/squareKilometre"/*
-                 * XSD.integer.getURI()
-                 */ + ">)}";
+//        query8 = "SELECT * WHERE {"
+//                + "?s <http://dbpedia.org/ontology/PopulatedPlace/areaTotal> ?lit. "
+//                + "FILTER(?lit = \"1.0\"^^<" + "http://dbpedia.org/datatypes/squareKilometre"/*
+//                 * XSD.integer.getURI()
+//                 */ + ">)}";
 
         query10 = "PREFIX  res:  <http://dbpedia.org/resource/> "
                 + "PREFIX  dbo:  <http://dbpedia.org/ontology/> "
@@ -1222,11 +1281,14 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
 //        query8 = "SELECT * WHERE {" +
 //        		"?s <http://dbpedia.org/ontology/PopulatedPlace/areaTotal> \"12\"^^<http://dbpedia.org/datatypes/squareKilometre>.} ";
+        
+        query = "PREFIX res: <http://dbpedia.org/resource/> PREFIX dbo: <http://dbpedia.org/ontology/> SELECT DISTINCT ?string WHERE {res:Angela_Merkel dbo:birthName ?string.}";
 
+        query = "PREFIX dbo: <http://dbpedia.org/ontology/> SELECT ?s MAX(?value) WHERE {?s a dbo:Company.?s dbo:numberOfEmployees ?value.} GROUP BY ?s LIMIT 10";
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://live.dbpedia.org/sparql"));
             SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(ep);
-            Query sparqlQuery = QueryFactory.create(query7, Syntax.syntaxARQ);
+            Query sparqlQuery = QueryFactory.create(query, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
