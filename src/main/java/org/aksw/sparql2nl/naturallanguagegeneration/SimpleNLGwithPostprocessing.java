@@ -1,5 +1,6 @@
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -88,6 +89,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     private SparqlEndpoint endpoint;
     private Model model;
     private PropertyProcessor pp;
+    private FunctionalityDetector functionalityDetector = new StatisticalFunctionalityDetector(new File("resources/dbpedia_functional_axioms.owl"), 0.9);
 
     public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint) {
         this.endpoint = endpoint;
@@ -984,8 +986,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     realisedsubj += "\'s ";
                 }
                
-                if(t.getObject().isVariable()){
-                	 NLGElement nnp = nlgFactory.createInflectedWord(predicateAsString, LexicalCategory.NOUN);
+                if(t.getObject().isVariable() && functionalityDetector.isFunctional(t.getPredicate().getURI())){
+                	 NLGElement nnp = nlgFactory.createInflectedWord(PlingStemmer.stem(predicateAsString), LexicalCategory.NOUN);
                      nnp.setPlural(true);
                      p.setSubject(realisedsubj + realiser.realise(nnp).getRealisation());
                 } else {
@@ -994,22 +996,22 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             	
                 p.setVerb("be");
                 p.setObject(object);
-                FileOutputStream fos = null;
-                try {
-                	String out = realiser.realise(p).toString() + "\n";
-					fos = new FileOutputStream("prop.test", true);
-					fos.write(out.getBytes());
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				} finally {
-					try {
-						fos.close();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
+//                FileOutputStream fos = null;
+//                try {
+//                	String out = realiser.realise(p).toString() + "\n";
+//					fos = new FileOutputStream("prop.test", true);
+//					fos.write(out.getBytes());
+//				} catch (FileNotFoundException e) {
+//					e.printStackTrace();
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				} finally {
+//					try {
+//						fos.close();
+//					} catch (IOException e) {
+//						e.printStackTrace();
+//					}
+//				}
             } // if the predicate is a verb
             else if (type == Type.VERB) {
                 p.setSubject(subj);
@@ -1285,8 +1287,15 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         query = "PREFIX res: <http://dbpedia.org/resource/> PREFIX dbo: <http://dbpedia.org/ontology/> SELECT DISTINCT ?string WHERE {res:Angela_Merkel dbo:birthName ?string.}";
 
         query = "PREFIX dbo: <http://dbpedia.org/ontology/> SELECT ?s MAX(?value) WHERE {?s a dbo:Company.?s dbo:numberOfEmployees ?value.} GROUP BY ?s LIMIT 10";
+        
+//        query = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
+//        		"SELECT ?x0 WHERE {	" +
+//        		"?x0 rdf:type <http://diadem.cs.ox.ac.uk/ontologies/real-estate#House>." +
+//        		"	?x0 <http://diadem.cs.ox.ac.uk/ontologies/real-estate#receptions> ?y.	" +
+//        		"FILTER(?y > 1).}";
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://live.dbpedia.org/sparql"));
+            ep = new SparqlEndpoint(new URL("http://[2001:638:902:2010:0:168:35:138]/sparql"));
             SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(ep);
             Query sparqlQuery = QueryFactory.create(query, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
