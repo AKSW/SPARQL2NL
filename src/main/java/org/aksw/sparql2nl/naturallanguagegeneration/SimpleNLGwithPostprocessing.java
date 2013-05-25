@@ -123,7 +123,6 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
 
         pp = new PropertyProcessor(wordnetDir);
-
     }
     
     public void setPropertyDistinctionThreshold(double threshold){
