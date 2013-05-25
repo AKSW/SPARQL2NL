@@ -139,10 +139,10 @@ public class Postprocessor {
             
             // STAGE 2: String level ("A.I. is for people who not have regex skill." (@DEVOPS_BORAT))
             
-            fuseWithSelectsAgain(bodyParts);             
-            addRemainingStuffToEqualities(bodyParts);
+            fuseWithSelectsAgain(bodyParts);            
+            addRemainingStuffToEqualities(bodyParts);      
             replaceEqualities(bodyParts);
-            
+                     
             List<String> final_bodyParts = new ArrayList<String>(bodyParts);
             final_bodyParts = replaceVarOccurrencesByPronouns(final_bodyParts);
             final_bodyParts = order(final_bodyParts);
@@ -853,9 +853,9 @@ public class Postprocessor {
             // first within equalities
             for (String v : equalities.keySet()) {
                  String value = equalities.get(v);
-                 if (value.contains(var)) {
-                     if (value.matches("\\?"+var.substring(1)+"\\'s? (.*)")) {
-                         value = "the "+value.replace(var+"'s ","").replace(var+"' ","")+" of "+var;
+                 if (value.matches(".*\\?"+var.substring(1)+"(\\'|\\s|\\z).*")) {
+                     if (value.matches(".*\\?"+var.substring(1)+"\\'s? .*")) {
+                         value = value.replace(var+"'s ","the ").replace(var+"' ","the ")+" of "+var;
                      }
                      equalities.put(v,value.replace(var,equalities.get(var)));
                      used_keys.add(var);
@@ -868,7 +868,7 @@ public class Postprocessor {
             // then in selects
             for (NPPhraseSpec sel : selects) {
                 String head = sel.getFeatureAsString("head");
-                if (head.contains(var) && !head.contains("'") && !isNeeded(var,bodyParts,1) && !equalities.get(var).contains("?")) {
+                if (head.matches(".*\\?"+var.substring(1)+"(\\s|\\z)") && !head.contains("'") && !isNeeded(var,bodyParts,1) && !equalities.get(var).contains("?")) {
                     sel.setFeature("head",head.replace(var,equalities.get(var)).replace(" their "," its "));
                     sel.setPreModifier("");
                     used_keys.add(var);
@@ -885,7 +885,7 @@ public class Postprocessor {
                  boolean found = false;
                  while (m.find()) {
                      if (!s.matches(".* has the \\w*\\s?((label)|(title)|(name)) .*")
-                             && !(equalities.get(var).matches(".* with the \\w*\\s?((label)|(title)|(name)) .*") && s.contains("'"))) {
+                             && !equalities.get(var).matches(".* with the \\w*\\s?((label)|(title)|(name)) .*") && !s.contains("'")) {
                         found = true;
                         if (used_keys.contains(var)) { 
                             String repl = equalities.get(var);
@@ -1065,15 +1065,16 @@ public class Postprocessor {
             
             for (String s : secondaries) {
                  String var = "?"+s;
-                 if (!realiser.realise(additionaloutput).toString().contains(var)) {
+                 if (!realiser.realise(additionaloutput).toString().matches(".*\\?"+s+"(\\'|\\s|\\z).*")) {
                     int count = 0;
-                    for (String b : bodyParts) if (b.contains(var)) count++;
+                    for (String b : bodyParts) if (b.matches(".*\\?"+s+"(\\'|\\s|\\z).*")) count++;
                     if (count > 0) {
                         boolean firstOccurence = false;
                         boolean initial = true;
                         for (String b : bodyParts) {
                             int pos = order.get(b);
-                            if (b.contains(var)) {
+                            String new_b = "";
+                            if (b.matches(".*\\?"+s+"(\\'|\\s|\\z).*")) {
                                 if (initial && !firstOccurence) { firstOccurence = true; initial = false; }
                                 else if (!initial && firstOccurence) { firstOccurence = false; }
                                 if (count == 1) {
@@ -1082,12 +1083,12 @@ public class Postprocessor {
                                     if (var.length() > 2) d = var.substring(1);
                                     else                  d = "entity";
                                     if (!descriptions.containsKey(d)) {
-                                        b = b.replace(var,"some "+d);
+                                        new_b = b.replace(var,"some "+d);
                                         descriptions.put(d,false);
                                     }
                                     else if (!descriptions.get(d)) {
                                         descriptions.put(d,true);
-                                        b = b.replace(var,"some other "+d);
+                                        new_b = b.replace(var,"some other "+d);
                                     }
                                 }
                                 else if (count > 1 && secondaries.size() == 1) {                                   
@@ -1097,24 +1098,24 @@ public class Postprocessor {
                                     else                  d = "entity";
                                     if (firstOccurence)  {
                                         if (!descriptions.containsKey(d)) {
-                                            b = b.replaceAll("\\?"+s,"some "+d);
+                                            new_b = b.replaceAll("\\?"+s,"some "+d);
                                             descriptions.put(var,false);
                                         }
                                         else if (!descriptions.get(d)) {
                                             descriptions.put(d,true);
-                                            b = b.replaceAll("\\?"+s,"some other "+d);
+                                            new_b = b.replaceAll("\\?"+s,"some other "+d);
                                         }
                                     }
                                     if (!descriptions.containsKey(d)) {
-                                        b = b.replaceAll("\\?"+s,"this "+d);
+                                        new_b = b.replaceAll("\\?"+s,"this "+d);
                                         descriptions.put(var,false);
                                         }
                                     else if (!descriptions.get(d)) {
                                         descriptions.put(d,true);
-                                        b = b.replaceAll("\\?"+s,"this other "+d);
+                                        new_b = b.replaceAll("\\?"+s,"this other "+d);
                                     }
                                 }
-                                result.add(pos,b);
+                                if (!new_b.isEmpty()) result.add(pos,new_b);
                             }
                         }
                     }

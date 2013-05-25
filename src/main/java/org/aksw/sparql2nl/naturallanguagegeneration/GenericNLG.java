@@ -4,9 +4,28 @@
  */
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import simplenlg.features.Feature;
+import simplenlg.features.Tense;
+import simplenlg.framework.CoordinatedPhraseElement;
+import simplenlg.framework.DocumentElement;
+import simplenlg.framework.NLGElement;
+import simplenlg.framework.NLGFactory;
+import simplenlg.framework.PhraseElement;
+import simplenlg.lexicon.Lexicon;
+import simplenlg.phrasespec.NPPhraseSpec;
+import simplenlg.phrasespec.SPhraseSpec;
+import simplenlg.realiser.english.Realiser;
+
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.graph.query.Query;
+import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.sparql.expr.E_Regex;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.syntax.Element;
@@ -14,19 +33,6 @@ import com.hp.hpl.jena.sparql.syntax.ElementFilter;
 import com.hp.hpl.jena.sparql.syntax.ElementGroup;
 import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
 import com.hp.hpl.jena.sparql.syntax.ElementUnion;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import simplenlg.features.Feature;
-import simplenlg.features.Tense;
-import simplenlg.framework.*;
-import simplenlg.lexicon.*;
-import simplenlg.phrasespec.NPPhraseSpec;
-import simplenlg.phrasespec.SPhraseSpec;
-import simplenlg.realiser.english.*;
 
 /**
  *

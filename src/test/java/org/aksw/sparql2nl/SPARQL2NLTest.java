@@ -232,11 +232,21 @@ public class SPARQL2NLTest {
         String query25 = "PREFIX  res:  <http://dbpedia.org/resource/> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX  dbp:  <http://dbpedia.org/property/> PREFIX  dbo:  <http://dbpedia.org/ontology/> PREFIX  yago: <http://dbpedia.org/class/yago/> PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
                 + "SELECT DISTINCT ?person WHERE { ?person rdf:type dbo:Person . { ?person rdf:type dbo:Scientist . } UNION { ?person dbo:occupation dbo:Music . }"
                 + "?person dbo:birthDate ?date . ?book dbo:author ?person .  FILTER (?date > \"1950\"^^xsd:date ) } GROUP BY ?person HAVING ( COUNT (?book ) > 2) ";
-        String query26 = "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX res:  <http://dbpedia.org/resource/> PREFIX dbo:  <http://dbpedia.org/ontology/> PREFIX dbp:  <http://dbpedia.org/property/> PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>"
-                + "SELECT DISTINCT  ?uri ?string  WHERE {  res:Bill_Clinton dbo:child ?child. ?child  dbp:spouse ?string. ?uri  rdfs:label ?string . }";
+        String query26 = "SELECT DISTINCT ?actorName WHERE { "
+                + "?dir1 <http://data.linkedmdb.org/resource/movie/director_name> \"John Waters\" . "
+                + "?dir2 <http://data.linkedmdb.org/resource/movie/director_name> \"Steven Spielberg\" . "
+                + "?dir1movie <http://data.linkedmdb.org/resource/movie/director> ?dir1 . "
+                + "?dir1movie <http://data.linkedmdb.org/resource/movie/actor> ?actor ."
+                + "?dir2movie <http://data.linkedmdb.org/resource/movie/actor> ?actor ."
+                + "?dir2movie <http://data.linkedmdb.org/resource/movie/director> ?dir2 ."
+                + "?actor <http://data.linkedmdb.org/resource/movie/actor_name> ?actorName . } " ;
+        String query27 = "SELECT DISTINCT ?actorName WHERE {"
+                + "?woody <http://data.linkedmdb.org/resource/movie/director_name> \"Woody Allen\". "
+                + "?movie <http://data.linkedmdb.org/resource/movie/director> ?woody; <http://data.linkedmdb.org/resource/movie/actor> ?actor."
+                + "?actor <http://data.linkedmdb.org/resource/movie/actor_name> ?actorName.}";
         
 //        String[] queries = {query,query2,query2b,query2c,query3,query3b,query4,query5,query6,query7,query8,query9,query10,query11,query14};
-      String[] queries = {query21};
+      String[] queries = {query27};
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://greententacle.techfak.uni-bielefeld.de:5171/sparql"));
             Lexicon lexicon = Lexicon.getDefaultLexicon();

@@ -1,9 +1,5 @@
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +28,7 @@ import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
+import simplenlg.phrasespec.VPPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
 import com.hp.hpl.jena.graph.Node;
@@ -41,7 +38,6 @@ import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.SortCondition;
 import com.hp.hpl.jena.query.Syntax;
-import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.sparql.core.TriplePath;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.Expr;
@@ -49,6 +45,8 @@ import com.hp.hpl.jena.sparql.expr.ExprAggregator;
 import com.hp.hpl.jena.sparql.expr.ExprVar;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggAvg;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggCountVar;
+import com.hp.hpl.jena.sparql.expr.aggregate.AggMax;
+import com.hp.hpl.jena.sparql.expr.aggregate.AggMin;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggSum;
 import com.hp.hpl.jena.sparql.expr.aggregate.Aggregator;
 import com.hp.hpl.jena.sparql.syntax.Element;
@@ -66,7 +64,7 @@ import com.hp.hpl.jena.vocabulary.RDFS;
  *
  * @author ngonga
  */
-public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
+public class SimpleNLGwithPostprocessing2 implements Sparql2NLConverter {
 
     Lexicon lexicon;
     NLGFactory nlgFactory;
@@ -87,11 +85,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     private NLGElement select;
     private boolean useBOA = false;
     private SparqlEndpoint endpoint;
-    private Model model;
     private PropertyProcessor pp;
-    private FunctionalityDetector functionalityDetector = new StatisticalFunctionalityDetector(new File("resources/dbpedia_functional_axioms.owl"), 0.9);
 
-    public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint) {
+    public SimpleNLGwithPostprocessing2(SparqlEndpoint endpoint) {
         this.endpoint = endpoint;
 
         lexicon = Lexicon.getDefaultLexicon();
@@ -106,7 +102,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
 
         if (isWindows()) {
-            pp = new PropertyProcessor("E:/Work/Java/SPARQL2NL/resources/wordnetWindows/");
+            pp = new PropertyProcessor("/resources/wordnetWindows/dict");
         } else {
             pp = new PropertyProcessor("resources/wordnet/dict");
         }
@@ -116,25 +112,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         return System.getProperty("os.name").startsWith("Windows");
     }
 
-    public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint, String wordnetDir) {
+    public SimpleNLGwithPostprocessing2(SparqlEndpoint endpoint, String wordnetDir) {
         this.endpoint = endpoint;
-
-        lexicon = Lexicon.getDefaultLexicon();
-        nlgFactory = new NLGFactory(lexicon);
-        realiser = new Realiser(lexicon);
-
-        post = new Postprocessor();
-        post.id = 0;
-
-        uriConverter = new URIConverter(endpoint);
-        literalConverter = new LiteralConverter(uriConverter);
-        expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
-
-        pp = new PropertyProcessor(wordnetDir);
-    }
-    
-    public SimpleNLGwithPostprocessing(Model model, String wordnetDir) {
-        this.model = model;
 
         lexicon = Lexicon.getDefaultLexicon();
         nlgFactory = new NLGFactory(lexicon);
@@ -247,14 +226,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         List<DocumentElement> sentences = new ArrayList<DocumentElement>();
 //        System.out.println("Input query = " + query);
         // preprocess the query to get the relevant types
-        
-        TypeExtractor tEx;
-        if(endpoint != null){
-        	tEx = new TypeExtractor(endpoint);
-        } else {
-        	tEx = new TypeExtractor(model);
-        }
-        
+        TypeExtractor tEx = new TypeExtractor(endpoint);
         Map<String, Set<String>> typeMap = tEx.extractTypes(query);
 //        System.out.println("Processed query = " + query);
         // contains the beginning of the query, e.g., "this query returns"
@@ -359,7 +331,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 select = post.returnSelect();
             } else // this is done in the first run and select is then set also for the second (postprocessing) run
             {
-                select = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct());  // if tEx.isCount(), this gives "number of" + select
+                select = processTypes(typeMap, whereVars, tEx.isCount(), query.isDistinct(), query);  // if tEx.isCount(), this gives "number of" + select
             }
             head.setObject(select);
             head.getObject().setFeature(Feature.SUPRESSED_COMPLEMENTISER, true);
@@ -418,7 +390,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 SPhraseSpec optionalHead = nlgFactory.createClause();
                 optionalHead.setSubject("it");
                 optionalHead.setVerb("retrieve");
-                optionalHead.setObject(processTypes(typeMap, optionalVars, tEx.isCount(), query.isDistinct()));
+                optionalHead.setObject(processTypes(typeMap, optionalVars, tEx.isCount(), query.isDistinct(), query));
                 optionalHead.setFeature(Feature.CUE_PHRASE, "Additionally, ");
                 if (!optionalElements.isEmpty()) {
                     NLGElement optionalBody;
@@ -630,7 +602,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         return object;
     }
 
-    private NLGElement processTypes(Map<String, Set<String>> typeMap, Set<String> vars, boolean count, boolean distinct) {
+    private NLGElement processTypes(Map<String, Set<String>> typeMap, Set<String> vars, boolean count, boolean distinct, Query query) {
         List<NPPhraseSpec> objects = new ArrayList<NPPhraseSpec>();
         //process the type information to create the object(s)
         for (String s : typeMap.keySet()) {
@@ -685,11 +657,18 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     //object.addPreModifier(nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr()));
                     object.addComplement(cpe);
                     
+                
                 }
                 object.setFeature(Feature.CONJUNCTION, "or");
                 objects.add(object);
             }
         }
+        
+        for(ExprAggregator agg : query.getAggregators()){
+        	NPPhraseSpec nnp = getNLGFromAggregation(agg);
+        	objects.add(nnp);
+        }
+        
 
         post.selects.addAll(objects);
 
@@ -898,150 +877,28 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
     public SPhraseSpec getNLForTriple(Triple t) {
         SPhraseSpec p = nlgFactory.createClause();
-        //process predicate
-        //start with variables
-        if (t.getPredicate().isVariable()) {
-            //if subject is variable then use variable label, else generate textual representation
-            if (t.getSubject().isVariable()) {
-                p.setSubject(t.getSubject().toString());
-            } else {
-                p.setSubject(getNPPhrase(t.getSubject().toString(), false));
-            }
-
-            // predicate is variable, thus simply use variable label
-            p.setVerb("be related via " + t.getPredicate().toString() + " to");
-
-
-            //then process the object
-            Object object;
-            if (t.getObject().isVariable()) {
-                object = t.getObject().toString();
-            } else if (t.getObject().isLiteral()) {
-                LiteralLabel lit = t.getObject().getLiteral();
-                NPPhraseSpec np = nlgFactory.createNounPhrase(
-                        nlgFactory.createInflectedWord(literalConverter.convert(lit), LexicalCategory.NOUN));
-                np.setPlural(literalConverter.isPlural(lit));
-                object = np;
-            } else {
-                object = getNPPhrase(t.getObject().toString(), false);
-            }
-            p.setObject(object);
-        } //more interesting case. Predicate is not a variable
-        //then check for noun and verb. If the predicate is a noun or a verb, then
-        //use possessive or verbal form, else simply get the boa pattern
-        else {
-            // first get the string representation for the subject
-            NLGElement subj;
-            if (t.getSubject().isVariable()) {
-                subj = nlgFactory.createWord(t.getSubject().toString(), LexicalCategory.NOUN);
-            } else {
-                subj = nlgFactory.createWord(uriConverter.convert(t.getSubject().toString()), LexicalCategory.NOUN);
-            }
-
-            //then process the object
-            Object object;
-            if (t.getObject().isVariable()) {
-                object = t.getObject().toString();
-            } else if (t.getObject().isLiteral()) {
-                LiteralLabel lit = t.getObject().getLiteral();
-                NPPhraseSpec np = nlgFactory.createNounPhrase(
-                        nlgFactory.createInflectedWord(literalConverter.convert(lit), LexicalCategory.NOUN));
-                np.setPlural(literalConverter.isPlural(lit));
-                object = np;
-            } else {
-                object = getNPPhrase(t.getObject().toString(), false, t.getPredicate().matches(RDF.type.asNode()));
-            }
-
-            //handle the predicate
-            String predicateAsString = uriConverter.convert(t.getPredicate().toString());
-
-            //convert camelcase to single words
-            String regex = "([a-z])([A-Z])";
-            String replacement = "$1 $2";
-            predicateAsString = predicateAsString.replaceAll(regex, replacement).toLowerCase();
-            if (predicateAsString.contains("(")) {
-                predicateAsString = predicateAsString.substring(0, predicateAsString.indexOf("("));
-            }
-            //System.out.println(predicateAsString);
-            Type type;
-            if (t.getPredicate().matches(RDFS.label.asNode())) {
-                type = Type.NOUN;
-            } else {
-                type = pp.getType(predicateAsString);
-            }
-
-
-            // if the predicate is rdf:type
-            if (t.getPredicate().matches(RDF.type.asNode())) {
-                p.setSubject(subj);
-                p.setVerb("be a");
-                p.setObject(object);
-            } else // now if the predicate is a noun
-            if (type == Type.NOUN) {
-                String realisedsubj = realiser.realise(subj).getRealisation();
-                if (realisedsubj.endsWith("s")) {
-                    realisedsubj += "\' ";
-                } else {
-                    realisedsubj += "\'s ";
-                }
-               
-                if(t.getObject().isVariable() && functionalityDetector.isFunctional(t.getPredicate().getURI())){
-                	 NLGElement nnp = nlgFactory.createInflectedWord(PlingStemmer.stem(predicateAsString), LexicalCategory.NOUN);
-                     nnp.setPlural(true);
-                     p.setSubject(realisedsubj + realiser.realise(nnp).getRealisation());
-                } else {
-                	p.setSubject(realisedsubj +predicateAsString);// + PlingStemmer.stem(predicateAsString));
-                }
-            	
-                p.setVerb("be");
-                p.setObject(object);
-//                FileOutputStream fos = null;
-//                try {
-//                	String out = realiser.realise(p).toString() + "\n";
-//					fos = new FileOutputStream("prop.test", true);
-//					fos.write(out.getBytes());
-//				} catch (FileNotFoundException e) {
-//					e.printStackTrace();
-//				} catch (IOException e) {
-//					e.printStackTrace();
-//				} finally {
-//					try {
-//						fos.close();
-//					} catch (IOException e) {
-//						e.printStackTrace();
-//					}
-//				}
-            } // if the predicate is a verb
-            else if (type == Type.VERB) {
-                p.setSubject(subj);
-                p.setVerb(pp.getInfinitiveForm(predicateAsString));
-                p.setObject(object);
-            } //in other cases, use the BOA pattern
-            else {
-
-                List<org.aksw.sparql2nl.nlp.relation.Pattern> l = BoaPatternSelector.getNaturalLanguageRepresentation(t.getPredicate().toString(), 1);
-                if (l.size() > 0) {
-                    String boaPattern = l.get(0).naturalLanguageRepresentation;
-                    //range before domain
-                    if (boaPattern.startsWith("?R?")) {
-                        p.setSubject(subj);
-                        p.setObject(object);
-                    } else {
-                        p.setObject(subj);
-                        p.setSubject(object);
-                    }
-                    p.setVerb(BoaPatternSelector.getNaturalLanguageRepresentation(t.getPredicate().toString(), 1).get(0).naturalLanguageRepresentationWithoutVariables);
-                } //last resort, i.e., no boa pattern found
-                else {
-                    p.setSubject(subj);
-                    p.setVerb("be related via \"" + predicateAsString + "\" to");
-                    p.setObject(object);
-                }
-            }
-        }
+        
+        NLGElement subject = processSubject(t.getSubject());
+        NLGElement object = processObject(t.getObject());
+        NLGElement verb = processPredicate(t, subject, object);
+        
+        p.setSubject(subject);
+        p.setVerb(verb);
+        p.setObject(object);
         p.setFeature(Feature.TENSE, Tense.PRESENT);
-
+        System.out.println(realiser.realise(p).getRealisation());
         return p;
+    }
+    
+    private String normalizeLabel(String label){
+    	//convert camelcase to single words
+        String regex = "([a-z])([A-Z])";
+        String replacement = "$1 $2";
+        String normalizedLabel = label.replaceAll(regex, replacement).toLowerCase();
+        if (normalizedLabel.contains("(")) {
+        	normalizedLabel = normalizedLabel.substring(0, normalizedLabel.indexOf("("));
+        }
+        return normalizedLabel;
     }
 
     private NLGElement processSubject(Node node) {
@@ -1056,10 +913,85 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         return subj;
     }
 
-    private void processPredicate(Node node) {
+    private NLGElement processPredicate(Triple t, NLGElement processedSubject, NLGElement processedObject) {
+    	Node node = t.getPredicate();
+    	VPPhraseSpec verb = null;
+        if (node.isVariable()) {
+        	verb = nlgFactory.createVerbPhrase("be related via " + node.toString() + " to");
+           
+        } //more interesting case. Predicate is not a variable
+        //then check for noun and verb. If the predicate is a noun or a verb, then
+        //use possessive or verbal form, else simply get the boa pattern
+        else {
+            //handle the predicate
+            String predicateAsString = uriConverter.convert(t.getPredicate().toString());
+            predicateAsString = normalizeLabel(predicateAsString);
+            
+            Type type;
+            if (node.matches(RDFS.label.asNode())) {
+                type = Type.NOUN;
+            } else {
+                type = pp.getType(predicateAsString);
+            }
+
+
+            // if the predicate is rdf:type
+            if (t.getPredicate().matches(RDF.type.asNode())) {
+            	verb = nlgFactory.createVerbPhrase("be a");
+            } else  if (type == Type.NOUN) {// now if the predicate is a noun
+                String realisedsubj = realiser.realise(processedSubject).getRealisation();
+                if (realisedsubj.endsWith("s")) {
+                    realisedsubj += "\' ";
+                } else {
+                    realisedsubj += "\'s ";
+                }
+				if (t.getObject().isVariable()) {
+					NLGElement nnp = nlgFactory.createInflectedWord(PlingStemmer.stem(predicateAsString), LexicalCategory.NOUN);
+					nnp.setPlural(true);
+					processedSubject = nlgFactory.createNounPhrase(realisedsubj + realiser.realise(nnp).getRealisation());
+				} else {
+					processedSubject = nlgFactory.createNounPhrase(realisedsubj + predicateAsString);
+				}
+				verb = nlgFactory.createVerbPhrase("be");
+            } 
+            else if (type == Type.VERB) {// if the predicate is a verb
+            	verb = nlgFactory.createVerbPhrase(pp.getInfinitiveForm(predicateAsString));
+            } else {//in other cases, use the BOA pattern
+                List<org.aksw.sparql2nl.nlp.relation.Pattern> l = BoaPatternSelector.getNaturalLanguageRepresentation(t.getPredicate().toString(), 1);
+                if (l.size() > 0) {
+                    String boaPattern = l.get(0).naturalLanguageRepresentation;
+                    //range before domain
+                    if (boaPattern.startsWith("?R?")) {
+                    	
+                    } else {//switch subject and object position
+                    	NLGElement tmp = processedObject;
+                    	processedObject = processedSubject;
+                    	processedSubject = tmp;
+                    }
+                    verb = nlgFactory.createVerbPhrase(BoaPatternSelector.getNaturalLanguageRepresentation(t.getPredicate().toString(), 1).get(0).naturalLanguageRepresentationWithoutVariables);
+                } //last resort, i.e., no boa pattern found
+                else {
+                	verb = nlgFactory.createVerbPhrase("be related via \"" + predicateAsString + "\" to");
+                }
+            }
+        }
+        return verb;
     }
 
-    private void processObject(Node node) {
+    private NLGElement processObject(Node node) {
+    	NPPhraseSpec object;
+        if (node.isVariable()) {
+            object = nlgFactory.createNounPhrase(node.toString());
+        } else if (node.isLiteral()) {
+            LiteralLabel lit = node.getLiteral();
+            NPPhraseSpec np = nlgFactory.createNounPhrase(
+                    nlgFactory.createInflectedWord(literalConverter.convert(lit), LexicalCategory.NOUN));
+            np.setPlural(literalConverter.isPlural(lit));
+            object = np;
+        } else {
+            object = getNPPhrase(node.toString(), false);
+        }
+        return object;
     }
 
     private String normalizeVerb(String verb) {
@@ -1085,18 +1017,22 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         return expressionConverter.convert(expr);
     }
 
-    private NLGElement getNLGFromAggregation(ExprAggregator aggregationExpr) {
-        SPhraseSpec p = nlgFactory.createClause();
+    private NPPhraseSpec getNLGFromAggregation(ExprAggregator aggregationExpr) {
+        NPPhraseSpec p = nlgFactory.createNounPhrase();
         Aggregator aggregator = aggregationExpr.getAggregator();
         Expr expr = aggregator.getExpr();
         if (aggregator instanceof AggCountVar) {
-            p.setSubject("the number of " + expr);
+            p.setNoun("the number of " + expr);
         } else if (aggregator instanceof AggSum) {
-            p.setSubject("the number of " + expr);
-        } else if(aggregator instanceof AggAvg){
-        	
+            p.setNoun("the sum of " + expr);
+        } else if (aggregator instanceof AggMin) {
+            p.setNoun("the minimum of " + expr);
+        } else if (aggregator instanceof AggMax) {
+            p.setNoun("the maximum of " + expr);
+        } else if (aggregator instanceof AggAvg) {
+            p.setNoun("the average of " + expr);
         }
-        return p.getSubject();
+        return p;
     }
 
     private NLGElement getNLFromExpressions(List<Expr> expressions) {
@@ -1280,64 +1216,16 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 + "        OPTIONAL {?person rdfs:label ?string"
                 + "        FILTER ( lang(?string) = \"en\" ) } }";
 
-        String argentina = "PREFIX  res:  <http://dbpedia.org/resource/> " +
-"PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> " + 
-"PREFIX  dbo:  <http://dbpedia.org/ontology/> " +
-"PREFIX  dbp:  <http://dbpedia.org/property/> " +
-"PREFIX  yago: <http://dbpedia.org/class/yago/> " +
-"PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  " +
-"SELECT DISTINCT  ?uri ?string " +
-"WHERE " +
-"  {   { ?uri rdf:type yago:ArgentineFilms }  " +
-"    UNION " +
-"      { ?uri rdf:type dbo:Film  " +
-"        { ?uri dbo:country res:Argentina } " +
-"      } " +
-"    UNION " +
-"      { ?uri rdf:type dbo:Film  " +
-"        { ?uri dbp:country \"Argentina\"@en }  " +
-"      }  " +
-"    OPTIONAL  " +
-"      { ?uri rdfs:label ?string  " +
-"        FILTER ( lang(?string) = \"en\" ) " +
-"      } " +
-"  }";
-        
-                String argentina1 = "PREFIX  res:  <http://dbpedia.org/resource/> " +
-"PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> " + 
-"PREFIX  dbo:  <http://dbpedia.org/ontology/> " +
-"PREFIX  dbp:  <http://dbpedia.org/property/> " +
-"PREFIX  yago: <http://dbpedia.org/class/yago/> " +
-"PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  " +
-"SELECT DISTINCT  ?uri ?string " +
-"WHERE " +
-"  {   { ?uri rdf:type yago:ArgentineFilms }  " +
-"    UNION " +
-"      { ?uri rdf:type dbo:Film . ?uri dbo:country res:Argentina } " +
-"    UNION " +
-"      { ?uri rdf:type dbo:Film . ?uri dbp:country \"Argentina\"@en }  " +
-"    OPTIONAL  " +
-"      { ?uri rdfs:label ?string  " +
-"        FILTER ( lang(?string) = \"en\" ) " +
-"      } " +
-"  }";
 //        query8 = "SELECT * WHERE {" +
 //        		"?s <http://dbpedia.org/ontology/PopulatedPlace/areaTotal> \"12\"^^<http://dbpedia.org/datatypes/squareKilometre>.} ";
         
         query = "PREFIX res: <http://dbpedia.org/resource/> PREFIX dbo: <http://dbpedia.org/ontology/> SELECT DISTINCT ?string WHERE {res:Angela_Merkel dbo:birthName ?string.}";
-
         query = "PREFIX dbo: <http://dbpedia.org/ontology/> SELECT ?s MAX(?value) WHERE {?s a dbo:Company.?s dbo:numberOfEmployees ?value.} GROUP BY ?s LIMIT 10";
         
-//        query = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-//        		"SELECT ?x0 WHERE {	" +
-//        		"?x0 rdf:type <http://diadem.cs.ox.ac.uk/ontologies/real-estate#House>." +
-//        		"	?x0 <http://diadem.cs.ox.ac.uk/ontologies/real-estate#receptions> ?y.	" +
-//        		"FILTER(?y > 1).}";
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://live.dbpedia.org/sparql"));
-            ep = new SparqlEndpoint(new URL("http://[2001:638:902:2010:0:168:35:138]/sparql"));
-            SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(ep);
-            Query sparqlQuery = QueryFactory.create(argentina1, Syntax.syntaxARQ);
+            SimpleNLGwithPostprocessing2 snlg = new SimpleNLGwithPostprocessing2(ep);
+            Query sparqlQuery = QueryFactory.create(query, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {

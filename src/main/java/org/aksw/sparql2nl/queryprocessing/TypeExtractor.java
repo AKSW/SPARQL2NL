@@ -10,20 +10,20 @@ import java.util.Map;
 import java.util.Set;
 
 import org.dllearner.kb.sparql.SparqlEndpoint;
-import org.dllearner.kb.sparql.SparqlQuery;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.Syntax;
+import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.sparql.core.TriplePath;
 import com.hp.hpl.jena.sparql.core.Var;
-import com.hp.hpl.jena.sparql.core.VarAlloc;
+import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.ExprAggregator;
-import com.hp.hpl.jena.sparql.expr.aggregate.AggCount;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggCountVar;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggCountVarDistinct;
 import com.hp.hpl.jena.sparql.expr.aggregate.Aggregator;
@@ -57,6 +57,7 @@ public class TypeExtractor extends ElementVisitorBase {
 	
 	private Query query;
 	private SparqlEndpoint endpoint;
+	private Model model;
 	
 	private boolean isCount = false;
 	
@@ -64,6 +65,10 @@ public class TypeExtractor extends ElementVisitorBase {
 	
 	public TypeExtractor(SparqlEndpoint endpoint) {
 		this.endpoint = endpoint;
+	}
+	
+	public TypeExtractor(Model model) {
+		this.model = model;
 	}
 
        
@@ -160,8 +165,15 @@ public class TypeExtractor extends ElementVisitorBase {
 	
 	private String getPropertyType(String propertyURI){
 		String query = String.format("SELECT ?type WHERE {<%s> a ?type}", propertyURI);
-		ResultSet rs = new SparqlQuery(query, endpoint).send(false);
-		while(rs.hasNext()){
+		ResultSet rs;
+    	if(endpoint != null){
+    		QueryEngineHTTP qexec = new QueryEngineHTTP(endpoint.getURL().toString(), query);
+        	qexec.setDefaultGraphURIs(endpoint.getDefaultGraphURIs());
+        	rs = qexec.execSelect();
+    	} else {
+    		rs = QueryExecutionFactory.create(query, model).execSelect();
+    	}
+		if(rs.hasNext()){
 			return rs.next().get("type").asResource().getURI();
 		}
 		return null;
