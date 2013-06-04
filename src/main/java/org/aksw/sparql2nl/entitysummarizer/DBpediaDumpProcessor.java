@@ -108,7 +108,7 @@ public class DBpediaDumpProcessor implements DumpProcessor {
 
     public static void main(String args[]) {
         DBpediaDumpProcessor dp = new DBpediaDumpProcessor();
-        List<LogEntry> query = dp.processDump("E:/Work/Data/DBpediaQueryLog/log_small.txt");
+        List<LogEntry> query = dp.processDump("E:/Work/Data/DBpediaQueryLog/log_small.txt", true);
         List<String> filteredResults = new ArrayList<String>();
         for (LogEntry e : query) {
             if (dp.checkForResults(e.getQuery()) >= 0) {
@@ -116,5 +116,9 @@ public class DBpediaDumpProcessor implements DumpProcessor {
             }
         }
         System.out.println(filteredResults);
+    }
+
+    public List<LogEntry> processDump(String file) {
+        return processDump(file, true);
     }
 }
