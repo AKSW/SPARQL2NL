@@ -4,19 +4,12 @@
  */
 package org.aksw.sparql2nl.entitysummarizer.clustering;
 
+import java.util.Set;
+
 /**
  *
  * @author ngonga
  */
-public class Node {
-    public String label;
-    public Node(String label)
-    {
-        this.label = label;
-    }
-    
-    public String toString()
-    {
-        return label;
-    }
+public interface Clustering {
+    Set<Set<Node>> cluster(WeightedGraph wg);
 }

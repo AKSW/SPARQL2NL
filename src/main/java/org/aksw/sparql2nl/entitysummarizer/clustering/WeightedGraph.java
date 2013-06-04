@@ -42,6 +42,12 @@ public class WeightedGraph {
         return n;
     }
 
+    public Set<Node> getNeighbors(Node n)
+    {
+        if(edges.containsKey(n))
+        return edges.get(n).keySet();
+        else return new HashSet<Node>();
+    }
     /**
      * Adds a weighted edge to the graph
      *
@@ -60,8 +66,8 @@ public class WeightedGraph {
         }
         return false;
     }
-    
-       /**
+
+    /**
      * Adds a weighted edge to the graph
      *
      * @param n1 Source node
@@ -72,11 +78,12 @@ public class WeightedGraph {
     public boolean addSymmetricEdge(Node n1, Node n2, double weight) {
         boolean b1 = addEdge(n1, n2, weight);
         boolean b2 = addEdge(n2, n1, weight);
-        return (b1&&b2);
+        return (b1 && b2);
     }
 
     /**
      * Returns the weight of the edges between two nodes
+     *
      * @param n1 Source node
      * @param n2 Target node
      * @return Weight of edges between the two
@@ -87,26 +94,37 @@ public class WeightedGraph {
                 return edges.get(n1).get(n2);
             }
         }
-        return -1;
+        return 0d;
     }
     
+    /** 
+     * Returns the weight of a node
+     * @param n A node
+     * @return Its weight
+     */
+    public double getNodeWeight(Node n) {
+        if (nodes.containsKey(n)) {
+            return nodes.get(n);
+        }
+        return -1;
+    }
+
     @Override
-    public String toString()
-    {
+    public String toString() {
         String buffer = "";
-        for(Node n: edges.keySet())
-        {
-            for(Node n2: edges.get(n).keySet())
-            {
-                buffer = buffer +n.label+"("+nodes.get(n)+")\t"+n2.label+"("+nodes.get(n2)+")\t"+edges.get(n).get(n2)+"\n";
+        for (Node n : edges.keySet()) {
+            for (Node n2 : edges.get(n).keySet()) {
+                buffer = buffer + n.label + "(" + nodes.get(n) + ")\t" + n2.label + "(" + nodes.get(n2) + ")\t" + edges.get(n).get(n2) + "\n";
             }
         }
         return buffer;
     }
-    
-    
-    public static void main(String args[])
-    {
+
+    public Map<Node, Double> getEdges(Node n) {
+        return edges.get(n);
+    }
+
+    public static void main(String args[]) {
         WeightedGraph wg = new WeightedGraph();
         Node n1 = wg.addNode("a", 1.0);
         Node n2 = wg.addNode("b", 2.0);
