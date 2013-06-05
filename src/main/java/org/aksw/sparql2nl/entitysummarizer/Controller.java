@@ -6,6 +6,7 @@ package org.aksw.sparql2nl.entitysummarizer;
 
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.vocabulary.RDF;
 import java.util.*;
 import org.dllearner.core.owl.Property;
 import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
@@ -36,6 +37,20 @@ public class Controller {
     }
 
     /**
+     * Generates the weighted graph for the whole dump without considering the
+     * class
+     *
+     * @param dumpFile Dump file to be processed
+     * @return Weighted Graph
+     */
+    public static WeightedGraph generateGraph(String dumpFile) {
+        //get dump
+        DBpediaDumpProcessor dp = new DBpediaDumpProcessor();
+        List<LogEntry> entries = dp.processDump(dumpFile, selectQueriesWithEmptyResults);
+        return generateGraph(entries);
+    }
+
+    /**
      * Generates the weighted graph for a given class
      *
      * @param ontClass Named Class
@@ -46,25 +61,65 @@ public class Controller {
         WeightedGraph wg = new WeightedGraph();
         SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
         SPARQLQueryProcessor processor = new SPARQLQueryProcessor(endpoint);
-
+        int count = 0;
         //feed data into the processor and then into the graph
         for (LogEntry l : entries) {
             Map<NamedClass, Set<Property>> result = processor.processQuery(l.sparqlQuery);
             if (result.containsKey(ontClass)) {
-            System.out.println(result);
+                count++;
                 Set<Property> properties = result.get(ontClass);
                 Set<Node> nodes = new HashSet<Node>();
                 for (Property p : properties) {
-                    if (wg.getNode(p.getName()) == null) {
-                        Node newNode = new Node(p.getName());
-                        nodes.add(newNode);
-                    } else {
-                        nodes.addAll(wg.getNode(p.getName()));
+                    if (!p.getName().equals(RDF.type.getURI())) {
+                        if (wg.getNode(p.getName()) == null) {
+                            Node newNode = new Node(p.getName());
+                            nodes.add(newNode);
+                        } else {
+                            nodes.addAll(wg.getNode(p.getName()));
+                        }
                     }
                 }
                 wg.addClique(nodes);
             }
         }
+        System.out.println("Found "+count+" matching queries for "+ontClass.getName());
+        wg.scale((double) count);
+        return wg;
+    }
+
+    /**
+     * Generates the weighted graph for a given class
+     *
+     * @param entries List of log entries (e.g., from a dump file)
+     * @return Weighted Graph
+     */
+    public static WeightedGraph generateGraph(List<LogEntry> entries) {
+        WeightedGraph wg = new WeightedGraph();
+        SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
+        SPARQLQueryProcessor processor = new SPARQLQueryProcessor(endpoint);
+        int count = 0;
+        //feed data into the processor and then into the graph
+        for (LogEntry l : entries) {
+            Map<NamedClass, Set<Property>> result = processor.processQuery(l.sparqlQuery);
+            for (NamedClass ontClass : result.keySet()) {
+                count++;
+                Set<Property> properties = result.get(ontClass);
+                Set<Node> nodes = new HashSet<Node>();
+                for (Property p : properties) {
+                    if (!p.getName().equals(RDF.type.getURI())) {
+                        if (wg.getNode(p.getName()) == null) {
+                            Node newNode = new Node(p.getName());
+                            nodes.add(newNode);
+                        } else {
+                            nodes.addAll(wg.getNode(p.getName()));
+                        }
+                    }
+                }
+                wg.addClique(nodes);
+            }
+        }
+        System.out.println("Found "+count+" matching queries overall");
+        wg.scale((double) count);
         return wg;
     }
 
@@ -72,25 +127,31 @@ public class Controller {
         testDumpReader();
     }
 
-    public static void testDumpReader()
-    {
+    public static void testDumpReader() {
         SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
         SPARQLQueryProcessor processor = new SPARQLQueryProcessor(endpoint);
         List<LogEntry> entries = new ArrayList<LogEntry>();
 
-        String q = "PREFIX dbr: <http://dbpedia.org/resource/> "
-                + "PREFIX dbo: <http://dbpedia.org/ontology/> "
-                + "SELECT ?s ?place ?date WHERE {?s a dbo:Person. ?s dbo:birthPlace ?place. ?s dbo:birthDate ?date.}";
-        Query query = QueryFactory.create(q);
-        Map<NamedClass, Set<Property>> occurrences = processor.processQuery(query);
-        NamedClass nc = new ArrayList<NamedClass>(occurrences.keySet()).get(0);
-        
-        
-        DBpediaDumpProcessor dp = new DBpediaDumpProcessor(); 
+//        String q = "PREFIX dbr: <http://dbpedia.org/resource/> "
+//                + "PREFIX dbo: <http://dbpedia.org/ontology/> "
+//                + "SELECT ?s ?place ?date WHERE {?s a dbo:Person. ?s dbo:birthPlace ?place. ?s dbo:birthDate ?date.}";
+//        Query query = QueryFactory.create(q);
+//        Map<NamedClass, Set<Property>> occurrences = processor.processQuery(query);
+//        NamedClass nc = new ArrayList<NamedClass>(occurrences.keySet()).get(0);
+        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Person");
+
+        DBpediaDumpProcessor dp = new DBpediaDumpProcessor();
         entries = dp.processDump("E:/Work/Data/DBpediaQueryLog/access.log-20120805/access.log-20120805", false);
-        System.out.println("Graph = " + Controller.generateGraph(nc, entries));
-        
+        WeightedGraph wg = Controller.generateGraph(nc, entries);
+        WeightedGraph reference = Controller.generateGraph(entries);
+        System.out.println("Basic Graph =============== ");
+        System.out.println("Edges = " + wg);
+        System.out.println("Nodes = " + wg.getNodes());
+        System.out.println("Reference Graph =============== ");
+        System.out.println("Edges = " + reference);
+        System.out.println("Nodes = " + reference.getNodes());
     }
+
     public static void test() {
         SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
         SPARQLQueryProcessor processor = new SPARQLQueryProcessor(endpoint);
@@ -123,7 +184,9 @@ public class Controller {
                 + "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "SELECT ?s ?place ?date WHERE {?s a dbo:Person. ?s dbo:birthPlace ?place. }";
 
-//        NamedClass nc = new NamedClass("http://dbpedia.org/resource/Person");
-        System.out.println("Graph = " + Controller.generateGraph(nc, entries));
+//        NamedClass nc = ne    w NamedClass("http://dbpedia.org/resource/Person");
+        WeightedGraph wg = Controller.generateGraph(nc, entries);
+        System.out.println("Edges = " + wg);
+        System.out.println("Nodes = " + wg.getNodes());
     }
 }
