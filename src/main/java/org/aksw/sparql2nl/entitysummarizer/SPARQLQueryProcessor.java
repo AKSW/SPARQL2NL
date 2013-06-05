@@ -79,27 +79,30 @@ public class SPARQLQueryProcessor {
                 Node subject = triple.getSubject();
                 //get the predicate
                 Node predicate = triple.getPredicate();
-                Property property = new ObjectProperty(predicate.getURI());
+                //*BUG HERE*. Sometimes the predicates are variables
+                if (!predicate.isVariable()) {
+                    Property property = new ObjectProperty(predicate.getURI());
 
-                if (subject.isVariable()) {//if the subject s is a variable we can look for outgoing rdf:type triple patterns of s in the query
-                    Set<Triple> outgoingTriplePatterns = patternExtractor.extractOutgoingTriplePatterns(query, subject);
-                    for (Triple tp : outgoingTriplePatterns) {
-                        //check for rdf:type triples
-                        if (tp.predicateMatches(RDF.type.asNode()) && tp.getObject().isURI()) {
-                            NamedClass nc = new NamedClass(tp.getObject().getURI());
+                    if (subject.isVariable()) {//if the subject s is a variable we can look for outgoing rdf:type triple patterns of s in the query
+                        Set<Triple> outgoingTriplePatterns = patternExtractor.extractOutgoingTriplePatterns(query, subject);
+                        for (Triple tp : outgoingTriplePatterns) {
+                            //check for rdf:type triples
+                            if (tp.predicateMatches(RDF.type.asNode()) && tp.getObject().isURI()) {
+                                NamedClass nc = new NamedClass(tp.getObject().getURI());
+                                if (!result.containsKey(nc)) {
+                                    result.put(nc, new HashSet<Property>());
+                                }
+                                result.get(nc).add(property);
+                            }
+                        }
+                    } else if (subject.isURI()) {//if the subject is a URI we can ask the knowledge base for the types
+                        Set<NamedClass> types = reasoner.getTypes(new Individual(subject.getURI()));
+                        for (NamedClass nc : types) {
                             if (!result.containsKey(nc)) {
                                 result.put(nc, new HashSet<Property>());
                             }
                             result.get(nc).add(property);
                         }
-                    }
-                } else if (subject.isURI()) {//if the subject is a URI we can ask the knowledge base for the types
-                    Set<NamedClass> types = reasoner.getTypes(new Individual(subject.getURI()));
-                    for (NamedClass nc : types) {
-                        if (!result.containsKey(nc)) {
-                            result.put(nc, new HashSet<Property>());
-                        }
-                        result.get(nc).add(property);
                     }
                 }
             }
