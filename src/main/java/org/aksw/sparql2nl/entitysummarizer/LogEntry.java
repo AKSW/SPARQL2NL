@@ -4,6 +4,8 @@
  */
 package org.aksw.sparql2nl.entitysummarizer;
 
+import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryFactory;
 import java.util.Date;
 
 /**
@@ -14,7 +16,8 @@ public class LogEntry {
     String query;
     Date date;
     String ip;
-
+    Query sparqlQuery;
+    
     public Date getDate() {
         return date;
     }
@@ -37,10 +40,20 @@ public class LogEntry {
 
     public void setQuery(String query) {
         this.query = query;
+        this.sparqlQuery = QueryFactory.create(query);
+    }
+
+    public Query getSparqlQuery() {
+        return sparqlQuery;
+    }
+
+    public void setSparqlQuery(Query sparqlQuery) {
+        this.sparqlQuery = sparqlQuery;
     }
     
     public LogEntry(String q)
     {
         query = q;
+        this.sparqlQuery = QueryFactory.create(q);
     }
 }

@@ -6,6 +6,7 @@ package org.aksw.sparql2nl.entitysummarizer;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
@@ -26,19 +27,15 @@ public class DBpediaDumpProcessor implements DumpProcessor {
     public static String BEGIN = "query=";
     private static SparqlEndpoint ENDPOINT = SparqlEndpoint.getEndpointDBpedia();
     private static final Logger logger = Logger.getLogger(DBpediaDumpProcessor.class);
-    private static List<Var> vars;
-    private static Map<Node, Set<Node>> classPropertyMap;
-    private static Map<Var, Set<Node>> variableClassMap;
-    private static Map<Var, Set<Node>> variablePropertyMap;
+    private static int maxCount = 100000;
 
     public DBpediaDumpProcessor() {
-        classPropertyMap = new HashMap<Node, Set<Node>>();
-        variableClassMap = new HashMap<Var, Set<Node>>();
     }
 
     public List<LogEntry> processDump(String file, boolean selectQueriesWithEmptyResults) {
         List<LogEntry> results = new ArrayList<LogEntry>();
         int queryScore;
+        int count = 0;
         try {
             // set query score
             if (selectQueriesWithEmptyResults) {
@@ -50,16 +47,35 @@ public class DBpediaDumpProcessor implements DumpProcessor {
             BufferedReader bufRdr = new BufferedReader(new FileReader(new File(file)));
             String s = bufRdr.readLine();
             while (s != null) {
+                count++;
                 if (s.contains(BEGIN)) {
                     String q = processDumpLine(s);
                     if (q != null) {
-                        int r = checkForResults(q);
-                        if (r >= queryScore) {
-                            results.add(new LogEntry(q));
+                        if (selectQueriesWithEmptyResults) {
+                            int r = checkForResults(q);
+                            if (r >= queryScore) {
+                                results.add(new LogEntry(q));
+                            }
+                        } else {
+                            try {
+                                QueryFactory.create(q);
+                                results.add(new LogEntry(q));
+                                //logger.warn("Query parse error for " + query);
+                            }
+                            catch(Exception e)
+                            {
+                                
+                            }
                         }
                     }
                 }
                 s = bufRdr.readLine();
+                if (count == maxCount) {
+                    break;
+                }
+                if ((count + 1) % 1000 == 0) {
+                    System.out.println("Reading line " + (count + 1));
+                }
             }
         } catch (Exception e) {
         }
@@ -100,7 +116,7 @@ public class DBpediaDumpProcessor implements DumpProcessor {
                 return 0;
             }
         } catch (Exception e) {
-            logger.warn("Query parse error for " + query);
+            //logger.warn("Query parse error for " + query);
         }
         //query parse error
         return -1;

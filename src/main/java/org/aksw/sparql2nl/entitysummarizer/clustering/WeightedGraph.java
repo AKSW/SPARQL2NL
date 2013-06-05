@@ -4,8 +4,10 @@
  */
 package org.aksw.sparql2nl.entitysummarizer.clustering;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -42,12 +44,18 @@ public class WeightedGraph {
         return n;
     }
 
-    public Set<Node> getNeighbors(Node n)
-    {
-        if(edges.containsKey(n))
-        return edges.get(n).keySet();
-        else return new HashSet<Node>();
+    public Set<Node> getNode(String label) {
+        return nodeIndex.get(label);
     }
+
+    public Set<Node> getNeighbors(Node n) {
+        if (edges.containsKey(n)) {
+            return edges.get(n).keySet();
+        } else {
+            return new HashSet<Node>();
+        }
+    }
+
     /**
      * Adds a weighted edge to the graph
      *
@@ -96,9 +104,10 @@ public class WeightedGraph {
         }
         return 0d;
     }
-    
-    /** 
+
+    /**
      * Returns the weight of a node
+     *
      * @param n A node
      * @return Its weight
      */
@@ -124,15 +133,66 @@ public class WeightedGraph {
         return edges.get(n);
     }
 
+    public void addClique(Set<Node> nodeSet) {
+        List<Node> nodeList = new ArrayList<Node>(nodeSet);
+        // add nodes to the graph
+        for (Node n : nodeList) {
+            if (!nodes.containsKey(n)) {
+                nodes.put(n, 0d);
+                if (!nodeIndex.containsKey(n.label)) {
+                    nodeIndex.put(n.label, new HashSet<Node>());
+                }
+                nodeIndex.get(n.label).add(n);
+            }
+        }
+
+        // node occured alone. Thus increment its weight
+        if (nodeList.size() == 1) {
+            double weight = nodes.get(nodeList.get(0)) + 1;
+            nodes.remove(nodeList.get(0));
+            nodes.put(nodeList.get(0),weight);
+        } //node occurred with other nodes. Increment edge weight
+        else {
+
+            // add all nodes as sources for edges
+            for (int i = 0; i < nodeList.size(); i++) {
+                if (!edges.containsKey(nodeList.get(i))) {
+                    edges.put(nodeList.get(i), new HashMap<Node, Double>());
+                }
+            }
+
+            for (int i = 0; i < nodeList.size(); i++) {
+                for (int j = 0; j < nodeList.size(); j++) {
+                    if (i != j) {
+                        if (!edges.get(nodeList.get(i)).containsKey(nodeList.get(j))) {
+                            edges.get(nodeList.get(i)).put(nodeList.get(j), 0d);
+                        }
+                        //increment weights of edges
+                        edges.get(nodeList.get(i)).put(nodeList.get(j), edges.get(nodeList.get(i)).get(nodeList.get(j)) + 1d);
+                    }
+                }
+            }
+        }
+    }
+
     public static void main(String args[]) {
         WeightedGraph wg = new WeightedGraph();
         Node n1 = wg.addNode("a", 1.0);
         Node n2 = wg.addNode("b", 2.0);
         Node n3 = wg.addNode("c", 3.0);
         Node n4 = wg.addNode("d", 4.0);
+        Node n5 = new Node("e");
+
         wg.addEdge(n1, n2, 2.0);
         wg.addEdge(n3, n4, 1.0);
         wg.addEdge(n2, n3, 2.0);
         System.out.println(wg);
+        Set<Node> nodes = new HashSet<Node>();
+        nodes.add(n1);
+        nodes.add(n2);
+        nodes.add(n5);
+        wg.addClique(nodes);
+        System.out.println("===\n" + wg);
+
     }
 }
