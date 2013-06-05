@@ -132,7 +132,39 @@ public class WeightedGraph {
     public Map<Node, Double> getEdges(Node n) {
         return edges.get(n);
     }
+    
+    public Map<Node, Double> getNodes() {
+        return nodes;
+    }
 
+    public void scale(double factor)
+    {
+        double w;
+        Map<Node, Double> ns = new HashMap<Node, Double>();
+        Map<Node, Map<Node, Double>> es = new HashMap<Node, Map<Node, Double>>();
+        //scale node weights
+        for(Node n: nodes.keySet())
+        {
+            w = nodes.get(n);
+            w = w/factor;            
+            ns.put(n, w);
+        }
+        nodes = ns;
+        
+        //scale edge weights
+        
+        for(Node n1: edges.keySet())
+        {
+            es.put(n1, new HashMap<Node, Double>());
+            for(Node n2: edges.get(n1).keySet())
+            {
+                w = edges.get(n1).get(n2);
+                w = w/factor;
+                es.get(n1).put(n2, w);
+            }
+        }
+        edges = es;
+    }
     public void addClique(Set<Node> nodeSet) {
         List<Node> nodeList = new ArrayList<Node>(nodeSet);
         // add nodes to the graph

@@ -8,6 +8,7 @@ import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 import java.io.BufferedReader;
@@ -15,6 +16,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.net.URLDecoder;
 import java.util.*;
+import java.util.regex.Pattern;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
@@ -27,7 +29,7 @@ public class DBpediaDumpProcessor implements DumpProcessor {
     public static String BEGIN = "query=";
     private static SparqlEndpoint ENDPOINT = SparqlEndpoint.getEndpointDBpedia();
     private static final Logger logger = Logger.getLogger(DBpediaDumpProcessor.class);
-    private static int maxCount = 100000;
+    private static int maxCount = 20000;
 
     public DBpediaDumpProcessor() {
     }
@@ -36,6 +38,7 @@ public class DBpediaDumpProcessor implements DumpProcessor {
         List<LogEntry> results = new ArrayList<LogEntry>();
         int queryScore;
         int count = 0;
+        String s ="";
         try {
             // set query score
             if (selectQueriesWithEmptyResults) {
@@ -45,7 +48,7 @@ public class DBpediaDumpProcessor implements DumpProcessor {
             }
             //read file
             BufferedReader bufRdr = new BufferedReader(new FileReader(new File(file)));
-            String s = bufRdr.readLine();
+            s = bufRdr.readLine();
             while (s != null) {
                 count++;
                 if (s.contains(BEGIN)) {
@@ -60,11 +63,9 @@ public class DBpediaDumpProcessor implements DumpProcessor {
                             try {
                                 QueryFactory.create(q);
                                 results.add(new LogEntry(q));
-                                //logger.warn("Query parse error for " + query);
-                            }
-                            catch(Exception e)
-                            {
-                                
+
+                            } catch (Exception e) {
+//                                logger.warn("Query parse error for " + q);
                             }
                         }
                     }
@@ -78,6 +79,7 @@ public class DBpediaDumpProcessor implements DumpProcessor {
                 }
             }
         } catch (Exception e) {
+            logger.warn("Query parse error for "+s);
         }
         return results;
     }
@@ -91,10 +93,18 @@ public class DBpediaDumpProcessor implements DumpProcessor {
     private String processDumpLine(String line) {
 //        System.out.println(line);
         String query = line.substring(line.indexOf(BEGIN) + BEGIN.length());
-        query = query.substring(0, query.indexOf(" ") - 1);
         try {
-            return URLDecoder.decode(query, "UTF-8");
+            query = query.substring(0, query.indexOf(" ") - 1);
+            query = URLDecoder.decode(query, "UTF-8");
+            if (query.contains("&")) {
+                query = query.substring(0, query.indexOf("&")-1);
+                query = query +"}";
+            }
+            QueryFactory.create(query, Syntax.syntaxARQ);
+//            System.out.println(query);
+            return query;
         } catch (Exception e) {
+//            logger.warn("Query parse error for " + query + " from "+line);
             return null;
         }
     }
@@ -116,7 +126,7 @@ public class DBpediaDumpProcessor implements DumpProcessor {
                 return 0;
             }
         } catch (Exception e) {
-            //logger.warn("Query parse error for " + query);
+            logger.warn("Query parse error for " + query);
         }
         //query parse error
         return -1;
@@ -135,6 +145,6 @@ public class DBpediaDumpProcessor implements DumpProcessor {
     }
 
     public List<LogEntry> processDump(String file) {
-        return processDump(file, true);
+        return processDump(file, false);
     }
 }
