@@ -106,7 +106,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
 
         if (isWindows()) {
-            pp = new PropertyProcessor("/resources/wordnetWindows/dict");
+            pp = new PropertyProcessor("E:/Work/Java/SPARQL2NL/resources/wordnetWindows/");
         } else {
             pp = new PropertyProcessor("resources/wordnet/dict");
         }
@@ -135,7 +135,6 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
 
         pp = new PropertyProcessor(wordnetDir);
-        
         functionalityDetector = new StatisticalFunctionalityDetector(
         		this.getClass().getClassLoader().getResourceAsStream("dbpedia_functional_axioms.owl"),
         		0.8);
@@ -1293,6 +1292,47 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 + "        OPTIONAL {?person rdfs:label ?string"
                 + "        FILTER ( lang(?string) = \"en\" ) } }";
 
+        String argentina = "PREFIX  res:  <http://dbpedia.org/resource/> " +
+"PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> " + 
+"PREFIX  dbo:  <http://dbpedia.org/ontology/> " +
+"PREFIX  dbp:  <http://dbpedia.org/property/> " +
+"PREFIX  yago: <http://dbpedia.org/class/yago/> " +
+"PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  " +
+"SELECT DISTINCT  ?uri ?string " +
+"WHERE " +
+"  {   { ?uri rdf:type yago:ArgentineFilms }  " +
+"    UNION " +
+"      { ?uri rdf:type dbo:Film  " +
+"        { ?uri dbo:country res:Argentina } " +
+"      } " +
+"    UNION " +
+"      { ?uri rdf:type dbo:Film  " +
+"        { ?uri dbp:country \"Argentina\"@en }  " +
+"      }  " +
+"    OPTIONAL  " +
+"      { ?uri rdfs:label ?string  " +
+"        FILTER ( lang(?string) = \"en\" ) " +
+"      } " +
+"  }";
+        
+                String argentina1 = "PREFIX  res:  <http://dbpedia.org/resource/> " +
+"PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> " + 
+"PREFIX  dbo:  <http://dbpedia.org/ontology/> " +
+"PREFIX  dbp:  <http://dbpedia.org/property/> " +
+"PREFIX  yago: <http://dbpedia.org/class/yago/> " +
+"PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  " +
+"SELECT DISTINCT  ?uri ?string " +
+"WHERE " +
+"  {   { ?uri rdf:type yago:ArgentineFilms }  " +
+"    UNION " +
+"      { ?uri rdf:type dbo:Film . ?uri dbo:country res:Argentina } " +
+"    UNION " +
+"      { ?uri rdf:type dbo:Film . ?uri dbp:country \"Argentina\"@en }  " +
+"    OPTIONAL  " +
+"      { ?uri rdfs:label ?string  " +
+"        FILTER ( lang(?string) = \"en\" ) " +
+"      } " +
+"  }";
 //        query8 = "SELECT * WHERE {" +
 //        		"?s <http://dbpedia.org/ontology/PopulatedPlace/areaTotal> \"12\"^^<http://dbpedia.org/datatypes/squareKilometre>.} ";
         
@@ -1322,6 +1362,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(ep);
             Query sparqlQuery = QueryFactory.create(query, Syntax.syntaxARQ);
             System.out.println(sparqlQuery);
+//            Query sparqlQuery = QueryFactory.create(argentina1, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
