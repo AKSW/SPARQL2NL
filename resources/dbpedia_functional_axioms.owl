@@ -6073,6 +6073,18 @@
         <owl:annotatedTarget rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
     </owl:Axiom>
     
+    <!-- http://dbpedia.org/ontology/birthPlace -->
+
+    <owl:ObjectProperty rdf:about="http://dbpedia.org/ontology/birthPlace">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    </owl:ObjectProperty>
+    <owl:Axiom>
+        <enrichment:confidence rdf:datatype="http://www.w3.org/2001/XMLSchema#double">0.9999324799052208</enrichment:confidence>
+        <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/birthName"/>
+        <owl:annotatedProperty rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#type"/>
+        <owl:annotatedTarget rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    </owl:Axiom>
+    
 
 
     <!-- http://dbpedia.org/ontology/birthYear -->
@@ -8243,6 +8255,18 @@
         <owl:annotatedTarget rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
     </owl:Axiom>
     
+    
+    <!-- http://dbpedia.org/property/father -->
+
+    <owl:ObjectProperty rdf:about="http://dbpedia.org/property/father">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    </owl:ObjectProperty>
+    <owl:Axiom>
+        <enrichment:confidence rdf:datatype="http://www.w3.org/2001/XMLSchema#double">0.9999324799052208</enrichment:confidence>
+        <owl:annotatedSource rdf:resource="http://dbpedia.org/ontology/birthName"/>
+        <owl:annotatedProperty rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#type"/>
+        <owl:annotatedTarget rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+    </owl:Axiom>
 
 
     <!-- http://dbpedia.org/ontology/fareZone -->

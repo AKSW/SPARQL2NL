@@ -16,9 +16,11 @@ import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.sparql.core.TriplePath;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
@@ -147,11 +149,11 @@ public class TypeExtractor extends ElementVisitorBase {
 				if(triple.getPredicate().getURI().equals(RDFS.label.getURI())){
 					return RDFS.Literal.getURI();
 				}
-				String type = getPropertyType(triple.getPredicate().getURI());
-				if(type != null){
-					if(type.equals(OWL.ObjectProperty.getURI())){
+				Set<Resource> types = getPropertyTypes(triple.getPredicate().getURI());
+				for (Resource type : types) {
+					if(type.equals(OWL.ObjectProperty)){
 						return OWL.Thing.getURI();
-					} else if(type.equals(OWL.DatatypeProperty.getURI())){
+					} else if(type.equals(OWL.DatatypeProperty)){
 						return RDFS.Literal.getURI();
 					}
 				}
@@ -163,7 +165,8 @@ public class TypeExtractor extends ElementVisitorBase {
 		
 	}
 	
-	private String getPropertyType(String propertyURI){
+	private Set<Resource> getPropertyTypes(String propertyURI){
+		Set<Resource> types = new HashSet<Resource>();
 		String query = String.format("SELECT ?type WHERE {<%s> a ?type}", propertyURI);
 		ResultSet rs;
     	if(endpoint != null){
@@ -173,10 +176,14 @@ public class TypeExtractor extends ElementVisitorBase {
     	} else {
     		rs = QueryExecutionFactory.create(query, model).execSelect();
     	}
-		if(rs.hasNext()){
-			return rs.next().get("type").asResource().getURI();
-		}
-		return null;
+    	QuerySolution qs;
+    	while(rs.hasNext()){
+    		qs = rs.next();
+    		if(!qs.getResource("type").isAnon()){
+    			types.add(qs.getResource("type"));
+    		}
+    	}
+		return types;
 	}
 	
 	public void setDomainExtractor(DomainExtractor domainExtractor) {
@@ -361,7 +368,7 @@ public class TypeExtractor extends ElementVisitorBase {
 	}
 	
 	public static void main(String[] args) {
-		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpediaLiveAKSW();
+		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
 		
 		TypeExtractor extr = new TypeExtractor(endpoint);
 		extr.setDomainExtractor(new SPARQLDomainExtractor(endpoint));
@@ -381,8 +388,6 @@ public class TypeExtractor extends ElementVisitorBase {
 			"UNION{?s a dbo:Table.}" +
 			"}";
 		com.hp.hpl.jena.query.Query q = QueryFactory.create(queryString);
-		System.out.println(extr.extractTypes(q));
-		System.out.println(q);
 	
 		queryString = "PREFIX  res: <http://dbpedia.org/resource/>" +
 				"PREFIX  dbo: <http://dbpedia.org/ontology/>" +
@@ -396,8 +401,6 @@ public class TypeExtractor extends ElementVisitorBase {
 				"OPTIONAL{ ?uri dbo:description ?x }  " +
 				"} ";
 		q = QueryFactory.create(queryString);
-		System.out.println(extr.extractTypes(q));
-		System.out.println(q);
 		
 		queryString = "PREFIX  res: <http://dbpedia.org/resource/>" +
 		"PREFIX  dbo: <http://dbpedia.org/ontology/>" +
@@ -410,6 +413,9 @@ public class TypeExtractor extends ElementVisitorBase {
 		"FILTER(regex(?uri, \"France\")) " +
 		"OPTIONAL{ ?uri dbo:description ?x }  " +
 		"} ";
+		queryString = "SELECT DISTINCT  ?person ?height WHERE  { " +
+        		"?person <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person>." +
+        		"?person <http://dbpedia.org/ontology/height> ?height.}";
 		q = QueryFactory.create(queryString, Syntax.syntaxARQ);
 		System.out.println(extr.extractTypes(q));
 		System.out.println(q);

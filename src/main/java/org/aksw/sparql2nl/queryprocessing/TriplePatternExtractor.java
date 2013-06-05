@@ -1,12 +1,15 @@
 package org.aksw.sparql2nl.queryprocessing;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.collections15.ListUtils;
 
+import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.sparql.core.TriplePath;
@@ -32,6 +35,107 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	private int unionCount = 0;
 	private int optionalCount = 0;
 	private int filterCount = 0;
+	
+	/**
+	 * Returns all triple patterns in given SPARQL query that have the given node in subject position, i.e. the outgoing
+	 * triple patterns.
+	 * @param query The SPARQL query.
+	 * @param node
+	 * @return
+	 */
+	public Set<Triple> extractOutgoingTriplePatterns(Query query, Node node){
+		Set<Triple> triplePatterns = extractTriplePattern(query, false);
+		//remove triple patterns not containing triple patterns with given node in subject position
+		for (Iterator<Triple> iterator = triplePatterns.iterator(); iterator.hasNext();) {
+			Triple triple = iterator.next();
+			if(!triple.subjectMatches(node)){
+				iterator.remove();
+			}
+		}
+		return triplePatterns;
+	}
+	
+	/**
+	 * Returns all triple patterns in given SPARQL query that have the given node in object position, i.e. the ingoing
+	 * triple patterns.
+	 * @param query The SPARQL query.
+	 * @param node
+	 * @return
+	 */
+	public Set<Triple> extractIngoingTriplePatterns(Query query, Node node){
+		Set<Triple> triplePatterns = extractTriplePattern(query, false);
+		//remove triple patterns not containing triple patterns with given node in object position
+		for (Iterator<Triple> iterator = triplePatterns.iterator(); iterator.hasNext();) {
+			Triple triple = iterator.next();
+			if(!triple.objectMatches(node)){
+				iterator.remove();
+			}
+		}
+		return triplePatterns;
+	}
+	
+	/**
+	 * Returns all triple patterns in given SPARQL query that have the given node either in subject or in object position, i.e. 
+	 * the ingoing and outgoing triple patterns.
+	 * @param query The SPARQL query.
+	 * @param node
+	 * @return
+	 */
+	public Set<Triple> extractTriplePatterns(Query query, Node node){
+		Set<Triple> triplePatterns = new HashSet<Triple>();
+		triplePatterns.addAll(extractIngoingTriplePatterns(query, node));
+		triplePatterns.addAll(extractOutgoingTriplePatterns(query, node));
+		return triplePatterns;
+	}
+	
+	/**
+	 * Returns triple patterns for each projection variable v such that v is either in subject or object position.
+	 * @param query The SPARQL query.
+	 * @param node
+	 * @return
+	 */
+	public Map<Var,Set<Triple>> extractTriplePatternsForProjectionVars(Query query){
+		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<Var,Set<Triple>>();
+		for (Var var : query.getProjectVars()) {
+			Set<Triple> triplePatterns = new HashSet<Triple>();
+			triplePatterns.addAll(extractIngoingTriplePatterns(query, var));
+			triplePatterns.addAll(extractOutgoingTriplePatterns(query, var));
+			var2TriplePatterns.put(var, triplePatterns);
+		}
+		return var2TriplePatterns;
+	}
+	
+	/**
+	 * Returns triple patterns for each projection variable v such that v is in subject position.
+	 * @param query The SPARQL query.
+	 * @param node
+	 * @return
+	 */
+	public Map<Var,Set<Triple>> extractOutgoingTriplePatternsForProjectionVars(Query query){
+		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<Var,Set<Triple>>();
+		for (Var var : query.getProjectVars()) {
+			Set<Triple> triplePatterns = new HashSet<Triple>();
+			triplePatterns.addAll(extractOutgoingTriplePatterns(query, var));
+			var2TriplePatterns.put(var, triplePatterns);
+		}
+		return var2TriplePatterns;
+	}
+	
+	/**
+	 * Returns triple patterns for each projection variable v such that v is in object position.
+	 * @param query The SPARQL query.
+	 * @param node
+	 * @return
+	 */
+	public Map<Var,Set<Triple>> extractIngoingTriplePatternsForProjectionVars(Query query){
+		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<Var,Set<Triple>>();
+		for (Var var : query.getProjectVars()) {
+			Set<Triple> triplePatterns = new HashSet<Triple>();
+			triplePatterns.addAll(extractIngoingTriplePatterns(query, var));
+			var2TriplePatterns.put(var, triplePatterns);
+		}
+		return var2TriplePatterns;
+	}
 	
 	public Set<Triple> extractTriplePattern(Query query){
 		return extractTriplePattern(query, false);

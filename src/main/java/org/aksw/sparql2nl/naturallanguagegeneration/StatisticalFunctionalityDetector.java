@@ -1,6 +1,7 @@
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.Set;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
@@ -27,6 +28,17 @@ public class StatisticalFunctionalityDetector implements FunctionalityDetector{
 		try {
 			OWLOntologyManager man = OWLManager.createOWLOntologyManager();
 			ontology = man.loadOntologyFromOntologyDocument(ontologyFile);
+			dataFactory = man.getOWLDataFactory();
+		} catch (OWLOntologyCreationException e) {
+			e.printStackTrace();
+		}
+		this.threshold = threshold;
+	}
+	
+	public StatisticalFunctionalityDetector(InputStream is, double threshold) {
+		try {
+			OWLOntologyManager man = OWLManager.createOWLOntologyManager();
+			ontology = man.loadOntologyFromOntologyDocument(is);
 			dataFactory = man.getOWLDataFactory();
 		} catch (OWLOntologyCreationException e) {
 			e.printStackTrace();
@@ -73,8 +85,10 @@ public class StatisticalFunctionalityDetector implements FunctionalityDetector{
 //		OWLOntology functional = man.createOntology(IRI.create("http://sparql2nl.aksw.org/dbpedia"));
 //		man.addAxioms(functional, functionalAxioms);
 //		man.saveOntology(functional, new RDFXMLOntologyFormat(), new FileOutputStream(new File("resources/dbpedia_functional_axioms.owl")));
-		boolean f = new StatisticalFunctionalityDetector(new File("resources/dbpedia_functional_axioms.owl"), 0.9).isFunctional("http://dbpedia.org/ontology/occupation");
-		System.out.println(f);
+		StatisticalFunctionalityDetector detector = new StatisticalFunctionalityDetector(new File("resources/dbpedia_functional_axioms.owl"), 0.9);
+		System.out.println(detector.isFunctional("http://dbpedia.org/ontology/occupation"));
+		System.out.println(detector.isFunctional("http://dbpedia.org/ontology/birthDate"));
+		System.out.println(detector.isFunctional("http://dbpedia.org/ontology/populationTotal"));
 	}
 	
 	

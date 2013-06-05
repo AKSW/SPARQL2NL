@@ -2,6 +2,8 @@ package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.util.Stack;
 
+import org.h2.engine.RightOwner;
+
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.LexicalCategory;
@@ -164,6 +166,7 @@ public class FilterExpressionConverter implements ExprVisitor{
         	SPhraseSpec phrase = nlgFactory.createClause();
         	 //handle verb resp. predicate
             String verb = null;
+            boolean plural = false;
             if (func instanceof E_GreaterThan) {
                 if (inverted) {
                     verb = "be less than";
@@ -199,6 +202,7 @@ public class FilterExpressionConverter implements ExprVisitor{
             	if(left instanceof E_Lang && simplifyLanguageFilterConstructs){
             		rightElement = nlgFactory.createNounPhrase(getLanguageForAbbreviation(realiser.realise(rightElement).getRealisation()));
                         verb = "be in";
+                        plural = true;
             	} else {
                         if (realiser.realise(rightElement).toString().startsWith("?")) verb = "be the same as";
                         else verb = "be equal to";
@@ -216,6 +220,9 @@ public class FilterExpressionConverter implements ExprVisitor{
             phrase.setSubject(leftElement);
             phrase.setObject(rightElement);
             phrase.setVerb(verb);
+            if(plural){
+            	phrase.setPlural(true);
+            }
             stack.push(phrase);
         }
         

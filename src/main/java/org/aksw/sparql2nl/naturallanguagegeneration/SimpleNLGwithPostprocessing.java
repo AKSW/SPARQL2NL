@@ -89,8 +89,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     private SparqlEndpoint endpoint;
     private Model model;
     private PropertyProcessor pp;
-    private FunctionalityDetector functionalityDetector = new StatisticalFunctionalityDetector(new File("resources/dbpedia_functional_axioms.owl"), 0.9);
-
+    private FunctionalityDetector functionalityDetector;
+    
     public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint) {
         this.endpoint = endpoint;
 
@@ -110,6 +110,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         } else {
             pp = new PropertyProcessor("resources/wordnet/dict");
         }
+        
+        functionalityDetector = new StatisticalFunctionalityDetector(
+        		this.getClass().getClassLoader().getResourceAsStream("dbpedia_functional_axioms.owl"),
+        		0.8);
     }
 
     public static boolean isWindows() {
@@ -131,6 +135,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
 
         pp = new PropertyProcessor(wordnetDir);
+        
+        functionalityDetector = new StatisticalFunctionalityDetector(
+        		this.getClass().getClassLoader().getResourceAsStream("dbpedia_functional_axioms.owl"),
+        		0.8);
 
     }
     
@@ -986,9 +994,13 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     realisedsubj += "\'s ";
                 }
                
-                if(t.getObject().isVariable() && functionalityDetector.isFunctional(t.getPredicate().getURI())){
+                if(t.getObject().isVariable()){// && functionalityDetector.isFunctional(t.getPredicate().getURI())){
                 	 NLGElement nnp = nlgFactory.createInflectedWord(PlingStemmer.stem(predicateAsString), LexicalCategory.NOUN);
-                     nnp.setPlural(true);
+                	 if(!functionalityDetector.isFunctional(t.getPredicate().getURI())){
+                		 nnp.setPlural(true);
+                		 p.setPlural(true);
+                	 }
+                		 
                      p.setSubject(realisedsubj + realiser.realise(nnp).getRealisation());
                 } else {
                 	p.setSubject(realisedsubj +predicateAsString);// + PlingStemmer.stem(predicateAsString));
@@ -1201,7 +1213,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 + "WHERE { "
                 + "	?uri rdf:type yago:RussianCosmonauts."
                 + "        ?uri rdf:type yago:FemaleAstronauts ."
-                + "OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') }"
+                + "OPTIONAL { ?uri rdfs:label ?string.  }"
                 + "}";
 
         String querya = "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
@@ -1286,18 +1298,30 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         
         query = "PREFIX res: <http://dbpedia.org/resource/> PREFIX dbo: <http://dbpedia.org/ontology/> SELECT DISTINCT ?string WHERE {res:Angela_Merkel dbo:birthName ?string.}";
 
-        query = "PREFIX dbo: <http://dbpedia.org/ontology/> SELECT ?s MAX(?value) WHERE {?s a dbo:Company.?s dbo:numberOfEmployees ?value.} GROUP BY ?s LIMIT 10";
+//        query = "PREFIX dbo: <http://dbpedia.org/ontology/> SELECT ?s  WHERE {?s a dbo:Company.?s dbo:numberOfEmployees ?value.} GROUP BY ?s LIMIT 10";
         
 //        query = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
 //        		"SELECT ?x0 WHERE {	" +
 //        		"?x0 rdf:type <http://diadem.cs.ox.ac.uk/ontologies/real-estate#House>." +
 //        		"	?x0 <http://diadem.cs.ox.ac.uk/ontologies/real-estate#receptions> ?y.	" +
 //        		"FILTER(?y > 1).}";
+        
+//        query = "PREFIX res:<http://dbpedia.org/resource/> PREFIX dbo:<http://dbpedia.org/ontology/> PREFIX xsd:<http://www.w3.org/2001/XMLSchema#> " +
+//        		"SELECT DISTINCT  ?person WHERE  { ?person a dbo:Person ;  dbo:occupation res:Writer;            dbo:occupation res:Musician.}";
+       
+        query = "SELECT DISTINCT  ?person ?height WHERE  { " +
+        		"?person <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person>." +
+        		"?person <http://dbpedia.org/ontology/height> ?height.}";
+        
+        query = "SELECT DISTINCT  ?person ?height WHERE  { " +
+        		"?person <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person>." +
+        		"OPTIONAL{?person <http://dbpedia.org/ontology/height> ?height.}}";
         try {
-            SparqlEndpoint ep = new SparqlEndpoint(new URL("http://live.dbpedia.org/sparql"));
-            ep = new SparqlEndpoint(new URL("http://[2001:638:902:2010:0:168:35:138]/sparql"));
+            SparqlEndpoint ep = new SparqlEndpoint(new URL("http://dbpedia.org/sparql"));
+//            ep = new SparqlEndpoint(new URL("http://[2001:638:902:2010:0:168:35:138]/sparql"));
             SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(ep);
             Query sparqlQuery = QueryFactory.create(query, Syntax.syntaxARQ);
+            System.out.println(sparqlQuery);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());
             System.out.println("Simple NLG: " + snlg.getNLR(sparqlQuery));
         } catch (Exception e) {
