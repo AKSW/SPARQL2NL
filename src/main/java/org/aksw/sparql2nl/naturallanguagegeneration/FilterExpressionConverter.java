@@ -2,7 +2,7 @@ package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.util.Stack;
 
-import org.h2.engine.RightOwner;
+//import org.h2.engine.RightOwner;
 
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
