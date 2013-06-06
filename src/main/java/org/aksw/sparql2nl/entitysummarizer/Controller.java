@@ -124,6 +124,7 @@ public class Controller {
     }
 
     public static void main(String args[]) {
+        test();
         testDumpReader();
     }
 
@@ -132,12 +133,6 @@ public class Controller {
         SPARQLQueryProcessor processor = new SPARQLQueryProcessor(endpoint);
         List<LogEntry> entries = new ArrayList<LogEntry>();
 
-//        String q = "PREFIX dbr: <http://dbpedia.org/resource/> "
-//                + "PREFIX dbo: <http://dbpedia.org/ontology/> "
-//                + "SELECT ?s ?place ?date WHERE {?s a dbo:Person. ?s dbo:birthPlace ?place. ?s dbo:birthDate ?date.}";
-//        Query query = QueryFactory.create(q);
-//        Map<NamedClass, Set<Property>> occurrences = processor.processQuery(query);
-//        NamedClass nc = new ArrayList<NamedClass>(occurrences.keySet()).get(0);
         NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Person");
 
         DBpediaDumpProcessor dp = new DBpediaDumpProcessor();
@@ -162,7 +157,7 @@ public class Controller {
                 + "SELECT ?s ?place ?date WHERE {?s a dbo:Person. ?s dbo:birthPlace ?place. ?s dbo:birthDate ?date.}";
         Query query = QueryFactory.create(q);
         Map<NamedClass, Set<Property>> occurrences = processor.processQuery(query);
-        NamedClass nc = new ArrayList<NamedClass>(occurrences.keySet()).get(0);
+        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Person");
 //        System.out.println(Joiner.on("\n").withKeyValueSeparator("=").join(occurrences));
 
         LogEntry lg = new LogEntry(q);
