@@ -10,8 +10,11 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URLDecoder;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.log4j.Logger;
@@ -40,7 +43,7 @@ public class DBpediaDumpProcessor implements DumpProcessor {
         List<LogEntry> results = new ArrayList<LogEntry>();
         int queryScore;
         int count = 0;
-        String s ="";
+        String s = "";
         try {
             // set query score
             if (selectQueriesWithEmptyResults) {
@@ -58,18 +61,17 @@ public class DBpediaDumpProcessor implements DumpProcessor {
             while (s != null) {
                 count++;
                 if (s.contains(BEGIN)) {
-                    String q = processDumpLine(s);
-                    if (q != null) {
+                    LogEntry l = processDumpLine(s);
+                    if (l != null) {
                         if (selectQueriesWithEmptyResults) {
-                            int r = checkForResults(q);
+                            int r = checkForResults(l.query);
                             if (r >= queryScore) {
-                                results.add(new LogEntry(q));
+                                results.add(l);
                             }
                         } else {
                             try {
-                                QueryFactory.create(q);
-                                results.add(new LogEntry(q));
-
+                                QueryFactory.create(l.query);
+                                results.add(l);
                             } catch (Exception e) {
 //                                logger.warn("Query parse error for " + q);
                             }
@@ -85,7 +87,8 @@ public class DBpediaDumpProcessor implements DumpProcessor {
                 }
             }
         } catch (Exception e) {
-            logger.warn("Query parse error for "+s);
+            e.printStackTrace();
+            logger.warn("Query parse error for " + s);
         }
         return results;
     }
@@ -96,19 +99,26 @@ public class DBpediaDumpProcessor implements DumpProcessor {
      * @param line Line of DBpedia dump
      * @return Query contained therein
      */
-    private String processDumpLine(String line) {
+    private LogEntry processDumpLine(String line) {
 //        System.out.println(line);
+
         String query = line.substring(line.indexOf(BEGIN) + BEGIN.length());
+        DateFormat df = new SimpleDateFormat("dd/MMM/yyyy hh:mm:ss", Locale.ENGLISH);
+
         try {
             query = query.substring(0, query.indexOf(" ") - 1);
             query = URLDecoder.decode(query, "UTF-8");
             if (query.contains("&")) {
-                query = query.substring(0, query.indexOf("&")-1);
-                query = query +"}";
+                query = query.substring(0, query.indexOf("&") - 1);
+                query = query + "}";
             }
             QueryFactory.create(query, Syntax.syntaxARQ);
-//            System.out.println(query);
-            return query;
+            LogEntry l = new LogEntry(query);
+            String[] split = line.split(" ");
+            l.ip = split[0];
+            l.date = df.parse(split[3].substring(1).toLowerCase() + " " + split[4].toLowerCase());
+
+            return l;
         } catch (Exception e) {
 //            logger.warn("Query parse error for " + query + " from "+line);
             return null;
@@ -142,9 +152,11 @@ public class DBpediaDumpProcessor implements DumpProcessor {
         DBpediaDumpProcessor dp = new DBpediaDumpProcessor();
         List<LogEntry> query = dp.processDump("E:/Work/Data/DBpediaQueryLog/log_small.txt", true);
         List<String> filteredResults = new ArrayList<String>();
+        DateFormat df = new SimpleDateFormat("dd/mm/yyyy hh:mm:ss", Locale.ENGLISH);
+
         for (LogEntry e : query) {
             if (dp.checkForResults(e.getQuery()) >= 0) {
-                filteredResults.add(e.getQuery());
+                filteredResults.add(df.format(e.date) + "" + e.getQuery());
             }
         }
         System.out.println(filteredResults);
