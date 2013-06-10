@@ -4,21 +4,23 @@
  */
 package org.aksw.sparql2nl.entitysummarizer;
 
-import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.graph.Triple;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.log4j.Logger;
+import org.dllearner.kb.sparql.SparqlEndpoint;
+
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.Syntax;
-import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.net.URLDecoder;
-import java.util.*;
-import java.util.regex.Pattern;
-import org.apache.log4j.Logger;
-import org.dllearner.kb.sparql.SparqlEndpoint;
 
 /**
  *
@@ -27,9 +29,9 @@ import org.dllearner.kb.sparql.SparqlEndpoint;
 public class DBpediaDumpProcessor implements DumpProcessor {
 
     public static String BEGIN = "query=";
-    private static SparqlEndpoint ENDPOINT = SparqlEndpoint.getEndpointDBpedia();
+    private static SparqlEndpoint ENDPOINT = SparqlEndpoint.getEndpointDBpediaLiveAKSW();
     private static final Logger logger = Logger.getLogger(DBpediaDumpProcessor.class);
-    private static int maxCount = 20000;
+    private static int maxCount = 10000;
 
     public DBpediaDumpProcessor() {
     }
@@ -47,7 +49,11 @@ public class DBpediaDumpProcessor implements DumpProcessor {
                 queryScore = 1;
             }
             //read file
-            BufferedReader bufRdr = new BufferedReader(new FileReader(new File(file)));
+            InputStream is = new FileInputStream(new File(file));
+            if(file.endsWith(".gz")){
+            	is = new GzipCompressorInputStream(is);
+            }
+            BufferedReader bufRdr = new BufferedReader(new InputStreamReader(is));
             s = bufRdr.readLine();
             while (s != null) {
                 count++;
