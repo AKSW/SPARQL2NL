@@ -1,0 +1,277 @@
+<?xml version="1.0" ?>
+<dataset id="dbpedia-train">
+<question id="19">
+<string>Who is called Dana?</string>
+<query>
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt; PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; PREFIX foaf: &lt;http://xmlns.com/foaf/0.1/&gt; PREFIX prop: &lt;http://dbpedia.org/property/&gt; SELECT DISTINCT ?uri ?string WHERE { { ?uri rdf:type foaf:Person. ?uri foaf:givenName 'Dana'@en. } UNION { ?uri prop:alias ?alias . FILTER regex(?alias,'Dana') . } OPTIONAL {?uri rdfs:label ?string . FILTER (lang(?string) = 'en') } }
+</query>
+<answers>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Andrews</uri>
+<string>Dana Andrews</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Countryman</uri>
+<string>Dana Countryman</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Delany</uri>
+<string>Dana Delany</string>
+</answer>
+<answer>
+<uri>
+http://dbpedia.org/resource/Dana_Glover_%28singer%29
+</uri>
+<string>Dana Glover (singer)</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Hill</uri>
+<string>Dana Hill</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_International</uri>
+<string>Dana International</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Jennings</uri>
+<string>Dana Jennings</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Knutson</uri>
+<string>Dana Knutson</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Mase</uri>
+<string>Dana Mase</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Perino</uri>
+<string>Dana Perino</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Porter</uri>
+<string>Dana Porter</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Quigley</uri>
+<string>Dana Quigley</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Rohrabacher</uri>
+<string>Dana Rohrabacher</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Weigel</uri>
+<string>Dana Weigel</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Ashbrook</uri>
+<string>Dana Ashbrook</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Bash</uri>
+<string>Dana Bash</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Bullen</uri>
+<string>Dana Bullen</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Davis</uri>
+<string>Dana Davis</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Elcar</uri>
+<string>Dana Elcar</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Fuchs</uri>
+<string>Dana Fuchs</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Jacobson</uri>
+<string>Dana Jacobson</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Kimmell</uri>
+<string>Dana Kimmell</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Rogers</uri>
+<string>Dana Rogers</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Sparks</uri>
+<string>Dana Sparks</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Strum</uri>
+<string>Dana Strum</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Suesse</uri>
+<string>Dana Suesse</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Tyler</uri>
+<string>Dana Tyler</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Wheeler-Nicholson</uri>
+<string>Dana Wheeler-Nicholson</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_White</uri>
+<string>Dana White</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Wortley</uri>
+<string>Dana Wortley</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Barron</uri>
+<string>Dana Barron</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Beal</uri>
+<string>Dana Beal</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Carvey</uri>
+<string>Dana Carvey</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Dawson</uri>
+<string>Dana Dawson</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Eskelson</uri>
+<string>Dana Eskelson</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_McCauley</uri>
+<string>Dana McCauley</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Plato</uri>
+<string>Dana Plato</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Reeve</uri>
+<string>Dana Reeve</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Whipkey</uri>
+<string>Dana Whipkey</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Wilson</uri>
+<string>Dana Wilson</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Wynter</uri>
+<string>Dana Wynter</string>
+</answer>
+<answer>
+<uri>
+http://dbpedia.org/resource/Dana_Z%C3%A1topkov%C3%A1
+</uri>
+<string>Dana Zátopková</string>
+</answer>
+<answer>
+<uri>
+http://dbpedia.org/resource/Dana_Jur%C3%A1skov%C3%A1
+</uri>
+<string>Dana Jurásková</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_V%C3%A1vrov%C3%A1</uri>
+<string>Dana Vávrová</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Sawyer</uri>
+<string>Dana Sawyer</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Redd</uri>
+<string>Dana Redd</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_King</uri>
+<string>Dana King</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_MacDuff</uri>
+<string>Dana MacDuff</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Murphy</uri>
+<string>Dana Murphy</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Lixenberg</uri>
+<string>Dana Lixenberg</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Allison</uri>
+<string>Dana Allison</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Ivey</uri>
+<string>Dana Ivey</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Stevens</uri>
+<string>Dana Stevens</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Ranga</uri>
+<string>Dana Ranga</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Heitman</uri>
+<string>Dana Heitman</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Coons</uri>
+<string>Dana Coons</string>
+</answer>
+<answer>
+<uri>
+http://dbpedia.org/resource/Dana_Bro%C5%BEkov%C3%A1
+</uri>
+<string>Dana Brožková</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Reason</uri>
+<string>Dana Reason</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Angluin</uri>
+<string>Dana Angluin</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Colley</uri>
+<string>Dana Colley</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Wong</uri>
+<string>Dana Wong</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Walsh</uri>
+<string>Dana Walsh</string>
+</answer>
+<answer>
+<uri>
+http://dbpedia.org/resource/Dana_Howard_%28television%29
+</uri>
+<string>Dana Howard (television)</string>
+</answer>
+<answer>
+<uri>http://dbpedia.org/resource/Dana_Rosemary_Scallon</uri>
+<string>Dana Rosemary Scallon</string>
+</answer>
+</answers>
+</question>
+</dataset>
