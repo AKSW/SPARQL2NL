@@ -151,7 +151,7 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 		if(!ignoreOptionals){
 			if(query.isSelectType()){
 				for(Triple t : candidates){
-					if(ListUtils.intersection(new ArrayList<Var>(VarUtils.getVars(t)), query.getProjectVars()).size() >= 2){
+					if(!ListUtils.intersection(new ArrayList<Var>(VarUtils.getVars(t)), query.getProjectVars()).isEmpty()){
 						triplePattern.add(t);
 					}
 				}
