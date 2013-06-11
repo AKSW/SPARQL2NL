@@ -85,11 +85,11 @@ public class Controller {
                 wg.addClique(nodes);
             }
         }
-        System.out.println("Found "+count+" matching queries for "+ontClass.getName());
+        System.out.println("Found " + count + " matching queries for " + ontClass.getName());
         wg.scale((double) count);
         return wg;
     }
-    
+
     /**
      * Generates the weighted graph for a given class
      *
@@ -105,7 +105,7 @@ public class Controller {
         //feed data into the processor and then into the graph
         Collection<Map<NamedClass, Set<Property>>> result = processor.processEntries(entries);
         for (Map<NamedClass, Set<Property>> map : result) {
-        	if (map.containsKey(ontClass)) {
+            if (map.containsKey(ontClass)) {
                 count++;
                 Set<Property> properties = map.get(ontClass);
                 Set<Node> nodes = new HashSet<Node>();
@@ -122,7 +122,7 @@ public class Controller {
                 wg.addClique(nodes);
             }
         }
-        System.out.println("Found "+count+" matching queries for "+ontClass.getName());
+        System.out.println("Found " + count + " matching queries for " + ontClass.getName());
         wg.scale((double) count);
         return wg;
     }
@@ -158,7 +158,7 @@ public class Controller {
                 wg.addClique(nodes);
             }
         }
-        System.out.println("Found "+count+" matching queries overall");
+        System.out.println("Found " + count + " matching queries overall");
         wg.scale((double) count);
         return wg;
     }
@@ -177,7 +177,7 @@ public class Controller {
         //feed data into the processor and then into the graph
         Collection<Map<NamedClass, Set<Property>>> result = processor.processEntries(entries);
         for (Map<NamedClass, Set<Property>> map : result) {
-        	for (NamedClass ontClass : map.keySet()) {
+            for (NamedClass ontClass : map.keySet()) {
                 count++;
                 Set<Property> properties = map.get(ontClass);
                 Set<Node> nodes = new HashSet<Node>();
@@ -193,11 +193,12 @@ public class Controller {
                 }
                 wg.addClique(nodes);
             }
-		}
-        System.out.println("Found "+count+" matching queries overall");
+        }
+        System.out.println("Found " + count + " matching queries overall");
         wg.scale((double) count);
         return wg;
     }
+
     public static void main(String args[]) {
         test();
         testDumpReader();
@@ -212,17 +213,21 @@ public class Controller {
 
         DBpediaDumpProcessor dp = new DBpediaDumpProcessor();
         entries = dp.processDump("resources/dbpediaLog/access.log-20120805.gz", false);
-        for(NamedClass nc : new SPARQLReasoner(new SparqlEndpointKS(endpoint)).getOWLClasses()){
-        	 WeightedGraph wg = Controller.generateGraphMultithreaded(nc, entries);
-             WeightedGraph reference = Controller.generateGraph(entries);
-             System.out.println("Basic Graph =============== ");
-             System.out.println("Edges = " + wg);
-             System.out.println("Nodes = " + wg.getNodes());
-             System.out.println("Reference Graph =============== ");
-             System.out.println("Edges = " + reference);
-             System.out.println("Nodes = " + reference.getNodes());
+        for (NamedClass nc : new SPARQLReasoner(new SparqlEndpointKS(endpoint)).getOWLClasses()) {
+            WeightedGraph wg = Controller.generateGraphMultithreaded(nc, entries);
+            WeightedGraph reference = Controller.generateGraph(entries);
+//            System.out.println("\n\nBasic Graph =============== ");
+//            System.out.println("Edges = " + wg);
+//            System.out.println("Nodes = " + wg.getNodes());
+//            System.out.println("Reference Graph =============== ");
+//            System.out.println("Edges = " + reference);
+//            System.out.println("Nodes = " + reference.getNodes());
+            System.out.println("Difference Graph =============== ");
+            wg.nodeConservingMinus(reference);
+//            System.out.println("Edges = " + wg);
+            System.out.println("Nodes = " + wg.getNodes());
         }
-       
+
     }
 
     public static void test() {
