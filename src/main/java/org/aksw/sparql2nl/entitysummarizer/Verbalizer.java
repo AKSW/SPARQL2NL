@@ -18,7 +18,7 @@ import simplenlg.framework.NLGElement;
 import simplenlg.phrasespec.SPhraseSpec;
 
 /**
- * A verbalizer for triples that all have the same subject.
+ * A verbalizer for triples without variables.
  * @author ngonga
  */
 public class Verbalizer {
