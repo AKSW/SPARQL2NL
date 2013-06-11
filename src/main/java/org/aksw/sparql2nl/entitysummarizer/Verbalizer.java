@@ -19,54 +19,60 @@ import simplenlg.phrasespec.SPhraseSpec;
 
 /**
  * A verbalizer for triples without variables.
+ *
  * @author ngonga
  */
 public class Verbalizer {
+
     SimpleNLGwithPostprocessing nlg;
-    
-    public Verbalizer(SparqlEndpoint endpoint)
-    {
+
+    public Verbalizer(SparqlEndpoint endpoint) {
         nlg = new SimpleNLGwithPostprocessing(endpoint);
     }
-    
-    /** Generates sentence for a given set of triples
-     * 
+
+    /**
+     * Generates sentence for a given set of triples
+     *
      * @param triples A set of triples
      * @return A set of sentences representing these triples
      */
-    public List<NLGElement> verbalize(Set<Triple> triples)
-    {
+    public List<NLGElement> verbalize(Set<Triple> triples) {
         List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
-        for(Triple t: triples)
-        {
+        for (Triple t : triples) {
             phrases.add(verbalize(t));
         }
-        int newSize = phrases.size(), oldSize = phrases.size()+1;
+        return verbalize(phrases);
+    }
+
+    public List<NLGElement> verbalize(List<SPhraseSpec> triples) {
+        List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
+
+        int newSize = phrases.size(), oldSize = phrases.size() + 1;
         Rule mr = new ObjectMergeRule();
         Rule pr = new PredicateMergeRule();
-        
+
         //fix point iteration for object and predicate merging
-        while(newSize < oldSize)
-        {
+        while (newSize < oldSize) {
             oldSize = newSize;
             int mrCount = mr.isApplicable(phrases);
             int prCount = pr.isApplicable(phrases);
-            if(prCount > mrCount)
+            if (prCount > mrCount) {
                 phrases = pr.apply(phrases);
-            else
+            } else {
                 phrases = mr.apply(phrases);
+            }
             newSize = phrases.size();
         }
         return (new SubjectMergeRule()).apply(phrases);
     }
-   
-    /** Generates a simple phrase for a triple
-     * 
+
+    /**
+     * Generates a simple phrase for a triple
+     *
      * @param triple A triple
      * @return A simple phrases
      */
-    public SPhraseSpec verbalize(Triple triple)
-    {
+    public SPhraseSpec verbalize(Triple triple) {
         return nlg.getNLForTriple(triple);
     }
 }

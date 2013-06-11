@@ -23,60 +23,71 @@ import simplenlg.realiser.english.Realiser;
 public class PredicateMergeRule implements Rule {
 
     /**
-     * Checks whether a rule is applicable and returns the number of pairs on
-     * which it can be applied
+     * Checks whether a rule is applicable and returns the maximal number of
+     * matching predicate realizations
      *
      * @param phrases List of phrases
-     * @return Number of mapping pairs
+     * @return Maximal number of mapping predicate realizations
      */
     Lexicon lexicon = Lexicon.getDefaultLexicon();
     NLGFactory nlgFactory = new NLGFactory(lexicon);
     Realiser realiser = new Realiser(lexicon);
-
+    
     public int isApplicable(List<SPhraseSpec> phrases) {
-        int count = 0;
+        int max = 0, count = 0;
         SPhraseSpec p1, p2;
-        String o1, o2;
-
+        String obj1, obj2;
+        String subj1, subj2;
+        
         for (int i = 0; i < phrases.size(); i++) {
             p1 = phrases.get(i);
-            o1 = p1.getObject().getRealisation();
+            obj1 = realiser.realiseSentence(p1.getObject());
+            subj1 = realiser.realiseSentence(p1.getSubject());
+            
+            count = 0;
             for (int j = i + 1; j < phrases.size(); j++) {
                 p2 = phrases.get(j);
-                o2 = p2.getObject().getRealisation();
-                if (o1.equals(o2)) {
+                obj2 = realiser.realiseSentence(p2.getObject());
+                subj2 = realiser.realiseSentence(p2.getSubject());
+                
+                if (obj1.equals(obj2) && subj2.equals(subj1)) {
                     count++;
                 }
             }
+            max = Math.max(max, count);
         }
-        return count;
+        return max;
     }
 
-    /** Applies this rule to the phrases
-     * 
+    /**
+     * Applies this rule to the phrases
+     *
      * @param phrases Set of phrases
      * @return Result of the rule being applied
      */
     public List<SPhraseSpec> apply(List<SPhraseSpec> phrases) {
-
+        
         SPhraseSpec p1, p2;
-        String o1, o2;
-
+        String obj1, obj2;
+        String subj1, subj2;
         // get mapping o's
         Multimap<Integer, Integer> map = TreeMultimap.create();
         for (int i = 0; i < phrases.size(); i++) {
             p1 = phrases.get(i);
-            o1 = realiser.realiseSentence(p1.getObject());
-
+            obj1 = realiser.realiseSentence(p1.getObject());
+            subj1 = realiser.realiseSentence(p1.getSubject());
+            
             for (int j = i + 1; j < phrases.size(); j++) {
                 p2 = phrases.get(j);
-                o2 = realiser.realiseSentence(p2.getObject());
-                if (o1.equals(o2)) {
+                obj2 = realiser.realiseSentence(p2.getObject());
+                subj2 = realiser.realiseSentence(p2.getSubject());
+                
+                if (obj1.equals(obj2) && subj1.equals(subj2)) {
                     map.put(i, j);
                 }
             }
         }
-
+        
         int maxSize = 0;
         int phraseIndex = 0;
 
@@ -97,7 +108,7 @@ public class PredicateMergeRule implements Rule {
         for (int index : toMerge) {
             elt.addCoordinate(phrases.get(index).getVerb());
         }
-
+        
         SPhraseSpec fusedPhrase = phrases.get(phraseIndex);
         fusedPhrase.setVerb(elt);
 
@@ -111,40 +122,40 @@ public class PredicateMergeRule implements Rule {
         }
         return result;
     }
-
+    
     public static void main(String args[]) {
         Lexicon lexicon = Lexicon.getDefaultLexicon();
         NLGFactory nlgFactory = new NLGFactory(lexicon);
         Realiser realiser = new Realiser(lexicon);
-
+        
         SPhraseSpec s1 = nlgFactory.createClause();
         s1.setSubject("Mike");
         s1.setVerb("like");
         s1.setObject("apples");
         s1.getObject().setPlural(true);
-
+        
         SPhraseSpec s2 = nlgFactory.createClause();
         s2.setSubject("Mike");
         s2.setVerb("eat");
         s2.setObject("apples");
         s2.getObject().setPlural(true);
-
+        
         SPhraseSpec s3 = nlgFactory.createClause();
-        s3.setSubject("Mike");
-        s3.setVerb("be born in");
-        s3.setObject("New York");
+        s3.setSubject("John");
+        s3.setVerb("hate");
+        s3.setObject("apples");
         s3.getObject().setPlural(true);
-
+        
         List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
         phrases.add(s1);
         phrases.add(s2);
         phrases.add(s3);
-
+        
         for (SPhraseSpec p : phrases) {
             System.out.println("=>" + realiser.realiseSentence(p));
         }
         phrases = (new PredicateMergeRule()).apply(phrases);
-
+        
         for (SPhraseSpec p : phrases) {
             System.out.println("=>" + realiser.realiseSentence(p));
         }

@@ -19,7 +19,7 @@ import simplenlg.realiser.english.Realiser;
  *
  * @author ngonga
  */
-public class ObjectMergeRule implements Rule{
+public class ObjectMergeRule implements Rule {
 
     /**
      * Checks whether a rule is applicable and returns the number of pairs on
@@ -33,26 +33,34 @@ public class ObjectMergeRule implements Rule{
     Realiser realiser = new Realiser(lexicon);
 
     public int isApplicable(List<SPhraseSpec> phrases) {
-        int count = 0;
+        int max = 0, count = 0;
         SPhraseSpec p1, p2;
         String verb1, verb2;
+        String subj1, subj2;
 
         for (int i = 0; i < phrases.size(); i++) {
             p1 = phrases.get(i);
-            verb1 = p1.getVerb().getRealisation();
+            verb1 = realiser.realiseSentence(p1.getVerb());
+            subj1 = realiser.realiseSentence(p1.getSubject());
+
+            count = 0;
             for (int j = i + 1; j < phrases.size(); j++) {
                 p2 = phrases.get(j);
-                verb2 = p2.getVerb().getRealisation();
-                if (verb1.equals(verb2)) {
+                verb2 = realiser.realiseSentence(p2.getVerb());
+                subj2 = realiser.realiseSentence(p2.getSubject());
+
+                if (verb1.equals(verb2) && subj1.equals(subj2)) {
                     count++;
                 }
             }
+            max = Math.max(max, count);
         }
-        return count;
+        return max;
     }
 
-    /** Applies this rule to the phrases
-     * 
+    /**
+     * Applies this rule to the phrases
+     *
      * @param phrases Set of phrases
      * @return Result of the rule being applied
      */
@@ -60,17 +68,21 @@ public class ObjectMergeRule implements Rule{
 
         SPhraseSpec p1, p2;
         String verb1, verb2;
+        String subj1, subj2;
 
         // get mapping o's
         Multimap<Integer, Integer> map = TreeMultimap.create();
         for (int i = 0; i < phrases.size(); i++) {
             p1 = phrases.get(i);
             verb1 = realiser.realiseSentence(p1.getVerb());
+            subj1 = realiser.realiseSentence(p1.getSubject());
 
             for (int j = i + 1; j < phrases.size(); j++) {
                 p2 = phrases.get(j);
                 verb2 = realiser.realiseSentence(p2.getVerb());
-                if (verb1.equals(verb2)) {
+                subj2 = realiser.realiseSentence(p2.getSubject());
+
+                if (verb1.equals(verb2) && subj1.equals(subj2)) {
                     map.put(i, j);
                 }
             }
@@ -89,7 +101,6 @@ public class ObjectMergeRule implements Rule{
         }
 
         //now merge
-        NLGFactory nlgFactory = new NLGFactory(Lexicon.getDefaultLexicon());
         Collection<Integer> toMerge = map.get(phraseIndex);
         toMerge.add(phraseIndex);
         CoordinatedPhraseElement elt = nlgFactory.createCoordinatedPhrase();
@@ -111,7 +122,6 @@ public class ObjectMergeRule implements Rule{
         return result;
     }
 
-    
     public static void main(String args[]) {
         Lexicon lexicon = Lexicon.getDefaultLexicon();
         NLGFactory nlgFactory = new NLGFactory(lexicon);
@@ -130,9 +140,9 @@ public class ObjectMergeRule implements Rule{
         s2.getObject().setPlural(true);
 
         SPhraseSpec s3 = nlgFactory.createClause();
-        s3.setSubject("Mike");
-        s3.setVerb("be born in");
-        s3.setObject("New York");
+        s3.setSubject("John");
+        s3.setVerb("like");
+        s3.setObject("banana");
         s3.getObject().setPlural(true);
 
         List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
@@ -149,5 +159,4 @@ public class ObjectMergeRule implements Rule{
             System.out.println("=>" + realiser.realiseSentence(p));
         }
     }
-    
 }
