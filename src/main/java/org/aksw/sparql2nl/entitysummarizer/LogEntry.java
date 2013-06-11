@@ -8,15 +8,23 @@ import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import java.util.Date;
 
+import org.apache.commons.lang.builder.CompareToBuilder;
+
 /**
  *
  * @author ngonga
  */
-public class LogEntry {
+public class LogEntry implements Comparable<LogEntry>{
     String query;
     Date date;
     String ip;
     Query sparqlQuery;
+    
+    public LogEntry(String q)
+    {
+        query = q;
+        this.sparqlQuery = QueryFactory.create(q);
+    }
     
     public Date getDate() {
         return date;
@@ -50,10 +58,18 @@ public class LogEntry {
     public void setSparqlQuery(Query sparqlQuery) {
         this.sparqlQuery = sparqlQuery;
     }
+
+	/* (non-Javadoc)
+	 * @see java.lang.Comparable#compareTo(java.lang.Object)
+	 */
+	@Override
+	public int compareTo(LogEntry other) {
+		return new CompareToBuilder()
+		.append(ip, other.ip)
+		.append(query, other.query)
+		.append(date, other.date)
+		.toComparison();
+	}
     
-    public LogEntry(String q)
-    {
-        query = q;
-        this.sparqlQuery = QueryFactory.create(q);
-    }
+   
 }

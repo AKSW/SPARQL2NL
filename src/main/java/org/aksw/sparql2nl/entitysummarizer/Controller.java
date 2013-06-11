@@ -4,10 +4,12 @@
  */
 package org.aksw.sparql2nl.entitysummarizer;
 
+import com.google.common.collect.Multimap;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.vocabulary.RDF;
 import java.util.*;
+import java.util.Map.Entry;
 
 import org.dllearner.core.owl.Property;
 import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
@@ -200,9 +202,34 @@ public class Controller {
     }
 
     public static void main(String args[]) {
-        test();
-        testDumpReader();
+//        test();
+//        testDumpReader();
+        testSPARQLQueryProcessor();
     }
+    
+	public static void testSPARQLQueryProcessor() {
+		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
+		SPARQLQueryProcessor queryProcessor = new SPARQLQueryProcessor(endpoint);
+		DBpediaDumpProcessor dp = new DBpediaDumpProcessor();
+		List<LogEntry> entries = dp.processDump("resources/dbpediaLog/access.log-20120805.gz", false, 5000);
+		
+		// group by IP address
+		Multimap<String, LogEntry> ip2Entries = LogEntryGrouping.groupByIPAddress(entries);
+		System.out.println("#IP addresses: " + ip2Entries.keySet().size());
+
+		for (Entry<String, Collection<LogEntry>> entry : ip2Entries.asMap().entrySet()) {
+			String ip = entry.getKey();
+			Collection<LogEntry> entriesForIP = entry.getValue();
+			System.out.println(ip + ": " + entriesForIP.size());
+			// print top n
+			int n = 3;
+			for (LogEntry e : new ArrayList<LogEntry>(entriesForIP).subList(0, Math.min(entriesForIP.size(), n))) {
+				System.out.println(e.getSparqlQuery());
+				Map<NamedClass, Set<Property>> result = queryProcessor.processQuery(e.getSparqlQuery());
+				System.out.println(result);
+			}
+		}
+	}
 
     public static void testDumpReader() {
         SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
