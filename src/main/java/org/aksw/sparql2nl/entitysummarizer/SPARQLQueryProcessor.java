@@ -20,10 +20,12 @@ import org.dllearner.core.owl.NamedClass;
 import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.core.owl.Property;
 import org.dllearner.kb.SparqlEndpointKS;
+import org.dllearner.kb.sparql.ExtractionDBCache;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.Sets;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
@@ -40,7 +42,7 @@ public class SPARQLQueryProcessor {
 
     public SPARQLQueryProcessor(SparqlEndpoint endpoint) {
         this.endpoint = endpoint;
-        reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint));
+        reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint), new ExtractionDBCache("cache"));
     }
 
     public Map<NamedClass, Set<Property>> processQuery(String query) {
@@ -75,9 +77,13 @@ public class SPARQLQueryProcessor {
     
     public Collection<Map<NamedClass, Set<Property>>> processEntries(Collection<LogEntry> entries) {
     	List<Query> queries = new ArrayList<Query>();
+    	Set<String> blacklist = Sets.newHashSet("-", "bliss", "ARC" , "[CURL]");
     	for (LogEntry entry : entries) {
-			queries.add(entry.sparqlQuery);
+    		if(!blacklist.contains(entry.userAgent)){
+    			queries.add(entry.sparqlQuery);
+    		}
 		}
+    	System.out.println(queries.size());
         return processQueries(queries);
     }
     
