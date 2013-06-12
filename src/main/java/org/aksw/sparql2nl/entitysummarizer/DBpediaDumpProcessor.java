@@ -45,7 +45,7 @@ public class DBpediaDumpProcessor implements DumpProcessor {
     public static String BEGIN = "query=";
     private static SparqlEndpoint ENDPOINT = SparqlEndpoint.getEndpointDBpediaLiveAKSW();
     private static final Logger logger = Logger.getLogger(DBpediaDumpProcessor.class);
-    private static int maxCount = 20000;
+    private static int maxCount = 500000;
     private ExtractionDBCache cache = new ExtractionDBCache("cache");
 
     public DBpediaDumpProcessor() {

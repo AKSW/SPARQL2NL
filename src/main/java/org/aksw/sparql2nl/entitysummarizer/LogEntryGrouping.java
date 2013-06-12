@@ -30,5 +30,13 @@ public class LogEntryGrouping {
 		}
 		return time2Entries;
 	}
+	
+	public static Multimap<String, LogEntry> groupByUserAgent(Collection<LogEntry> entries){
+		Multimap<String, LogEntry> userAgent2Entries = TreeMultimap.create();
+		for (LogEntry entry : entries) {
+			userAgent2Entries.put(entry.getUserAgent(), entry);
+		}
+		return userAgent2Entries;
+	}
 
 }

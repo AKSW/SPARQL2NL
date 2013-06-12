@@ -10,6 +10,8 @@ import com.hp.hpl.jena.sparql.expr.ExprAggregator;
 import com.hp.hpl.jena.sparql.syntax.Element;
 import com.hp.hpl.jena.sparql.syntax.ElementGroup;
 import com.hp.hpl.jena.sparql.syntax.ElementOptional;
+import com.hp.hpl.jena.sparql.syntax.PatternVars;
+import com.hp.hpl.jena.sparql.util.VarUtils;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
@@ -71,13 +73,13 @@ public class SPARQLDeconstructor {
 
         List<String> optionalVars = new ArrayList<String>();
         for (Element e : optionals) {
-            for (Var var : e.varsMentioned()) {
+            for (Var var : PatternVars.vars(e)) {
                 optionalVars.add(var.toString().replace("?",""));
             }
         }
         List<String> nonoptionalVars = new ArrayList<String>();
         for (Element e : body) {
-            for (Var var : e.varsMentioned()) {
+            for (Var var : PatternVars.vars(e)) {
                 if (!optionalVars.contains(var.toString())) {
                     nonoptionalVars.add(var.toString().replace("?",""));
                 }

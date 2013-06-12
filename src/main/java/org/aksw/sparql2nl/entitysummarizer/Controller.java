@@ -100,13 +100,10 @@ public class Controller {
      * @param entries List of log entries (e.g., from a dump file)
      * @return Weighted Graph
      */
-    public static WeightedGraph generateGraphMultithreaded(NamedClass ontClass, List<LogEntry> entries) {
+    public static WeightedGraph generateGraphMultithreaded(NamedClass ontClass, Collection<Map<NamedClass, Set<Property>>> result) {
         WeightedGraph wg = new WeightedGraph();
-        SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
-        SPARQLQueryProcessor processor = new SPARQLQueryProcessor(endpoint);
         int count = 0;
         //feed data into the processor and then into the graph
-        Collection<Map<NamedClass, Set<Property>>> result = processor.processEntries(entries);
         for (Map<NamedClass, Set<Property>> map : result) {
             if (map.containsKey(ontClass)) {
                 count++;
@@ -168,20 +165,20 @@ public class Controller {
 
     /**
      * Generates the weighted graph for a given class
-     *
+     *System.out.println("Reference Graph =============== ");
+//            System.out.println("Edges = " + reference);
+//            System.
      * @param entries List of log entries (e.g., from a dump file)
      * @return Weighted Graph
      */
-    public static WeightedGraph generateGraphMultithreaded(List<LogEntry> entries) {
+    public static WeightedGraph generateGraphMultithreaded(Collection<Map<NamedClass, Set<Property>>> result) {
         WeightedGraph wg = new WeightedGraph();
-        SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
-        SPARQLQueryProcessor processor = new SPARQLQueryProcessor(endpoint);
         int count = 0;
         //feed data into the processor and then into the graph
-        Collection<Map<NamedClass, Set<Property>>> result = processor.processEntries(entries);
+       
         for (Map<NamedClass, Set<Property>> map : result) {
+        	count++;
             for (NamedClass ontClass : map.keySet()) {
-                count++;
                 Set<Property> properties = map.get(ontClass);
                 Set<Node> nodes = new HashSet<Node>();
                 for (Property p : properties) {
@@ -212,41 +209,51 @@ public class Controller {
 		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
 		SPARQLQueryProcessor queryProcessor = new SPARQLQueryProcessor(endpoint);
 		DBpediaDumpProcessor dp = new DBpediaDumpProcessor();
-		List<LogEntry> entries = dp.processDump(testFile, false, 5000);
+		List<LogEntry> entries = dp.processDump(testFile, false, 20000);
 		
 		// group by IP address
 		Multimap<String, LogEntry> ip2Entries = LogEntryGrouping.groupByIPAddress(entries);
 		System.out.println("#IP addresses: " + ip2Entries.keySet().size());
-
-		for (Entry<String, Collection<LogEntry>> entry : ip2Entries.asMap().entrySet()) {
-			String ip = entry.getKey();
-			Collection<LogEntry> entriesForIP = entry.getValue();
-			System.out.println(ip + ": " + entriesForIP.size());
-			// print top n
-			int n = 3;
-			for (LogEntry e : new ArrayList<LogEntry>(entriesForIP).subList(0, Math.min(entriesForIP.size(), n))) {
-				System.out.println(e.getSparqlQuery());
-				Map<NamedClass, Set<Property>> result = queryProcessor.processQuery(e.getSparqlQuery());
-				System.out.println(result);
-			}
+		
+		// group by user agent
+		Multimap<String, LogEntry> userAgent2Entries = LogEntryGrouping.groupByUserAgent(entries);
+		System.out.println("#User agent: " + userAgent2Entries.keySet().size());
+		
+		for (Entry<String, Collection<LogEntry>> entry : userAgent2Entries.asMap().entrySet()) {
+			String userAgent = entry.getKey();
+			Collection<LogEntry> entriesForUserAgent = entry.getValue();
+			System.out.println(userAgent + ": " + entriesForUserAgent.size());
 		}
+
+//		for (Entry<String, Collection<LogEntry>> entry : ip2Entries.asMap().entrySet()) {
+//			String ip = entry.getKey();
+//			Collection<LogEntry> entriesForIP = entry.getValue();
+//			System.out.println(ip + ": " + entriesForIP.size());
+//			// print top n
+//			int n = 3;
+//			for (LogEntry e : new ArrayList<LogEntry>(entriesForIP).subList(0, Math.min(entriesForIP.size(), n))) {
+//				System.out.println(e.getSparqlQuery());
+//				Map<NamedClass, Set<Property>> result = queryProcessor.processQuery(e.getSparqlQuery());
+//				System.out.println(result);
+//			}
+//		}
 	}
 
     public static void testDumpReader() {
         SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
         SPARQLQueryProcessor processor = new SPARQLQueryProcessor(endpoint);
-        List<LogEntry> entries = new ArrayList<LogEntry>();
 
 //        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Person");
 
         DBpediaDumpProcessor dp = new DBpediaDumpProcessor();
-        entries = dp.processDump(testFile, false);
+        List<LogEntry> entries = dp.processDump(testFile, false);
+        Collection<Map<NamedClass, Set<Property>>> result = processor.processEntries(entries);
+        WeightedGraph reference = Controller.generateGraphMultithreaded(result);
         for(NamedClass nc : new SPARQLReasoner(new SparqlEndpointKS(endpoint)).getOWLClasses()){
-        	 WeightedGraph wg = Controller.generateGraph(nc, entries);
-             WeightedGraph reference = Controller.generateGraphMultithreaded(entries);
-//            System.out.println("\n\nBasic Graph =============== ");
-//            System.out.println("Edges = " + wg);
-//            System.out.println("Nodes = " + wg.getNodes());
+        	 WeightedGraph wg = Controller.generateGraphMultithreaded(nc, result);
+            System.out.println("\n\nBasic Graph =============== ");
+            System.out.println("Edges = " + wg);
+            System.out.println("Nodes = " + wg.getNodes());
 //            System.out.println("Reference Graph =============== ");
 //            System.out.println("Edges = " + reference);
 //            System.out.println("Nodes = " + reference.getNodes());
