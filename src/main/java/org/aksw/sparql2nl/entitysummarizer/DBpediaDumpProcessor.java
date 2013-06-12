@@ -18,6 +18,7 @@ import java.net.URLDecoder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.zip.GZIPInputStream;
@@ -28,6 +29,7 @@ import org.dllearner.kb.sparql.ExtractionDBCache;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.kb.sparql.SparqlQuery;
 
+import com.google.common.collect.Multimap;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.ResultSet;
@@ -43,7 +45,7 @@ public class DBpediaDumpProcessor implements DumpProcessor {
     public static String BEGIN = "query=";
     private static SparqlEndpoint ENDPOINT = SparqlEndpoint.getEndpointDBpediaLiveAKSW();
     private static final Logger logger = Logger.getLogger(DBpediaDumpProcessor.class);
-    private static int maxCount = 10000;
+    private static int maxCount = 20000;
     private ExtractionDBCache cache = new ExtractionDBCache("cache");
 
     public DBpediaDumpProcessor() {
@@ -161,6 +163,94 @@ public class DBpediaDumpProcessor implements DumpProcessor {
 			}
 		}
 	}
+	
+	public void filterOutByUserAgents(String file) {
+		OutputStream os = null;
+		InputStream is = null;
+		try {
+			String ending = file.substring(file.lastIndexOf('.') + 1);
+			os = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(new File(file.substring(0,
+					file.lastIndexOf('.'))
+					+ "-nonjava." + ending), true)));
+			is = new FileInputStream(new File(file));
+			if (file.endsWith(".gz")) {
+				is = new GZIPInputStream(is);
+			}
+			BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+			String line = null;
+			LogEntry entry = null;
+			while ((line = reader.readLine()) != null) {
+				entry = processDumpLine(line);
+				if (!entry.getUserAgent().equals("Java")) {
+					line += "\n";
+					os.write(line.getBytes());
+					os.flush();
+				}
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				is.close();
+				os.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	public void filterOutIPAddressApproximatedNoise(String file) {
+		OutputStream os = null;
+		InputStream is = null;
+		try {
+			is = new FileInputStream(new File(file));
+			if (file.endsWith(".gz")) {
+				is = new GZIPInputStream(is);
+			}
+			BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+			List<LogEntry> entries = new ArrayList<LogEntry>();
+			List<String> lines = new ArrayList<String>();
+			String line = null;
+			while ((line = reader.readLine()) != null) {System.out.println(line);
+				entries.add(processDumpLine(line));
+				lines.add(line);
+			}
+			
+			int thresholdPerIPAddress = (int)Math.sqrt(entries.size());
+			System.out.println("Max. number of queries per IP address: " + thresholdPerIPAddress);
+			
+			Multimap<String, LogEntry> groupedByIPAddress = LogEntryGrouping.groupByIPAddress(entries);
+			
+			String ending = file.substring(file.lastIndexOf('.') + 1);
+			os = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(new File(file.substring(0,
+					file.lastIndexOf('.'))
+					+ "-ip." + ending), true)));
+			
+			LogEntry entry;
+			for (String l : lines) {
+				entry = processDumpLine(line);
+				if(groupedByIPAddress.get(entry.ip).size() <= thresholdPerIPAddress){
+					line += "\n";
+					os.write(l.getBytes());
+					os.flush();
+				}
+			}
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				is.close();
+				os.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 
     public List<LogEntry> processDump(String file, boolean omitQueriesWithEmptyResults, int limit) {
     	List<LogEntry> results = new ArrayList<LogEntry>();
@@ -223,7 +313,6 @@ public class DBpediaDumpProcessor implements DumpProcessor {
      */
     private LogEntry processDumpLine(String line) {
 //        System.out.println(line);
-
         String query = line.substring(line.indexOf(BEGIN) + BEGIN.length());
         DateFormat df = new SimpleDateFormat("dd/MMM/yyyy hh:mm:ss", Locale.ENGLISH);
 
@@ -239,7 +328,7 @@ public class DBpediaDumpProcessor implements DumpProcessor {
             String[] split = line.split(" ");
             l.ip = split[0];
             l.date = df.parse(split[3].substring(1).toLowerCase() + " " + split[4].toLowerCase());
-
+            l.userAgent = split[10].substring(1, split[10].length() - 1);
             return l;
         } catch (Exception e) {
 //            logger.warn("Query parse error for " + query + " from "+line);
@@ -273,9 +362,11 @@ public class DBpediaDumpProcessor implements DumpProcessor {
 
     public static void main(String args[]) {
         DBpediaDumpProcessor dp = new DBpediaDumpProcessor();
-        dp.filterOutInvalidQueries("resources/dbpediaLog/dbpedia.log.gz");
-        dp.filterOutNonSelectQueries("resources/dbpediaLog/dbpedia.log-valid.gz");
+//        dp.filterOutInvalidQueries("resources/dbpediaLog/dbpedia.log.gz");
+//        dp.filterOutNonSelectQueries("resources/dbpediaLog/dbpedia.log-valid.gz");
 //        dp.filterOutEmptyQueries("resources/dbpediaLog/dbpedia.log-valid-select.gz");
+//        dp.filterOutIPAddressApproximatedNoise("resources/dbpediaLog/dbpedia.log-valid-select.gz");
+        dp.filterOutByUserAgents("resources/dbpediaLog/dbpedia.log-valid-select.gz");
 //        List<LogEntry> entries = dp.processDump("resources/dbpediaLog/access.log-20120805.gz", false);
 //        System.out.println("#Entries: " + entries.size());
 //        

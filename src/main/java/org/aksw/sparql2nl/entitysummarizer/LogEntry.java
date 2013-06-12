@@ -19,6 +19,7 @@ public class LogEntry implements Comparable<LogEntry>{
     Date date;
     String ip;
     Query sparqlQuery;
+    String userAgent;
     
     public LogEntry(String q)
     {
@@ -58,6 +59,10 @@ public class LogEntry implements Comparable<LogEntry>{
     public void setSparqlQuery(Query sparqlQuery) {
         this.sparqlQuery = sparqlQuery;
     }
+    
+	public String getUserAgent() {
+		return userAgent;
+	}
 
 	/* (non-Javadoc)
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)

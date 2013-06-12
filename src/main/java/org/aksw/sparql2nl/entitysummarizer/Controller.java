@@ -26,6 +26,7 @@ import org.dllearner.reasoning.SPARQLReasoner;
 public class Controller {
 
     public static boolean selectQueriesWithEmptyResults = true;
+    private static final String testFile = "resources/dbpediaLog/dbpedia.log-valid-select-nonjava.gz";
 
     /**
      * Generates the weighted graph for a given class
@@ -64,7 +65,7 @@ public class Controller {
      */
     public static WeightedGraph generateGraph(NamedClass ontClass, List<LogEntry> entries) {
         WeightedGraph wg = new WeightedGraph();
-        SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
+        SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpediaLiveAKSW();
         SPARQLQueryProcessor processor = new SPARQLQueryProcessor(endpoint);
         int count = 0;
         //feed data into the processor and then into the graph
@@ -202,15 +203,15 @@ public class Controller {
     }
     public static void main(String args[]) {
 //        test();
-//        testDumpReader();
-        testSPARQLQueryProcessor();
+        testDumpReader();
+//        testSPARQLQueryProcessor();
     }
     
 	public static void testSPARQLQueryProcessor() {
 		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
 		SPARQLQueryProcessor queryProcessor = new SPARQLQueryProcessor(endpoint);
 		DBpediaDumpProcessor dp = new DBpediaDumpProcessor();
-		List<LogEntry> entries = dp.processDump("resources/dbpediaLog/access.log-20120805.gz", false, 5000);
+		List<LogEntry> entries = dp.processDump(testFile, false, 5000);
 		
 		// group by IP address
 		Multimap<String, LogEntry> ip2Entries = LogEntryGrouping.groupByIPAddress(entries);
@@ -238,9 +239,9 @@ public class Controller {
 //        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Person");
 
         DBpediaDumpProcessor dp = new DBpediaDumpProcessor();
-        entries = dp.processDump("resources/dbpediaLog/access.log-20120805.gz", false);
+        entries = dp.processDump(testFile, false);
         for(NamedClass nc : new SPARQLReasoner(new SparqlEndpointKS(endpoint)).getOWLClasses()){
-        	 WeightedGraph wg = Controller.generateGraphMultithreaded(nc, entries);
+        	 WeightedGraph wg = Controller.generateGraph(nc, entries);
              WeightedGraph reference = Controller.generateGraph(entries);
              System.out.println("Basic Graph =============== ");
              System.out.println("Edges = " + wg);
