@@ -132,39 +132,36 @@ public class WeightedGraph {
     public Map<Node, Double> getEdges(Node n) {
         return edges.get(n);
     }
-    
+
     public Map<Node, Double> getNodes() {
         return nodes;
     }
 
-    public void scale(double factor)
-    {
+    public void scale(double factor) {
         double w;
         Map<Node, Double> ns = new HashMap<Node, Double>();
         Map<Node, Map<Node, Double>> es = new HashMap<Node, Map<Node, Double>>();
         //scale node weights
-        for(Node n: nodes.keySet())
-        {
+        for (Node n : nodes.keySet()) {
             w = nodes.get(n);
-            w = w/factor;            
+            w = w / factor;
             ns.put(n, w);
         }
         nodes = ns;
-        
+
         //scale edge weights
-        
-        for(Node n1: edges.keySet())
-        {
+
+        for (Node n1 : edges.keySet()) {
             es.put(n1, new HashMap<Node, Double>());
-            for(Node n2: edges.get(n1).keySet())
-            {
+            for (Node n2 : edges.get(n1).keySet()) {
                 w = edges.get(n1).get(n2);
-                w = w/factor;
+                w = w / factor;
                 es.get(n1).put(n2, w);
             }
         }
         edges = es;
     }
+
     public void addClique(Set<Node> nodeSet) {
         List<Node> nodeList = new ArrayList<Node>(nodeSet);
         // add nodes to the graph
@@ -182,7 +179,7 @@ public class WeightedGraph {
         if (nodeList.size() == 1) {
             double weight = nodes.get(nodeList.get(0)) + 1;
             nodes.remove(nodeList.get(0));
-            nodes.put(nodeList.get(0),weight);
+            nodes.put(nodeList.get(0), weight);
         } //node occurred with other nodes. Increment edge weight
         else {
 
@@ -207,13 +204,78 @@ public class WeightedGraph {
         }
     }
 
+    public void minus(WeightedGraph g) {
+        for (Node n : g.nodes.keySet()) {
+            if (!nodeIndex.containsKey(n.label)) {
+                nodes.put(n, g.getNodeWeight(n));
+                Set<Node> ns = new HashSet<Node>();
+                ns.add(n);
+                nodeIndex.put(n.label, ns);
+            }
+            for (Node node : nodeIndex.get(n.label)) {
+                double w = getNodeWeight(node);
+                w = w - g.getNodeWeight(n);
+                nodes.remove(node);
+                nodes.put(node, w);
+            }
+        }
+
+        for (Node n1 : g.edges.keySet()) {
+            for (Node n2 : g.edges.get(n1).keySet()) {
+                if (!edges.containsKey(n1)) {
+                    edges.put(n1, new HashMap<Node, Double>());
+                }
+                Map<Node, Double> map = edges.get(n1);
+                if (!map.containsKey(n2)) {
+                    map.put(n2, 0d);
+                }
+                double w = edges.get(n1).get(n2);
+                edges.get(n1).remove(n2);
+                edges.get(n1).put(n2, w - g.getEdgeWeight(n1, n2));
+            }
+        }
+    }
+
+    public void nodeConservingMinus(WeightedGraph g) {
+        for (Node n : g.nodes.keySet()) {
+            if (nodeIndex.containsKey(n.label)) {
+                for (Node node : nodeIndex.get(n.label)) {
+                    double w = getNodeWeight(node);
+                    w = w - g.getNodeWeight(n);
+                    nodes.remove(node);
+                    nodes.put(node, w);
+                }
+            }
+        }
+
+        for (Node n1 : g.edges.keySet()) {
+            for (Node n2 : g.edges.get(n1).keySet()) {
+                if (!edges.containsKey(n1)) {
+                    edges.put(n1, new HashMap<Node, Double>());
+                }
+                Map<Node, Double> map = edges.get(n1);
+                if (!map.containsKey(n2)) {
+                    map.put(n2, 0d);
+                }
+                double w = edges.get(n1).get(n2);
+                edges.get(n1).remove(n2);
+                edges.get(n1).put(n2, w - g.getEdgeWeight(n1, n2));
+            }
+        }
+    }
+
     public static void main(String args[]) {
         WeightedGraph wg = new WeightedGraph();
+        WeightedGraph wg2 = new WeightedGraph();
+
         Node n1 = wg.addNode("a", 1.0);
         Node n2 = wg.addNode("b", 2.0);
         Node n3 = wg.addNode("c", 3.0);
         Node n4 = wg.addNode("d", 4.0);
         Node n5 = new Node("e");
+
+        Node n6 = wg2.addNode("a", 1.0);
+        Node n7 = wg2.addNode("b", 3.0);
 
         wg.addEdge(n1, n2, 2.0);
         wg.addEdge(n3, n4, 1.0);
@@ -225,6 +287,7 @@ public class WeightedGraph {
         nodes.add(n5);
         wg.addClique(nodes);
         System.out.println("===\n" + wg);
-
+        wg.minus(wg2);
+        System.out.println("===\n" + wg);
     }
 }

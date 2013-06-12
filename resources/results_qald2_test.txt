@@ -1,0 +1,2346 @@
+cd E:\Work\Java\SPARQL2NL; "JAVA_HOME=C:\\Program Files\\Java\\jdk1.7.0_03" "\"C:\\Program Files\\NetBeans 7.1.1\\java\\maven\\bin\\mvn.bat\"" "-Dexec.args=-classpath %classpath org.aksw.sparql2nl.Evaluation" "-Dexec.executable=C:\\Program Files\\Java\\jdk1.7.0_03\\bin\\java.exe" -Dexec.classpathScope=test -DskipTests=true process-classes org.codehaus.mojo:exec-maven-plugin:1.2:exec
+Scanning for projects...
+                                                                        
+------------------------------------------------------------------------
+Building SPARQL2NL 0.0.1-SNAPSHOT
+------------------------------------------------------------------------
+The POM for net.sourceforge.owlapi:owlapi:jar:3.1.0 is missing, no dependency information available
+The POM for org.semanticweb.elk:elk-owlapi:jar:0.3.0 is missing, no dependency information available
+The POM for de.tudresden.inf.lat.cel:reasoner:jar:0.5.1 is missing, no dependency information available
+The POM for de.tudresden.inf.lat.cel:jsexp:jar:0.1.0 is missing, no dependency information available
+The POM for simplenlg:simplenlg:jar:4.3 is missing, no dependency information available
+
+[resources:resources]
+[debug] execute contextualize
+Using 'UTF-8' encoding to copy filtered resources.
+Copying 1 resource
+
+[compiler:compile]
+Nothing to compile - all classes are up to date
+
+[exec:exec]
+Reading file containing queries and answers...
+Done.
+-------------------------------------------------
+Query 1:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  {   { ?uri rdf:type dbo:City }
+    UNION
+      { ?uri rdf:type dbo:Town }
+    ?uri dbo:country res:Germany .
+    ?uri dbo:populationTotal ?population
+    FILTER ( ?population > 250000 )
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking type
+Checking type
+Checking country
+Checking total
+Checking country
+Checking total
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?uri is a city or ?uri is a town, ?uri's country is Germany and ?uri's population total is ?population and ?population is greater than 250000. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities and their English label (if it exists) such that they are a town or city, their population total is greater than 250000 and their country is Germany.
+-------------------------------------------------
+Query 2:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:John_F._Kennedy dbo:successor ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking successor
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that John F. Kennedy's successor is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves John F. Kennedy's successor and its English label (if it exists).
+-------------------------------------------------
+Query 3:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Berlin dbo:leader ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking leader
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Berlin's leader is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Berlin's leader and its English label (if it exists).
+-------------------------------------------------
+Query 4:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT  ?num
+WHERE
+  { res:Vrije_Universiteit dbo:numberOfStudents ?num }
+
+Checking students
+
+SimpleNLG:
+This query retrieves values ?num such that Vrije Universiteit's number of student is ?num.
+
+After postprocessing:
+This query retrieves Vrije Universiteit's number of student.
+-------------------------------------------------
+Query 5:
+
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type dbo:Mountain .
+    ?uri dbo:elevation ?elevation
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+ORDER BY DESC(?elevation)
+OFFSET  1
+LIMIT   1
+
+Checking elevation
+
+SimpleNLG:
+This query retrieves distinct mountains ?uri such that ?uri's elevation is ?elevation. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist. The results are in descending order with respect to ?elevation. The query returns the 2nd result.
+
+After postprocessing:
+This query retrieves distinct mountains and their English label (if it exists). The query returns the result with the 2nd highest elevation.
+-------------------------------------------------
+Query 6:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri dbo:occupation res:Skateboarding
+      { ?uri dbo:birthPlace res:Sweden }
+    UNION
+      { ?uri dbo:birthPlace ?place .
+        ?place dbo:country res:Sweden
+      }
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking occupation
+Checking place
+Checking place
+Checking country
+Checking place
+Checking country
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?uri's occupation is Skateboarding and ?uri's birth place is Sweden or ?uri's birth place is ?place and ?place's country is Sweden. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities and their English label (if it exists) such that their birth place is Sweden or some place and some place's country is Sweden and their occupation is Skateboarding.
+-------------------------------------------------
+Query 7:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT  ?date
+WHERE
+  { res:Alberta dbp:admittancedate ?date }
+
+Checking date
+
+SimpleNLG:
+This query retrieves entities ?date such that Alberta's admittance date is ?date.
+
+After postprocessing:
+This query retrieves Alberta's admittance date.
+-------------------------------------------------
+Query 8:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Himalayas dbo:country ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking country
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Himalayas' country is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Himalayas' country and its English label (if it exists).
+-------------------------------------------------
+Query 9:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri dbo:occupation res:Bandleader .
+    ?uri dbo:instrument res:Trumpet
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking occupation
+Checking instrument
+Checking occupation
+Checking instrument
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?uri's occupation is Bandleader and ?uri's instrument is Trumpet. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities and their English label (if it exists) such that their occupation is Bandleader and their instrument is Trumpet.
+-------------------------------------------------
+Query 10:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT  ?num
+WHERE
+  { res:New_York_City_Fire_Department dbp:strength ?num }
+
+Checking strength
+
+SimpleNLG:
+This query retrieves entities ?num such that New York City Fire Department's strength is ?num.
+
+After postprocessing:
+This query retrieves New York City Fire Department's strength.
+-------------------------------------------------
+Query 11:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type dbo:FormulaOneRacer .
+    ?uri dbo:races ?x
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+ORDER BY DESC(?x)
+OFFSET  0
+LIMIT   1
+
+Checking races
+
+SimpleNLG:
+This query retrieves distinct Formula One racers ?uri such that ?uri's race is ?x. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist. The results are in descending order with respect to ?x. The query returns the 1st result.
+
+After postprocessing:
+This query retrieves distinct Formula One racers and their English label (if it exists). The query returns the result with the highest race.
+-------------------------------------------------
+Query 12:
+
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+PREFIX  xsd:  <http://www.w3.org/2001/XMLSchema#>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type dbo:WorldHeritageSite .
+    ?uri dbp:year ?x
+    FILTER ( ?x >= 2007 )
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking year
+
+SimpleNLG:
+This query retrieves distinct World Heritage Sites ?uri such that ?uri's year is ?x and ?x is greater than or equal to 2007. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct World Heritage Sites whose year is greater than or equal to 2007, and their English label (if it exists).
+-------------------------------------------------
+Query 13:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri dbo:team ?x .
+    ?x dbo:league res:Premier_League .
+    ?uri dbo:birthDate ?y
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+ORDER BY DESC(?y)
+OFFSET  0
+LIMIT   1
+
+Checking team
+Checking league
+Checking date
+Checking team
+Checking league
+Checking date
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?uri's team is ?x, ?x's league is Premier League and ?uri's birth date is ?y. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist. The results are in descending order with respect to ?y. The query returns the 1st result.
+
+After postprocessing:
+This query retrieves distinct entities whose team's league is Premier League, and their English label (if it exists). The query returns the result with the highest birth date.
+-------------------------------------------------
+Query 14:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:The_Prodigy dbo:bandMember ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking member
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that The Prodigy's band member is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves The Prodigy's band member and its English label (if it exists).
+-------------------------------------------------
+Query 15:
+
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type dbo:River .
+    ?uri dbp:length ?x
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+ORDER BY DESC(?x)
+OFFSET  0
+LIMIT   1
+
+Checking length
+
+SimpleNLG:
+This query retrieves distinct rivers ?uri such that ?uri's length is ?x. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist. The results are in descending order with respect to ?x. The query returns the 1st result.
+
+After postprocessing:
+This query retrieves distinct rivers and their English label (if it exists). The query returns the result with the highest length.
+-------------------------------------------------
+Query 16:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+ASK
+WHERE
+  { <http://dbpedia.org/resource/Battlestar_Galactica_%281978_TV_series%29> dbo:numberOfEpisodes ?x .
+    <http://dbpedia.org/resource/Battlestar_Galactica_%282004_TV_series%29> dbo:numberOfEpisodes ?y
+    FILTER ( ?y > ?x )
+  }
+
+Dereferencing URI: http://dbpedia.org/resource/Battlestar_Galactica_%281978_TV_series%29
+Checking episodes
+Dereferencing URI: http://dbpedia.org/resource/Battlestar_Galactica_%282004_TV_series%29
+Checking episodes
+Checking episodes
+Checking episodes
+
+SimpleNLG:
+This query asks whether Battlestar_Galactica_%281978_TV_series%29's number of episode is ?x and Battlestar_Galactica_%282004_TV_series%29's number of episode is ?y and ?y is greater than ?x.
+
+After postprocessing:
+This query asks whether Battlestar_Galactica_(2004_TV_series)'s number of episode is greater than Battlestar_Galactica_(1978_TV_series)'s number of episode.
+-------------------------------------------------
+Query 17:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+PREFIX  yago: <http://dbpedia.org/class/yago/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type dbo:Automobile
+      { ?uri dbp:production res:Germany }
+    UNION
+      { ?uri dbp:assembly res:Germany }
+    UNION
+      { ?uri dbp:manufacturer ?x
+          { ?x dbo:locationCountry res:Germany }
+        UNION
+          { ?x rdf:type yago:AutomotiveCompaniesOfGermany }
+      }
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking production
+Checking assembly
+Checking manufacturer
+Checking country
+Checking manufacturer
+Checking type
+
+SimpleNLG:
+This query retrieves distinct automobiles ?uri such that ?uri's production is Germany, ?uri's assembly is Germany, ?uri's manufacturer is ?x and ?x's location country is Germany or ?uri's manufacturer is ?x and ?x is a Automotive companies of Germany. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct automobiles and their English label (if it exists) such that some entity is a Automotive companies of Germany, their production is Germany or its manufacturer is some entity and some entity's location country is Germany or their assembly is Germany.
+-------------------------------------------------
+Query 19:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri dbo:birthPlace res:Vienna .
+    ?uri dbo:deathPlace res:Berlin
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking place
+Checking place
+Checking place
+Checking place
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?uri's birth place is Vienna and ?uri's death place is Berlin. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities and their English label (if it exists) such that their death place is Berlin and their birth place is Vienna.
+-------------------------------------------------
+Query 20:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT  ?num
+WHERE
+  { res:Michael_Jordan dbo:height ?num }
+
+Checking height
+
+SimpleNLG:
+This query retrieves entities ?num such that Michael Jordan's height is ?num.
+
+After postprocessing:
+This query retrieves Michael Jordan's height.
+-------------------------------------------------
+Query 21:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Canada dbo:capital ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking capital
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Canada's capital is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Canada's capital and its English label (if it exists).
+-------------------------------------------------
+Query 22:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Texas dbp:governor ?string .
+    ?uri foaf:name ?string
+  }
+
+Checking governor
+Dereferencing URI: http://xmlns.com/foaf/0.1/name
+Checking name
+Checking governor
+Checking name
+
+SimpleNLG:
+This query retrieves distinct entities ?string and distinct entities ?uri such that Texas' governor is ?string and ?uri names ?string.
+
+After postprocessing:
+This query retrieves distinct entities such that Texas' governor is named by them.
+-------------------------------------------------
+Query 23:
+
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+ASK
+WHERE
+  { <http://dbpedia.org/resource/Prince_William,_Duke_of_Cambridge> dbp:mother ?x .
+    <http://dbpedia.org/resource/Prince_Harry_of_Wales> dbp:mother ?y
+    FILTER ( ?x = ?y )
+  }
+
+Checking mother
+Checking mother
+Checking mother
+Checking mother
+
+SimpleNLG:
+This query asks whether Prince William, Duke of Cambridge's mother is ?x and Prince Harry of Wales' mother is ?y and ?x is the same as ?y.
+
+After postprocessing:
+This query asks whether Prince William, Duke of Cambridge's mother is the same as Prince Harry of Wales' mother.
+-------------------------------------------------
+Query 24:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Elizabeth_II dbp:father ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking father
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Elizabeth II's father is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Elizabeth II's father and its English label (if it exists).
+-------------------------------------------------
+Query 25:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+PREFIX  yago: <http://dbpedia.org/class/yago/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string ?x
+WHERE
+  { ?uri rdf:type yago:StatesOfTheUnitedStates .
+    ?uri dbp:admittancedate ?x
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+ORDER BY DESC(?x)
+OFFSET  0
+LIMIT   1
+
+Checking date
+
+SimpleNLG:
+This query retrieves distinct States of the United States ?uri and distinct entities ?x such that ?uri's admittance date is ?x. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist. The results are in descending order with respect to ?x. The query returns the 1st result.
+
+After postprocessing:
+This query retrieves distinct States of the United States ?uri and their English label (if it exists) and distinct entities ?x. The query returns the result with the highest ?uri's admittance date.
+-------------------------------------------------
+Query 26:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT  (count(distinct ?x))
+WHERE
+  { res:Seychelles dbo:officialLanguage ?x }
+
+Checking language
+
+SimpleNLG:
+This query retrieves the number of entities ?x such that Seychelles' official language is ?x.
+
+After postprocessing:
+This query retrieves Seychelles' official language.
+-------------------------------------------------
+Query 27:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  yago: <http://dbpedia.org/class/yago/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type yago:StatesOfTheUnitedStates .
+    ?uri dbp:governor res:Sean_Parnell
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking governor
+
+SimpleNLG:
+This query retrieves distinct States of the United States ?uri such that ?uri's governor is Sean Parnell. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct States of the United States whose governor is Sean Parnell, and their English label (if it exists).
+-------------------------------------------------
+Query 28:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type dbo:Film .
+    ?uri dbo:director res:Francis_Ford_Coppola
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking director
+
+SimpleNLG:
+This query retrieves distinct films ?uri such that ?uri's director is Francis Ford Coppola. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct films whose director is Francis Ford Coppola, and their English label (if it exists).
+-------------------------------------------------
+Query 29:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?x dbo:director res:William_Shatner .
+    ?x dbo:starring res:William_Shatner
+      { ?x dbo:starring ?uri }
+    UNION
+      { ?x dbp:starring ?uri }
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking director
+Checking starring
+Checking director
+Checking starring
+Checking starring
+Checking starring
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?x's director is William Shatner and ?x stars William Shatner and ?x stars ?uri or ?x stars ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities and their English label (if it exists) such that some entity stars them, this entity stars William Shatner and this entity's director is William Shatner.
+-------------------------------------------------
+Query 30:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT DISTINCT  ?string
+WHERE
+  { res:Angela_Merkel dbp:birthName ?string }
+
+Checking name
+Checking birth
+
+SimpleNLG:
+This query retrieves distinct entities ?string such that Angela Merkel's birth name is ?string.
+
+After postprocessing:
+This query retrieves Angela Merkel's birth name.
+-------------------------------------------------
+Query 31:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+PREFIX  yago: <http://dbpedia.org/class/yago/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type yago:CurrentNationalLeaders .
+    ?uri dbp:religion res:Methodism
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking religion
+
+SimpleNLG:
+This query retrieves distinct current national leaders ?uri such that ?uri's religion is Methodism. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct current national leaders whose religion is Methodism, and their English label (if it exists).
+-------------------------------------------------
+Query 32:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT  (count(distinct ?x))
+WHERE
+  { res:Nicole_Kidman dbo:spouse ?x }
+
+Checking spouse
+
+SimpleNLG:
+This query retrieves the number of entities ?x such that Nicole Kidman's spouse is ?x.
+
+After postprocessing:
+This query retrieves Nicole Kidman's spouse.
+-------------------------------------------------
+Query 33:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri dbo:type res:Nonprofit_organization
+      { ?uri dbo:locationCountry res:Australia }
+    UNION
+      { ?uri dbo:location ?x .
+        ?x dbo:country res:Australia
+      }
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking type
+Checking country
+Checking location
+Checking country
+Checking location
+Checking country
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?uri's type is Nonprofit organization and ?uri's location country is Australia or ?uri's location is ?x and ?x's country is Australia. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities ?uri and distinct values ?string such that ?uri is a Nonprofit organization with the English label ?string (if it exists) and ?uri's location country is Australia or some entity is ?uri's location and some entity's country is Australia.
+-------------------------------------------------
+Query 34:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:T._E._Lawrence dbo:battle ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking battle
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that T. E. Lawrence's battle is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves T. E. Lawrence's battle and its English label (if it exists).
+-------------------------------------------------
+Query 35:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Skype dbo:developer ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking developer
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Skype's developer is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Skype's developer and its English label (if it exists).
+-------------------------------------------------
+Query 38:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT  ?num
+WHERE
+  { res:Maribor dbo:populationTotal ?num }
+
+Checking total
+
+SimpleNLG:
+This query retrieves values ?num such that Maribor's population total is ?num.
+
+After postprocessing:
+This query retrieves Maribor's population total.
+-------------------------------------------------
+Query 39:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type dbo:Company
+      { ?uri dbo:location res:Munich }
+    UNION
+      { ?uri dbo:headquarter res:Munich }
+    UNION
+      { ?uri dbo:locationCity res:Munich }
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking location
+Checking headquarter
+Checking city
+
+SimpleNLG:
+This query retrieves distinct companies ?uri such that ?uri's location is Munich, ?uri's headquarter is Munich or ?uri's location city is Munich. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct companies whose location city or headquarter or location is Munich, and their English label (if it exists).
+-------------------------------------------------
+Query 40:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT  ?uri ?string
+WHERE
+  { ?uri dbo:publisher res:GMT_Games
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking publisher
+
+SimpleNLG:
+This query retrieves entities ?uri such that ?uri's publisher is GMT Games. Additionally, it retrieves values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves entities whose publisher is GMT Games, and their English label (if it exists).
+-------------------------------------------------
+Query 41:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Intel dbo:foundedBy ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking founded
+Checking founded
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Intel is founded by ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities and their English label (if it exists) such that Intel is founded by them.
+-------------------------------------------------
+Query 42:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Amanda_Palmer dbp:spouse ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking spouse
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Amanda Palmer's spouse is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Amanda Palmer's spouse and its English label (if it exists).
+-------------------------------------------------
+Query 43:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT  ?uri
+WHERE
+  { ?uri dbp:breed res:German_Shepherd_Dog
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking breed
+
+SimpleNLG:
+This query retrieves entities ?uri such that ?uri's breed is German Shepherd Dog. Additionally, it retrieves data such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves entities whose breed is German Shepherd Dog, and their English label (if it exists).
+-------------------------------------------------
+Query 44:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Weser dbo:city ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking city
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Weser's city is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Weser's city and its English label (if it exists).
+-------------------------------------------------
+Query 45:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Rhine dbo:country ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking country
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Rhine's country is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Rhine's country and its English label (if it exists).
+-------------------------------------------------
+Query 46:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri dbo:occupation res:Surfing .
+    ?uri dbo:birthPlace res:Philippines
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking occupation
+Checking place
+Checking occupation
+Checking place
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?uri's occupation is Surfing and ?uri's birth place is Philippines. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities and their English label (if it exists) such that their birth place is Philippines and their occupation is Surfing.
+-------------------------------------------------
+Query 48:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Secret_Intelligence_Service dbo:headquarter ?uri .
+    ?uri dbo:country res:United_Kingdom
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking headquarter
+Checking country
+Checking headquarter
+Checking country
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Secret Intelligence Service's headquarter is ?uri and ?uri's country is United Kingdom. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities and their English label (if it exists) such that Secret Intelligence Service's headquarter's country is United Kingdom.
+-------------------------------------------------
+Query 49:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type dbo:Weapon .
+    ?uri dbp:designer ?x .
+    res:Uzi dbp:designer ?x
+    FILTER ( ?uri != res:Uzi )
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking designer
+Checking designer
+Checking designer
+Checking designer
+
+SimpleNLG:
+This query retrieves distinct weapons ?uri such that ?uri's designer is ?x and Uzi's designer is ?x and ?uri is not equal to Uzi. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct weapons not equal to Uzi and their English label (if it exists) such that some entity is their designer and Uzi's designer.
+-------------------------------------------------
+Query 50:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+ASK
+WHERE
+  { res:Cuban_Missile_Crisis dbo:date ?x .
+    res:Bay_of_Pigs_Invasion dbo:date ?y
+    FILTER ( ?x < ?y )
+  }
+
+Checking date
+Checking date
+Checking date
+Checking date
+
+SimpleNLG:
+This query asks whether Cuban Missile Crisis' date is ?x and Bay of Pigs Invasion's date is ?y and ?x is less than ?y.
+
+After postprocessing:
+This query asks whether Cuban Missile Crisis' date is less than Bay of Pigs Invasion's date.
+-------------------------------------------------
+Query 51:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  yago: <http://dbpedia.org/class/yago/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type yago:FrisianIslands .
+    ?uri dbo:country res:Netherlands
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking country
+
+SimpleNLG:
+This query retrieves distinct Waddens ?uri such that ?uri's country is Netherlands. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct Waddens whose country is Netherlands, and their English label (if it exists).
+-------------------------------------------------
+Query 53:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Lisbon dbp:leaderParty ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking party
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Lisbon's leader party is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Lisbon's leader party and its English label (if it exists).
+-------------------------------------------------
+Query 54:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT DISTINCT  ?string
+WHERE
+  { res:San_Francisco dbp:nickname ?string }
+
+Checking nickname
+
+SimpleNLG:
+This query retrieves distinct entities ?string such that San Francisco nicknames ?string.
+
+After postprocessing:
+This query retrieves distinct entities that are nicknamed by San Francisco.
+-------------------------------------------------
+Query 55:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+PREFIX  yago: <http://dbpedia.org/class/yago/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type yago:GreekGoddesses .
+    ?uri dbp:abode res:Mount_Olympus
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking abode
+
+SimpleNLG:
+This query retrieves distinct Greek goddesses ?uri such that ?uri's abode is Mount Olympus. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct Greek goddesses whose abode is Mount Olympus, and their English label (if it exists).
+-------------------------------------------------
+Query 56:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT  ?date
+WHERE
+  { res:Hells_Angels dbp:founded ?date }
+
+Checking founded
+
+SimpleNLG:
+This query retrieves entities ?date such that Hells Angels is founded ?date.
+
+After postprocessing:
+This query retrieves entities such that Hells Angels is founded on them.
+-------------------------------------------------
+Query 57:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri dbo:mission res:Apollo_14
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking mission
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?uri's mission is Apollo 14. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities whose mission is Apollo 14, and their English label (if it exists).
+-------------------------------------------------
+Query 58:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Salt_Lake_City dbp:timezone ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking zone
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Salt Lake City's time zone is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Salt Lake City's time zone and its English label (if it exists).
+-------------------------------------------------
+Query 59:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+PREFIX  yago: <http://dbpedia.org/class/yago/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Utah dbp:timezone ?x .
+    ?uri rdf:type yago:StatesOfTheUnitedStates .
+    ?uri dbp:timezone ?x
+    FILTER ( ?uri != res:Utah )
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking zone
+Checking zone
+Checking zone
+Checking zone
+
+SimpleNLG:
+This query retrieves distinct States of the United States ?uri such that Utah's time zone is ?x and ?uri's time zone is ?x and ?uri is not equal to Utah. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct States of the United States not equal to Utah and their English label (if it exists) such that some entity is their time zone and Utah's time zone.
+-------------------------------------------------
+Query 60:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  yago: <http://dbpedia.org/class/yago/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  {   { ?uri rdf:type dbo:Lake .
+        ?uri dbo:country res:Denmark
+      }
+    UNION
+      { ?uri rdf:type yago:LakesOfDenmark }
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking type
+Checking country
+Checking type
+Checking country
+Checking type
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?uri is a lake and ?uri's country is Denmark or ?uri is a Lakes of Denmark. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities that are a Lakes of Denmark or lake and their country is Denmark, and their English label (if it exists).
+-------------------------------------------------
+Query 61:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT  (count(distinct ?uri))
+WHERE
+  { ?uri rdf:type dbo:SpaceMission }
+
+
+SimpleNLG:
+This query retrieves the number of space missions ?uri.
+
+After postprocessing:
+This query retrieves the number of space missions.
+-------------------------------------------------
+Query 62:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+ASK
+WHERE
+  { res:Aristotle dbo:influencedBy res:Socrates }
+
+Checking influenced
+Checking influenced
+
+SimpleNLG:
+This query asks whether Aristotle is influenced by Socrates.
+
+After postprocessing:
+This query asks whether Aristotle is influenced by Socrates.
+-------------------------------------------------
+Query 63:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+PREFIX  yago: <http://dbpedia.org/class/yago/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  {   { ?uri rdf:type yago:ArgentineFilms }
+    UNION
+      { ?uri rdf:type dbo:Film
+          { ?uri dbo:country res:Argentina }
+        UNION
+          { ?uri dbp:country "Argentina"@en }
+      }
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking type
+Checking type
+Checking country
+Checking type
+Checking country
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?uri is a Argentine film, ?uri is a film and ?uri's country is Argentina or ?uri is a film and ?uri's country is Argentina. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities that are a film and their country is Argentina or Argentine film, and their English label (if it exists).
+-------------------------------------------------
+Query 64:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type dbo:LaunchPad .
+    ?uri dbo:operator res:NASA
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking operator
+
+SimpleNLG:
+This query retrieves distinct launch pads ?uri such that ?uri's operator is NASA. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct launch pads whose operator is NASA, and their English label (if it exists).
+-------------------------------------------------
+Query 65:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:John_Lennon dbo:instrument ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking instrument
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that John Lennon's instrument is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves John Lennon's instrument and its English label (if it exists).
+-------------------------------------------------
+Query 66:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri dbp:shipNamesake res:Benjamin_Franklin
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking namesake
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?uri's ship namesake is Benjamin Franklin. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities whose ship namesake is Benjamin Franklin, and their English label (if it exists).
+-------------------------------------------------
+Query 67:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Juan_Carlos_I_of_Spain dbo:spouse ?x .
+    ?x dbo:parent ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking spouse
+Checking parent
+Checking spouse
+Checking parent
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Juan Carlos I of Spain's spouse is ?x and ?x's parent is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves the parent of Juan Carlos I of Spain's spouse and its English label (if it exists).
+-------------------------------------------------
+Query 68:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT  ?num
+WHERE
+  { res:Google dbo:numberOfEmployees ?num }
+
+Checking employees
+
+SimpleNLG:
+This query retrieves values ?num such that Google's number of employee is ?num.
+
+After postprocessing:
+This query retrieves Google's number of employee.
+-------------------------------------------------
+Query 69:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+ASK
+WHERE
+  { res:Nikola_Tesla dbo:award res:Nobel_Prize_in_Physics }
+
+Checking award
+
+SimpleNLG:
+This query asks whether Nikola Tesla's award is Nobel Prize in Physics.
+
+After postprocessing:
+This query asks whether Nikola Tesla's award is Nobel Prize in Physics.
+-------------------------------------------------
+Query 70:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+ASK
+WHERE
+  { res:Barack_Obama dbo:spouse res:Michelle_Obama }
+
+Checking spouse
+
+SimpleNLG:
+This query asks whether Barack Obama's spouse is Michelle Obama.
+
+After postprocessing:
+This query asks whether Barack Obama's spouse is Michelle Obama.
+-------------------------------------------------
+Query 71:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT  ?num
+WHERE
+  { res:Statue_of_Liberty dbp:built ?num }
+
+Checking built
+
+SimpleNLG:
+This query retrieves entities ?num such that Statue of Liberty builds ?num.
+
+After postprocessing:
+This query retrieves entities that are built by Statue of Liberty.
+-------------------------------------------------
+Query 72:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Area_51 dbo:location ?uri .
+    ?uri dbo:country res:United_States
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking location
+Checking country
+Checking location
+Checking country
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Area 51's location is ?uri and ?uri's country is United States. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities and their English label (if it exists) such that Area 51's location's country is United States.
+-------------------------------------------------
+Query 73:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT  (count(distinct ?uri))
+WHERE
+  { res:Benjamin_Franklin dbo:child ?uri }
+
+Checking child
+
+SimpleNLG:
+This query retrieves the number of entities ?uri such that Benjamin Franklin's child is ?uri.
+
+After postprocessing:
+This query retrieves Benjamin Franklin's child.
+-------------------------------------------------
+Query 74:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?date
+WHERE
+  { res:Michael_Jackson dbo:deathDate ?date }
+
+Checking date
+
+SimpleNLG:
+This query retrieves distinct entities ?date such that Michael Jackson's death date is ?date.
+
+After postprocessing:
+This query retrieves Michael Jackson's death date.
+-------------------------------------------------
+Query 75:
+
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  yago: <http://dbpedia.org/class/yago/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type yago:DaughtersOfBritishEarls .
+    ?uri dbo:birthPlace ?x .
+    ?uri dbo:deathPlace ?y
+    FILTER ( ?x != ?y )
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking place
+Checking place
+Checking place
+Checking place
+
+SimpleNLG:
+This query retrieves distinct Daughters of British earls ?uri such that ?uri's birth place is ?x and ?uri's death place is ?y and ?x is not the same as ?y. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct Daughters of British earls whose birth place is not the same as their death place, and their English label (if it exists).
+-------------------------------------------------
+Query 76:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Margaret_Thatcher dbo:child ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking child
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Margaret Thatcher's child is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Margaret Thatcher's child and its English label (if it exists).
+-------------------------------------------------
+Query 77:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri dbp:nickname res:Scarface
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking nickname
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?uri nicknames Scarface. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities that nicknames Scarface, and their English label (if it exists).
+-------------------------------------------------
+Query 78:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+ASK
+WHERE
+  { res:Margaret_Thatcher dbo:profession res:Chemist }
+
+Checking profession
+
+SimpleNLG:
+This query asks whether Margaret Thatcher's profession is Chemist.
+
+After postprocessing:
+This query asks whether Margaret Thatcher's profession is Chemist.
+-------------------------------------------------
+Query 79:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+ASK
+WHERE
+  { res:Dutch_Schultz dbp:ethnicity "Jewish"@en }
+
+Checking ethnicity
+
+SimpleNLG:
+This query asks whether Dutch Schultz's ethnicity is Jewish.
+
+After postprocessing:
+This query asks whether Dutch Schultz's ethnicity is Jewish.
+-------------------------------------------------
+Query 80:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type dbo:Book .
+    ?uri dbo:author res:William_Goldman .
+    ?uri dbo:numberOfPages ?x
+    FILTER ( ?x > 300 )
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking author
+Checking pages
+Checking author
+Checking pages
+
+SimpleNLG:
+This query retrieves distinct books ?uri such that ?uri's author is William Goldman and ?uri's number of page is ?x and ?x is greater than 300. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct books and their English label (if it exists) such that their number of page is greater than 300 and their author is William Goldman.
+-------------------------------------------------
+Query 81:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type dbo:Book .
+    ?uri dbo:publisher res:Viking_Press .
+    ?uri dbo:author res:Jack_Kerouac
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking publisher
+Checking author
+Checking publisher
+Checking author
+
+SimpleNLG:
+This query retrieves distinct books ?uri such that ?uri's publisher is Viking Press and ?uri's author is Jack Kerouac. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct books and their English label (if it exists) such that their author is Jack Kerouac and their publisher is Viking Press.
+-------------------------------------------------
+Query 82:
+
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  yago: <http://dbpedia.org/class/yago/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type yago:AmericanInventions
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+
+SimpleNLG:
+This query retrieves distinct American inventions ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct American inventions and their English label (if it exists).
+-------------------------------------------------
+Query 83:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT  ?num
+WHERE
+  { res:Mount_Everest dbo:elevation ?num }
+
+Checking elevation
+
+SimpleNLG:
+This query retrieves values ?num such that Mount Everest's elevation is ?num.
+
+After postprocessing:
+This query retrieves Mount Everest's elevation.
+-------------------------------------------------
+Query 84:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT  ?uri ?string
+WHERE
+  { res:Captain_America dbo:creator ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking creator
+
+SimpleNLG:
+This query retrieves entities ?uri such that Captain America's creator is ?uri. Additionally, it retrieves values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Captain America's creator and its English label (if it exists).
+-------------------------------------------------
+Query 85:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT  ?num
+WHERE
+  { res:Australia dbo:capital ?x .
+    ?x dbo:populationTotal ?num
+  }
+
+Checking capital
+Checking total
+Checking capital
+Checking total
+
+SimpleNLG:
+This query retrieves values ?num such that Australia's capital is ?x and ?x's population total is ?num.
+
+After postprocessing:
+This query retrieves the population total of Australia's capital.
+-------------------------------------------------
+Query 86:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Australia dbo:largestCity ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking city
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Australia's largest city is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Australia's largest city and its English label (if it exists).
+-------------------------------------------------
+Query 87:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Harold_and_Maude dbo:musicComposer ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking composer
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Harold and Maude's music composer is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Harold and Maude's music composer and its English label (if it exists).
+-------------------------------------------------
+Query 88:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri dbo:director res:Clint_Eastwood .
+    ?uri dbo:starring res:Clint_Eastwood
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking director
+Checking starring
+Checking director
+Checking starring
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?uri's director is Clint Eastwood and ?uri stars Clint Eastwood. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities and their English label (if it exists) such that their director is Clint Eastwood and they stars Clint Eastwood.
+-------------------------------------------------
+Query 89:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Juliana_of_the_Netherlands dbo:restingPlace ?uri .
+    ?uri rdf:type dbo:Settlement
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking place
+
+SimpleNLG:
+This query retrieves distinct municipalities ?uri such that Juliana of the Netherlands' resting place is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Juliana of the Netherlands' resting place and its English label (if it exists).
+-------------------------------------------------
+Query 90:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Prime_Minister_of_Spain dbp:residence ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking residence
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Prime Minister of Spain's residence is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves Prime Minister of Spain's residence and its English label (if it exists).
+-------------------------------------------------
+Query 91:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+PREFIX  yago: <http://dbpedia.org/class/yago/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT  ?uri ?string
+WHERE
+  { ?uri rdf:type yago:StatesOfTheUnitedStates .
+    ?uri dbp:postalabbreviation "MN"@en
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking abbreviation
+
+SimpleNLG:
+This query retrieves States of the United States ?uri such that ?uri's postal abbreviation is MN. Additionally, it retrieves values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves States of the United States whose postal abbreviation is MN, and their English label (if it exists).
+-------------------------------------------------
+Query 92:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  yago: <http://dbpedia.org/class/yago/>
+PREFIX  xsd:  <http://www.w3.org/2001/XMLSchema#>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type dbo:Song .
+    ?uri dbo:artist res:Bruce_Springsteen .
+    ?uri dbo:releaseDate ?date
+    FILTER ( ( ?date >= "1980-01-01"^^xsd:date ) && ( ?date <= "1990-12-31"^^xsd:date ) )
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking artist
+Checking date
+Checking artist
+Checking date
+
+SimpleNLG:
+This query retrieves distinct songs ?uri such that ?uri's artist is Bruce Springsteen and ?uri's release date is ?date and ?date is greater than or equal to 1. Januar 1980 and ?date is less than or equal to 31. Januar 1990. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct songs and their English label (if it exists) such that their release date is greater than or equal to 1. Januar 1980 and less than or equal to 31. Januar 1990 and their artist is Bruce Springsteen.
+-------------------------------------------------
+Query 93:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri rdf:type dbo:Film .
+    ?uri dbo:director res:Sam_Raimi
+      { ?uri dbo:releaseDate ?x }
+    UNION
+      { ?uri dbp:released ?x }
+    res:Army_of_Darkness dbo:releaseDate ?y
+    FILTER ( ?x > ?y )
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking director
+Checking date
+Checking released
+Checking date
+
+SimpleNLG:
+This query retrieves distinct films ?uri such that ?uri's director is Sam Raimi, ?uri's release date is ?x or ?uri is released ?x, Army of Darkness' release date is ?y and ?x is greater than ?y. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct films ?uri and their English label (if it exists) such that ?uri is released ?x or ?uri's release date is ?x, ?uri's director is Sam Raimi and ?x is greater than Army of Darkness' release date.
+-------------------------------------------------
+Query 94:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT  ?num
+WHERE
+  { res:Pilsner_Urquell dbp:brewery ?uri .
+    ?uri dbp:foundation ?num
+  }
+
+Checking brewery
+Checking foundation
+Checking brewery
+Checking foundation
+
+SimpleNLG:
+This query retrieves entities ?num such that Pilsner Urquell's brewery is ?uri and ?uri's foundation is ?num.
+
+After postprocessing:
+This query retrieves the foundation of Pilsner Urquell's brewery.
+-------------------------------------------------
+Query 95:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Poland dbo:anthem ?x .
+    ?x dbp:author ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking anthem
+Checking author
+Checking anthem
+Checking author
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Poland's anthem is ?x and ?x's author is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves the author of Poland's anthem and its English label (if it exists).
+-------------------------------------------------
+Query 96:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT DISTINCT  ?string
+WHERE
+  { ?x dbo:musicalArtist res:Ramones .
+    ?x dbp:bSide ?string
+  }
+
+Checking artist
+Checking b-side
+Checking artist
+Checking b-side
+
+SimpleNLG:
+This query retrieves distinct entities ?string such that ?x's musical artist is Ramones and ?x's b-side is ?string.
+
+After postprocessing:
+This query retrieves distinct entities such that they are some entity's b-side and this entity's musical artist is Ramones.
+-------------------------------------------------
+Query 97:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbp:  <http://dbpedia.org/property/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:The_Storm_on_the_Sea_of_Galilee dbp:artist ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking artist
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that The Storm on the Sea of Galilee's artist is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves The Storm on the Sea of Galilee's artist and its English label (if it exists).
+-------------------------------------------------
+Query 98:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { res:Miffy dbo:creator ?x .
+    ?x dbo:nationality ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking creator
+Checking nationality
+Checking creator
+Checking nationality
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that Miffy's creator is ?x and ?x's nationality is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves the nationality of Miffy's creator and its English label (if it exists).
+-------------------------------------------------
+Query 99:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?x rdf:type dbo:Album .
+    ?x dbo:artist res:Elvis_Presley .
+    ?x dbo:releaseDate ?y .
+    ?x dbo:recordLabel ?uri
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+ORDER BY ASC(?y)
+LIMIT   1
+
+Checking type
+Checking artist
+Checking date
+Checking label
+Checking record
+Checking type
+Checking artist
+Checking date
+Checking label
+Checking record
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?x is a album, ?x's artist is Elvis Presley, ?x's release date is ?y and ?x's record label is ?uri. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist. The results are in ascending order with respect to ?y. The query returns the first result.
+
+After postprocessing:
+This query retrieves the record label of a album and its English label (if it exists) such that this album's artist is Elvis Presley. The query returns the result with the lowest release date of this album.
+-------------------------------------------------
+Query 100:
+
+PREFIX  res:  <http://dbpedia.org/resource/>
+PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX  dbo:  <http://dbpedia.org/ontology/>
+
+SELECT DISTINCT  ?uri ?string
+WHERE
+  { ?uri dbo:product res:Orangina
+    OPTIONAL
+      { ?uri rdfs:label ?string
+        FILTER ( lang(?string) = "en" )
+      }
+  }
+
+Checking product
+
+SimpleNLG:
+This query retrieves distinct entities ?uri such that ?uri's product is Orangina. Additionally, it retrieves distinct values ?string such that ?uri's label is ?string and ?string is in English if such exist.
+
+After postprocessing:
+This query retrieves distinct entities whose product is Orangina, and their English label (if it exists).
+------------------------------------------------------------------------
+BUILD SUCCESS
+------------------------------------------------------------------------
+Total time: 57.765s
+Finished at: Fri Nov 23 16:39:16 CET 2012
+Final Memory: 11M/154M
+------------------------------------------------------------------------
