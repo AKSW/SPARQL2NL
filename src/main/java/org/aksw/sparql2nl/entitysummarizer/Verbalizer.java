@@ -5,9 +5,16 @@
 package org.aksw.sparql2nl.entitysummarizer;
 
 import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.ResourceFactory;
+import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
 import org.aksw.sparql2nl.entitysummarizer.rules.ObjectMergeRule;
 import org.aksw.sparql2nl.entitysummarizer.rules.PredicateMergeRule;
 import org.aksw.sparql2nl.entitysummarizer.rules.Rule;
@@ -15,7 +22,9 @@ import org.aksw.sparql2nl.entitysummarizer.rules.SubjectMergeRule;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import simplenlg.framework.NLGElement;
+import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.SPhraseSpec;
+import simplenlg.realiser.english.Realiser;
 
 /**
  * A verbalizer for triples without variables.
@@ -25,9 +34,66 @@ import simplenlg.phrasespec.SPhraseSpec;
 public class Verbalizer {
 
     SimpleNLGwithPostprocessing nlg;
-
+    SparqlEndpoint endpoint;
+    String language = "en";
+    Realiser realiser = new Realiser(Lexicon.getDefaultLexicon());
+    
     public Verbalizer(SparqlEndpoint endpoint) {
         nlg = new SimpleNLGwithPostprocessing(endpoint);
+        this.endpoint = endpoint;
+    }
+
+    public Set<Triple> getTriples(Resource r, Property p) {
+        Set<Triple> result = new HashSet<Triple>();
+        try {
+            String q = "SELECT ?o where { <" + r.getURI() + "> <" + p.getURI() + "> ?p. FILTER langMatches( lang(?p), " + language + " )}";
+            QueryEngineHTTP qexec = new QueryEngineHTTP(endpoint.getURL().toString(), q);
+            ResultSet results = qexec.execSelect();
+
+            while (results.hasNext()) {
+                result.add(Triple.create(r.asNode(), p.asNode(), results.next().get("?label").asNode()));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    /** Generates the string representation of a verbalization
+     * 
+     * @param properties List of property clusters to be used for varbalization 
+     * @param resource Resource to summarize
+     * @return Textual representation
+     */
+    public String realize(List<Set<Node>> properties, Resource resource)
+    {
+        String realization ="";
+        List<NLGElement> elts = verbalize(properties, resource);
+        for(NLGElement elt: elts)
+        {
+            realization = realization + realiser.realiseSentence(elt) + " ";
+        }
+        return realization.substring(0, realization.length()-1);
+    }
+    /**
+     * Takes the output of the clustering for a given class and a resource.
+     * Returns the verbalization for the resource
+     *
+     * @param properties Output of the clustering
+     * @param resource Resource to summarize
+     * @return List of NLGElement
+     */
+    public List<NLGElement> verbalize(List<Set<Node>> properties, Resource resource) {
+        List<NLGElement> result = new ArrayList<NLGElement>();
+        Set<Triple> triples;
+        for (Set<Node> propertySet : properties) {
+            triples = new HashSet<Triple>();
+            for (Node property : propertySet) {
+                triples.addAll(getTriples(resource, ResourceFactory.createProperty(property.label)));
+            }
+            result.addAll(verbalize(triples));
+        }
+        return result;
     }
 
     /**
