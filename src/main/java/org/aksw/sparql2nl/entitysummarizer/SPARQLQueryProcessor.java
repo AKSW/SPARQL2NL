@@ -75,15 +75,20 @@ public class SPARQLQueryProcessor {
         return result;
     }
     
+    /**
+     * Each log entry is processed by getting classes with its used properties.
+     * @param entries
+     * @return
+     */
     public Collection<Map<NamedClass, Set<Property>>> processEntries(Collection<LogEntry> entries) {
     	List<Query> queries = new ArrayList<Query>();
-    	Set<String> blacklist = Sets.newHashSet("-", "bliss", "ARC" , "[CURL]");
+//    	Set<String> blacklist = Sets.newHashSet("-", "bliss", "ARC" , "[CURL]");
     	for (LogEntry entry : entries) {
-    		if(!blacklist.contains(entry.userAgent)){
-    			queries.add(entry.sparqlQuery);
-    		}
+    		queries.add(entry.sparqlQuery);
+//    		if(!blacklist.contains(entry.userAgent)){
+//    			
+//    		}
 		}
-    	System.out.println(queries.size());
         return processQueries(queries);
     }
     

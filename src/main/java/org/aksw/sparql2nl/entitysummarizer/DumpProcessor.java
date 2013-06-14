@@ -12,4 +12,5 @@ import java.util.List;
  */
 public interface DumpProcessor {
     List<LogEntry> processDump(String file);
+    List<LogEntry> processDump(String file, int limit);
 }

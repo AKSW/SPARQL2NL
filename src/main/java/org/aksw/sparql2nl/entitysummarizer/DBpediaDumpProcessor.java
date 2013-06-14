@@ -45,7 +45,6 @@ public class DBpediaDumpProcessor implements DumpProcessor {
     public static String BEGIN = "query=";
     private static SparqlEndpoint ENDPOINT = SparqlEndpoint.getEndpointDBpediaLiveAKSW();
     private static final Logger logger = Logger.getLogger(DBpediaDumpProcessor.class);
-    private static int maxCount = 500000;
     private ExtractionDBCache cache = new ExtractionDBCache("cache");
 
     public DBpediaDumpProcessor() {
@@ -251,6 +250,10 @@ public class DBpediaDumpProcessor implements DumpProcessor {
 			}
 		}
 	}
+	
+	public List<LogEntry> processDump(String file, int limit) {
+		return processDump(file, false, limit);
+	}
 
     public List<LogEntry> processDump(String file, boolean omitQueriesWithEmptyResults, int limit) {
     	List<LogEntry> results = new ArrayList<LogEntry>();
@@ -302,7 +305,7 @@ public class DBpediaDumpProcessor implements DumpProcessor {
     }
     
     public List<LogEntry> processDump(String file, boolean selectQueriesWithEmptyResults) {
-        return processDump(file, selectQueriesWithEmptyResults, maxCount);
+        return processDump(file, selectQueriesWithEmptyResults, Integer.MAX_VALUE);
     }
 
     /**

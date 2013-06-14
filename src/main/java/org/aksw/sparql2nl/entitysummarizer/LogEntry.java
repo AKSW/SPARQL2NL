@@ -21,7 +21,9 @@ public class LogEntry implements Comparable<LogEntry>{
     Query sparqlQuery;
     String userAgent;
     
-    public LogEntry(String q)
+    
+
+	public LogEntry(String q)
     {
         query = q;
         this.sparqlQuery = QueryFactory.create(q);
@@ -74,6 +76,37 @@ public class LogEntry implements Comparable<LogEntry>{
 		.append(query, other.query)
 		.append(date, other.date)
 		.toComparison();
+	}
+	
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((ip == null) ? 0 : ip.hashCode());
+		result = prime * result + ((query == null) ? 0 : query.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		LogEntry other = (LogEntry) obj;
+		if (ip == null) {
+			if (other.ip != null)
+				return false;
+		} else if (!ip.equals(other.ip))
+			return false;
+		if (query == null) {
+			if (other.query != null)
+				return false;
+		} else if (!query.equals(other.query))
+			return false;
+		return true;
 	}
     
    
