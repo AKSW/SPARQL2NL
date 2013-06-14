@@ -48,30 +48,31 @@ public class SPARQLQueryProcessor {
     public Map<NamedClass, Set<Property>> processQuery(String query) {
         return processQuery(QueryFactory.create(query, Syntax.syntaxARQ));
     }
-    
+
     public Collection<Map<NamedClass, Set<Property>>> processQueries(Collection<Query> queries) {
-    	Collection<Map<NamedClass, Set<Property>>> result = new ArrayList<Map<NamedClass,Set<Property>>>();
-    	ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-    	List<Future<Map<NamedClass, Set<Property>>>> futures = new ArrayList<Future<Map<NamedClass,Set<Property>>>>();
-    	for (final Query query : queries) {
-			futures.add(threadPool.submit(new Callable<Map<NamedClass, Set<Property>>>() {
-				@Override
-				public Map<NamedClass, Set<Property>> call() throws Exception {
-					return processQuery(query);
-				}
-			}));
-		}
-    	for (Future<Map<NamedClass, Set<Property>>> future : futures) {
-			try {
-				result.add(future.get());
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (ExecutionException e) {
-				e.printStackTrace();
-			}
-		}
-    	threadPool.shutdown();
-    	
+        Collection<Map<NamedClass, Set<Property>>> result = new ArrayList<Map<NamedClass, Set<Property>>>();
+        ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        List<Future<Map<NamedClass, Set<Property>>>> futures = new ArrayList<Future<Map<NamedClass, Set<Property>>>>();
+        for (final Query query : queries) {
+            futures.add(threadPool.submit(new Callable<Map<NamedClass, Set<Property>>>() {
+
+                @Override
+                public Map<NamedClass, Set<Property>> call() throws Exception {
+                    return processQuery(query);
+                }
+            }));
+        }
+        for (Future<Map<NamedClass, Set<Property>>> future : futures) {
+            try {
+                result.add(future.get());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+        threadPool.shutdown();
+
         return result;
     }
     
@@ -91,8 +92,6 @@ public class SPARQLQueryProcessor {
 		}
         return processQueries(queries);
     }
-    
-    
 
     /**
      * We want to get classes with frequent occurring predicates in the
@@ -101,7 +100,7 @@ public class SPARQLQueryProcessor {
      * @param query
      */
     public Map<NamedClass, Set<Property>> processQuery(Query query) {
-    	TriplePatternExtractor patternExtractor = new TriplePatternExtractor();
+        TriplePatternExtractor patternExtractor = new TriplePatternExtractor();
         Map<NamedClass, Set<Property>> result = new HashMap<NamedClass, Set<Property>>();
         //get all projection variables in the query
         List<Var> vars = query.getProjectVars();
