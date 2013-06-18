@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.aksw.sparql2nl.entitysummarizer;
+package org.aksw.sparql2nl.entitysummarizer.dump;
 
 import java.util.Collection;
 import java.util.Date;

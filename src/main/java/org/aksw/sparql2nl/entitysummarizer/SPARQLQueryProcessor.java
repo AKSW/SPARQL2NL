@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.aksw.sparql2nl.entitysummarizer.dump.LogEntry;
 import org.aksw.sparql2nl.queryprocessing.TriplePatternExtractor;
 import org.dllearner.core.owl.Individual;
 import org.dllearner.core.owl.NamedClass;
@@ -85,7 +86,7 @@ public class SPARQLQueryProcessor {
     	List<Query> queries = new ArrayList<Query>();
 //    	Set<String> blacklist = Sets.newHashSet("-", "bliss", "ARC" , "[CURL]");
     	for (LogEntry entry : entries) {
-    		queries.add(entry.sparqlQuery);
+    		queries.add(entry.getSparqlQuery());
 //    		if(!blacklist.contains(entry.userAgent)){
 //    			
 //    		}

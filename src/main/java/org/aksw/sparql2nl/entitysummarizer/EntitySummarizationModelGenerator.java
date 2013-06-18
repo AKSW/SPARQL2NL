@@ -11,6 +11,8 @@ import java.util.Set;
 
 import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
 import org.aksw.sparql2nl.entitysummarizer.clustering.WeightedGraph;
+import org.aksw.sparql2nl.entitysummarizer.dump.Controller;
+import org.aksw.sparql2nl.entitysummarizer.dump.LogEntry;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.core.owl.Property;

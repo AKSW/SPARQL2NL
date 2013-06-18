@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.aksw.sparql2nl.entitysummarizer;
+package org.aksw.sparql2nl.entitysummarizer.dump;
 
 import com.google.common.collect.Multimap;
 import com.hp.hpl.jena.query.Query;
@@ -12,6 +12,7 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import org.dllearner.core.owl.Property;
+import org.aksw.sparql2nl.entitysummarizer.SPARQLQueryProcessor;
 import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
 import org.aksw.sparql2nl.entitysummarizer.clustering.WeightedGraph;
 import org.dllearner.core.owl.NamedClass;

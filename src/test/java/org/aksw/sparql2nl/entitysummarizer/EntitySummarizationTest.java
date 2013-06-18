@@ -5,14 +5,22 @@ package org.aksw.sparql2nl.entitysummarizer;
 
 import static org.junit.Assert.*;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Map.Entry;
 
+import org.aksw.sparql2nl.entitysummarizer.dump.DBpediaDumpProcessor;
+import org.aksw.sparql2nl.entitysummarizer.dump.DumpProcessor;
+import org.aksw.sparql2nl.entitysummarizer.dump.LogEntry;
+import org.aksw.sparql2nl.entitysummarizer.dump.LogEntryGrouping;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.Multimap;
+import com.google.common.io.Files;
 
 /**
  * @author Lorenz Buehmann
@@ -37,6 +45,7 @@ public class EntitySummarizationTest {
 		} else {
 			logEntries = dumpProcessor.processDump(queryLog, maxNrOfLogEntries);
 		}
+		new File("summarization").mkdir();
 	}
 
 	/**
@@ -62,7 +71,12 @@ public class EntitySummarizationTest {
 			Collection<LogEntry> entries = entry.getValue();
 			
 			EntitySummarizationModel model = generator.generateModel(entries);
-			System.out.println(userAgent + "\n" + model);
+			try {
+				Files.write(model.toString(), new File("summarization/" + userAgent + ".txt"), Charsets.UTF_8);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+//			System.out.println(userAgent + "\n" + model);
 		}
 	}
 
