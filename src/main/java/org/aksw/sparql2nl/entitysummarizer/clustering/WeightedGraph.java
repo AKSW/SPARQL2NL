@@ -43,6 +43,21 @@ public class WeightedGraph {
         nodeIndex.get(label).add(n);
         return n;
     }
+    
+    /**
+     * Adds a weighted node to the graph
+     *
+     * @param label label of node
+     * @param weight weight of node
+     * @return The new node
+     */
+    public void addNode(Node node, double weight) {
+        nodes.put(node, weight);
+        if (!nodeIndex.containsKey(node.label)) {
+            nodeIndex.put(node.label, new HashSet<Node>());
+        }
+        nodeIndex.get(node.label).add(node);
+    }
 
     public Set<Node> getNode(String label) {
         return nodeIndex.get(label);
