@@ -12,6 +12,7 @@ import java.util.List;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
+import simplenlg.framework.PhraseElement;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
@@ -58,7 +59,15 @@ public class SubjectMergeRule {
      * @return Result of the rule being applied
      */
     public List<NLGElement> apply(List<SPhraseSpec> phrases) {
-
+        
+        if(phrases.size() <= 1)
+        {
+            List<NLGElement> result = new ArrayList<NLGElement>();
+            for(SPhraseSpec s: phrases)
+                result.add(s);
+            return result;
+        }
+        
         SPhraseSpec p1, p2;
         String subj1, subj2;
 

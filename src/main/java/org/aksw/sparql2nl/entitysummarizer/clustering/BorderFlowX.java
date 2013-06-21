@@ -11,7 +11,7 @@ import java.util.Set;
  *
  * @author ngonga
  */
-public class BorderFlowX implements Clustering {
+public class BorderFlowX implements ClusteringAlgorithm {
 
     WeightedGraph graph;
 

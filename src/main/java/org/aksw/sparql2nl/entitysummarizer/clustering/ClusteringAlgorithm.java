@@ -10,6 +10,6 @@ import java.util.Set;
  *
  * @author ngonga
  */
-public interface Clustering {
+public interface ClusteringAlgorithm {
     Set<Set<Node>> cluster(WeightedGraph wg);
 }

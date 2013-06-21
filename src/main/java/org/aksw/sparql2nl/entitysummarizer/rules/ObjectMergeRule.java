@@ -65,7 +65,9 @@ public class ObjectMergeRule implements Rule {
      * @return Result of the rule being applied
      */
     public List<SPhraseSpec> apply(List<SPhraseSpec> phrases) {
-
+        
+        if(phrases.size() <= 1) return phrases;
+        
         SPhraseSpec p1, p2;
         String verb1, verb2;
         String subj1, subj2;

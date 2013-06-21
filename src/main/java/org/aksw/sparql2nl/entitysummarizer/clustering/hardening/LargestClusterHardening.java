@@ -2,21 +2,25 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.aksw.sparql2nl.entitysummarizer.clustering;
+package org.aksw.sparql2nl.entitysummarizer.clustering.hardening;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.aksw.sparql2nl.entitysummarizer.clustering.BorderFlowX;
+import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
+import org.aksw.sparql2nl.entitysummarizer.clustering.WeightedGraph;
+import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.Hardening;
 
 /**
- *
+ * Hardening that prefers clusters with larger weight
  * @author ngonga
  */
-public class PropertyGrouper {
+public class LargestClusterHardening implements Hardening{
 
-    public static List<Set<Node>> getPropertyGrouping(Set<Set<Node>> clusters, WeightedGraph wg) {
-        Set<Node> nodes = new HashSet<Node>(wg.nodes.keySet());
+    public List<Set<Node>> harden(Set<Set<Node>> clusters, WeightedGraph wg) {
+        Set<Node> nodes = new HashSet<Node>(wg.getNodes().keySet());
         double max, weight;
         Set<Node> bestCluster;
         List<Set<Node>> result = new ArrayList<Set<Node>>();
@@ -27,6 +31,7 @@ public class PropertyGrouper {
             for (Set<Node> c : clusters) {
                 if (!result.contains(c)) {
                     weight = getWeight(c, wg, nodes);
+                    System.out.println(c +" -> "+weight);
                     if (weight > max) {
                         max = weight;
                         bestCluster = c;
@@ -38,6 +43,8 @@ public class PropertyGrouper {
                 return result;
             }
             //in all other cases
+            clusters.remove(bestCluster);
+            bestCluster.retainAll(nodes);
             result.add(bestCluster);
             nodes.removeAll(bestCluster);
         }
@@ -53,7 +60,7 @@ public class PropertyGrouper {
      * @param reference
      * @return Weight of the set of nodes
      */
-    public static double getWeight(Set<Node> cluster, WeightedGraph wg, Set<Node> reference) {
+    public double getWeight(Set<Node> cluster, WeightedGraph wg, Set<Node> reference) {
         double w = 0d;
 
         for (Node n : cluster) {
@@ -84,6 +91,7 @@ public class PropertyGrouper {
 
         BorderFlowX bf = new BorderFlowX(wg);
         Set<Set<Node>> clusters = bf.cluster();
-        System.out.println(clusters +"=>"+PropertyGrouper.getPropertyGrouping(clusters, wg));
+//        System.out.println(clusters +"=>"+(new LargestClusterHardening()).harden(clusters, wg));
+        System.out.println(clusters +"=>"+(new AverageWeightClusterHardening()).harden(clusters, wg));
     }
 }

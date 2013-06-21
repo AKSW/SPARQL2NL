@@ -29,6 +29,5 @@ public class ChiSquaredStats implements Stats {
             result.put(n, Math.pow(edges.get(n)-expected, 2)/expected);
         }
         return result;
-    }
-    
+    }    
 }
