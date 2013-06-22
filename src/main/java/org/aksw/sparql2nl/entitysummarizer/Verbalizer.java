@@ -106,8 +106,8 @@ public class Verbalizer {
         List<NLGElement> result = new ArrayList<NLGElement>();
         Set<Triple> triples;
         for (Set<Node> propertySet : clusters) {
-            triples = new HashSet<Triple>();
             for (Node property : propertySet) {
+                triples = new HashSet<Triple>();            
                 triples.addAll(getTriples(resource, ResourceFactory.createProperty(property.label)));
                 System.out.println(property + " => " + triples);
                 if (triples.size() > 0) {
@@ -181,8 +181,8 @@ public class Verbalizer {
         BorderFlowX bf = new BorderFlowX(wg);
         Set<Set<Node>> clusters = bf.cluster();
         //then harden the results
-        List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(HardeningFactory.HardeningType.SMALLEST).harden(clusters, wg);
-        System.out.println(sortedPropertyClusters);
+        List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(HardeningFactory.HardeningType.LARGEST).harden(clusters, wg);
+        System.out.println("Cluster = "+sortedPropertyClusters);
 
         //finally generateSentencesFromClusters
         return generateSentencesFromClusters(sortedPropertyClusters, r);
