@@ -112,6 +112,7 @@ public class ObjectMergeRule implements Rule {
 
         SPhraseSpec fusedPhrase = phrases.get(phraseIndex);
         fusedPhrase.setObject(elt);
+        fusedPhrase.getVerb().setPlural(true);
 
         //now create the final result
         List<SPhraseSpec> result = new ArrayList<SPhraseSpec>();

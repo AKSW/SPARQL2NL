@@ -111,6 +111,7 @@ public class PredicateMergeRule implements Rule {
         
         SPhraseSpec fusedPhrase = phrases.get(phraseIndex);
         fusedPhrase.setVerb(elt);
+        fusedPhrase.getVerb().setPlural(true);
 
         //now create the final result
         List<SPhraseSpec> result = new ArrayList<SPhraseSpec>();
