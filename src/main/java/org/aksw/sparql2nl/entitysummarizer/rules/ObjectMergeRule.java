@@ -9,9 +9,12 @@ import com.google.common.collect.TreeMultimap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
+import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
+import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
@@ -65,9 +68,11 @@ public class ObjectMergeRule implements Rule {
      * @return Result of the rule being applied
      */
     public List<SPhraseSpec> apply(List<SPhraseSpec> phrases) {
-        
-        if(phrases.size() <= 1) return phrases;
-        
+
+        if (phrases.size() <= 1) {
+            return phrases;
+        }
+
         SPhraseSpec p1, p2;
         String verb1, verb2;
         String subj1, subj2;
@@ -106,14 +111,26 @@ public class ObjectMergeRule implements Rule {
         Collection<Integer> toMerge = map.get(phraseIndex);
         toMerge.add(phraseIndex);
         CoordinatedPhraseElement elt = nlgFactory.createCoordinatedPhrase();
+
         for (int index : toMerge) {
             elt.addCoordinate(phrases.get(index).getObject());
         }
 
         SPhraseSpec fusedPhrase = phrases.get(phraseIndex);
         fusedPhrase.setObject(elt);
-        fusedPhrase.getVerb().setPlural(true);
+        if (fusedPhrase.getSubject().getChildren().size() > 0) //possessive subject
+        {
+            //does not work yet
+            for (NLGElement subjElt : fusedPhrase.getSubject().getChildren()) {
+                if(!subjElt.hasFeature(Feature.POSSESSIVE))
+                ((NPPhraseSpec)subjElt).getHead().setPlural(true);
+//                    fusedPhrase.getSubject().setPlural(true);
+            }
 
+            fusedPhrase.setSubject(realiser.realise(fusedPhrase.getSubject()));
+            fusedPhrase.getSubject().setPlural(true);
+            fusedPhrase.getVerb().setPlural(true);
+        }
         //now create the final result
         List<SPhraseSpec> result = new ArrayList<SPhraseSpec>();
         result.add(fusedPhrase);

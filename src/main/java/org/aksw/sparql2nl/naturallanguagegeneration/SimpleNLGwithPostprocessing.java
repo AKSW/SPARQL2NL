@@ -61,6 +61,7 @@ import com.hp.hpl.jena.sparql.syntax.PatternVars;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
+import simplenlg.framework.*;
 
 /**
  *
@@ -68,9 +69,9 @@ import com.hp.hpl.jena.vocabulary.RDFS;
  */
 public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
-    Lexicon lexicon;
-    NLGFactory nlgFactory;
-    Realiser realiser;
+    public Lexicon lexicon;
+    public NLGFactory nlgFactory;
+    public Realiser realiser;
     private URIConverter uriConverter;
     private LiteralConverter literalConverter;
     private FilterExpressionConverter expressionConverter;
@@ -90,7 +91,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     private Model model;
     private PropertyProcessor pp;
     private FunctionalityDetector functionalityDetector;
-    
+
     public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint) {
         this.endpoint = endpoint;
 
@@ -110,10 +111,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         } else {
             pp = new PropertyProcessor("resources/wordnet/dict");
         }
-        
+
         functionalityDetector = new StatisticalFunctionalityDetector(
-        		this.getClass().getClassLoader().getResourceAsStream("dbpedia_functional_axioms.owl"),
-        		0.8);
+                this.getClass().getClassLoader().getResourceAsStream("dbpedia_functional_axioms.owl"),
+                0.8);
     }
 
     public static boolean isWindows() {
@@ -136,11 +137,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
         pp = new PropertyProcessor(wordnetDir);
         functionalityDetector = new StatisticalFunctionalityDetector(
-        		this.getClass().getClassLoader().getResourceAsStream("dbpedia_functional_axioms.owl"),
-        		0.8);
+                this.getClass().getClassLoader().getResourceAsStream("dbpedia_functional_axioms.owl"),
+                0.8);
 
     }
-    
+
     public SimpleNLGwithPostprocessing(Model model, String wordnetDir) {
         this.model = model;
 
@@ -158,9 +159,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         pp = new PropertyProcessor(wordnetDir);
 
     }
-    
-    public void setPropertyDistinctionThreshold(double threshold){
-    	pp.setThreshold(threshold);
+
+    public void setPropertyDistinctionThreshold(double threshold) {
+        pp.setThreshold(threshold);
     }
 
     public void setUseBOA(boolean useBOA) {
@@ -176,7 +177,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             }
             output = output + " " + sentence;
         }
-        if (!output.isEmpty()) output = output.substring(1);
+        if (!output.isEmpty()) {
+            output = output.substring(1);
+        }
         return output;
     }
 
@@ -190,9 +193,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     @Override
     public String getNLR(Query inputQuery) {
 
-    	//we copy the query object here, because during the NLR generation it will be modified 
-    	Query query = QueryFactory.create(inputQuery);
-    	query = new DisjunctiveNormalFormConverter().getDisjunctiveNormalForm(query);
+        //we copy the query object here, because during the NLR generation it will be modified 
+        Query query = QueryFactory.create(inputQuery);
+        query = new DisjunctiveNormalFormConverter().getDisjunctiveNormalForm(query);
 
         String output = "";
 
@@ -202,7 +205,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         UNIONSWITCH = false;
         output = realiseDocument(convert2NLE(query));
         System.out.println("\nSimpleNLG:\n" + output);
-        if (VERBOSE) post.TRACE = true;
+        if (VERBOSE) {
+            post.TRACE = true;
+        }
 
         // 2. run postprocessor
         post.postprocess();
@@ -210,7 +215,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         // 3. run convert2NLE again, but this time use body generations from postprocessor
         POSTPROCESSING = true;
         output = realiseDocument(convert2NLE(query));
-        output = output.replace(",,", ",").replace("..", ".").replace(".,",","); // wherever this duplicate punctuation comes from...
+        output = output.replace(",,", ",").replace("..", ".").replace(".,", ","); // wherever this duplicate punctuation comes from...
 //        output = post.removeDots(output)+".";
         System.out.println("\nAfter postprocessing:\n" + output);
 
@@ -255,14 +260,14 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         List<DocumentElement> sentences = new ArrayList<DocumentElement>();
 //        System.out.println("Input query = " + query);
         // preprocess the query to get the relevant types
-        
+
         TypeExtractor tEx;
-        if(endpoint != null){
-        	tEx = new TypeExtractor(endpoint);
+        if (endpoint != null) {
+            tEx = new TypeExtractor(endpoint);
         } else {
-        	tEx = new TypeExtractor(model);
+            tEx = new TypeExtractor(model);
         }
-        
+
         Map<String, Set<String>> typeMap = tEx.extractTypes(query);
 //        System.out.println("Processed query = " + query);
         // contains the beginning of the query, e.g., "this query returns"
@@ -310,55 +315,59 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             //process factual ask queries (no variables at all)
             head.setSubject("This query");
             head.setVerb("ask whether");
-            
+
             if (POSTPROCESSING) {
                 if (!post.selects.isEmpty()) {
                     if (post.selects.size() == 1 && post.output == null) {
                         head.setVerb("ask whether there is such a thing as");
                         head.setObject(post.selects.get(0));
                         sentences.add(nlgFactory.createSentence(head));
-                    }
-                    else if (post.selects.size() > 1 && post.output == null) {
+                    } else if (post.selects.size() > 1 && post.output == null) {
                         head.setVerb("ask whether there are such things as");
                         CoordinatedPhraseElement obj = nlgFactory.createCoordinatedPhrase();
                         obj.setConjunction("and");
-                        for (NPPhraseSpec np : post.selects) obj.addCoordinate(np);
+                        for (NPPhraseSpec np : post.selects) {
+                            obj.addCoordinate(np);
+                        }
                         head.setObject(obj);
                         sentences.add(nlgFactory.createSentence(head));
-                    }
-                    else if (post.output != null) {
+                    } else if (post.output != null) {
                         head.setVerb("ask whether there are");
-                        if (post.selects.size() == 1)
+                        if (post.selects.size() == 1) {
                             head.setObject(post.selects.get(0));
-                        else {
+                        } else {
                             CoordinatedPhraseElement obj = nlgFactory.createCoordinatedPhrase();
                             obj.setConjunction("and");
-                            for (NPPhraseSpec np : post.selects) obj.addCoordinate(np);
+                            for (NPPhraseSpec np : post.selects) {
+                                obj.addCoordinate(np);
+                            }
                             head.setObject(obj);
                         }
-                        CoordinatedPhraseElement p = nlgFactory.createCoordinatedPhrase(head,post.output);
-                        if (post.relativeClause) p.setConjunction("");
-                        else p.setConjunction("such that");
+                        CoordinatedPhraseElement p = nlgFactory.createCoordinatedPhrase(head, post.output);
+                        if (post.relativeClause) {
+                            p.setConjunction("");
+                        } else {
+                            p.setConjunction("such that");
+                        }
                         sentences.add(nlgFactory.createSentence(p));
                     }
-                }
-                else {
+                } else {
                     if (post.output != null && !realiser.realise(post.output).toString().trim().isEmpty()) {
                         head.setObject(post.output);
                         sentences.add(nlgFactory.createSentence(head));
-                    }                    
+                    }
                 }
-            }
-            else { // head.setObject(getNLFromElements(whereElements)) is correct but leads to a bug
+            } else { // head.setObject(getNLFromElements(whereElements)) is correct but leads to a bug
                 head.setObject(realiser.realise(getNLFromElements(whereElements)));
-                head.getObject().setFeature(Feature.SUPRESSED_COMPLEMENTISER,true);
+                head.getObject().setFeature(Feature.SUPRESSED_COMPLEMENTISER, true);
                 sentences.add(nlgFactory.createSentence(realiser.realise(head)));
             }
-            if (typeMap.isEmpty()) return nlgFactory.createParagraph(sentences);
-            
-        }
-        else {
-        //process SELECT queries
+            if (typeMap.isEmpty()) {
+                return nlgFactory.createParagraph(sentences);
+            }
+
+        } else {
+            //process SELECT queries
 
             head.setSubject("This query");
             head.setVerb("retrieve");
@@ -380,8 +389,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 }
                 //now add conjunction
                 CoordinatedPhraseElement phrase1 = nlgFactory.createCoordinatedPhrase(head, body);
-                if (POSTPROCESSING && post.relativeClause) phrase1.setConjunction("");
-                else phrase1.setConjunction("such that");
+                if (POSTPROCESSING && post.relativeClause) {
+                    phrase1.setConjunction("");
+                } else {
+                    phrase1.setConjunction("such that");
+                }
                 // add as first sentence
                 sentences.add(nlgFactory.createSentence(phrase1));
                 //this concludes the first sentence.
@@ -449,8 +461,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         //The last sentence deals with the result modifiers
         if (POSTPROCESSING && post.additionaloutput != null) {
             sentences.add(nlgFactory.createSentence(post.additionaloutput));
-        }
-        else if (!POSTPROCESSING) {
+        } else if (!POSTPROCESSING) {
             if (query.hasHaving()) {
                 SPhraseSpec modifierHead = nlgFactory.createClause();
                 modifierHead.setSubject("it");
@@ -459,14 +470,15 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 modifierHead.getObject().setPlural(true);
                 modifierHead.setFeature(Feature.CUE_PHRASE, "Moreover, ");
                 List<Expr> expressions = query.getHavingExprs();
-    //            CoordinatedPhraseElement phrase = nlgFactory.createCoordinatedPhrase(modifierHead, getNLFromExpressions(expressions));
+                //            CoordinatedPhraseElement phrase = nlgFactory.createCoordinatedPhrase(modifierHead, getNLFromExpressions(expressions));
                 NLGElement phrase = getNLFromExpressions(expressions);
-                phrase.setFeature("premodifier","such that");
+                phrase.setFeature("premodifier", "such that");
                 modifierHead.addComplement(phrase);
                 if (!POSTPROCESSING) {
-                    post.orderbylimit.add(new Sentence(modifierHead,false,post.id)); post.id++;
+                    post.orderbylimit.add(new Sentence(modifierHead, false, post.id));
+                    post.id++;
                     sentences.add(nlgFactory.createSentence(modifierHead));
-                }   
+                }
             }
             if (query.hasOrderBy()) {
                 SPhraseSpec order = nlgFactory.createClause();
@@ -478,19 +490,20 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     int direction = sc.get(0).getDirection();
                     if (direction == Query.ORDER_DESCENDING) {
                         order.setObject("descending order");
-                    } else if (direction == Query.ORDER_ASCENDING || direction == Query.ORDER_DEFAULT){
+                    } else if (direction == Query.ORDER_ASCENDING || direction == Query.ORDER_DEFAULT) {
                         order.setObject("ascending order");
                     }
                     Expr expr = sc.get(0).getExpression();
                     if (expr instanceof ExprVar) {
                         ExprVar ev = (ExprVar) expr;
-                        order.addComplement("with respect to "+ev.toString()+"");
+                        order.addComplement("with respect to " + ev.toString() + "");
                     }
                 }
                 if (!POSTPROCESSING) {
-                    post.orderbylimit.add(new Sentence(order,false,post.id)); post.id++;
+                    post.orderbylimit.add(new Sentence(order, false, post.id));
+                    post.id++;
                     sentences.add(nlgFactory.createSentence(order));
-                } 
+                }
             }
             if (query.hasLimit()) {
                 SPhraseSpec limitOffset = nlgFactory.createClause();
@@ -499,18 +512,25 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     long offset = query.getOffset();
                     limitOffset.setSubject("The query");
                     limitOffset.setVerb("return");
-                    if(limit == 1){
-                            String ending;
-                            switch ((int)offset+1){
-                                    case 1: ending = "st"; break;
-                                    case 2: ending = "nd"; break;
-                                    case 3: ending = "rd"; break;
-                                    default: ending = "th"; 
-                            }
-                            limitOffset.setObject("the " + (limit + offset) + ending + " result");
+                    if (limit == 1) {
+                        String ending;
+                        switch ((int) offset + 1) {
+                            case 1:
+                                ending = "st";
+                                break;
+                            case 2:
+                                ending = "nd";
+                                break;
+                            case 3:
+                                ending = "rd";
+                                break;
+                            default:
+                                ending = "th";
+                        }
+                        limitOffset.setObject("the " + (limit + offset) + ending + " result");
 
                     } else {
-                            limitOffset.setObject("results between number " + (offset+1) + " and " + (offset + limit));
+                        limitOffset.setObject("results between number " + (offset + 1) + " and " + (offset + limit));
                     }
 
 
@@ -521,7 +541,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                         if (query.hasOrderBy()) {
                             limitOffset.setObject("the first " + limit + " results");
                         } else {
-                            limitOffset.setObject( limit + " results");
+                            limitOffset.setObject(limit + " results");
                         }
                     } else {
                         if (query.hasOrderBy()) {
@@ -532,9 +552,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     }
                 }
                 if (!POSTPROCESSING) {
-                    post.orderbylimit.add(new Sentence(limitOffset,false,post.id)); post.id++;
+                    post.orderbylimit.add(new Sentence(limitOffset, false, post.id));
+                    post.id++;
                     sentences.add(nlgFactory.createSentence(limitOffset));
-                } 
+                }
             }
         }
 
@@ -658,7 +679,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                         np.addModifier("distinct");
                     }
                     np.setPlural(true);
-                    object.addPreModifier(np);                   
+                    object.addPreModifier(np);
                 } else {
                     Iterator<String> typeIterator = types.iterator();
                     String type0 = typeIterator.next();
@@ -683,16 +704,14 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     if (distinct) {
                         object.addPreModifier("distinct entities");
                         //cpe.addPreModifier("distinct");
-                    }
-                    else
-                    {
+                    } else {
                         object.addPreModifier("entities");
                     }
                     cpe.addPreModifier("that are");
                     //object.addPreModifier(cpe);
                     //object.addPreModifier(nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr()));
                     object.addComplement(cpe);
-                    
+
                 }
                 object.setFeature(Feature.CONJUNCTION, "or");
                 objects.add(object);
@@ -753,10 +772,16 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
         if (triples.size() == 1) {
             SPhraseSpec p = getNLForTriple(triples.get(0));
-            if (UNIONSWITCH) union.add(p);
-            else {
-                if (SWITCH) { addTo(post.sentences,new Sentence(p,true,post.id)); post.id++; }
-                else { addTo(post.sentences,new Sentence(p,false,post.id)); post.id++; }
+            if (UNIONSWITCH) {
+                union.add(p);
+            } else {
+                if (SWITCH) {
+                    addTo(post.sentences, new Sentence(p, true, post.id));
+                    post.id++;
+                } else {
+                    addTo(post.sentences, new Sentence(p, false, post.id));
+                    post.id++;
+                }
             }
             return p;
         } else { // the following code is a bit redundant...
@@ -764,10 +789,16 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             SPhraseSpec p;
             for (int i = 0; i < triples.size(); i++) {
                 p = getNLForTriple(triples.get(i));
-                if (UNIONSWITCH) union.add(p); 
-                else {
-                    if (SWITCH) { addTo(post.sentences,new Sentence(p,true,post.id)); post.id++; }
-                    else { addTo(post.sentences,new Sentence(p,false,post.id)); post.id++; }
+                if (UNIONSWITCH) {
+                    union.add(p);
+                } else {
+                    if (SWITCH) {
+                        addTo(post.sentences, new Sentence(p, true, post.id));
+                        post.id++;
+                    } else {
+                        addTo(post.sentences, new Sentence(p, false, post.id));
+                        post.id++;
+                    }
                 }
             }
 
@@ -796,7 +827,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             }
             return getNLForTripleList(triples, "and");
         } // if clause is union clause then we generate or statements
-        else if (e instanceof ElementUnion) { 
+        else if (e instanceof ElementUnion) {
             CoordinatedPhraseElement cpe;
             //cast to union
             ElementUnion union = (ElementUnion) e;
@@ -816,14 +847,17 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             for (Set<SPhraseSpec> UN : UNION) {
                 Set<Sentence> UNclone = new HashSet<Sentence>();
                 for (SPhraseSpec s : UN) {
-                    UNclone.add(new Sentence(s,SWITCH,post.id));
+                    UNclone.add(new Sentence(s, SWITCH, post.id));
                     post.id++;
                 }
                 UNIONclone.add(UNclone);
             }
 
-            if (SWITCH) post.unions.add(new Union(UNIONclone,true));
-            else post.unions.add(new Union(UNIONclone,false));
+            if (SWITCH) {
+                post.unions.add(new Union(UNIONclone, true));
+            } else {
+                post.unions.add(new Union(UNIONclone, false));
+            }
 
             UNIONSWITCH = false;
             UNION = new HashSet<Set<SPhraseSpec>>();
@@ -850,56 +884,62 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             Expr expr = filter.getExpr();
             NLGElement el = getNLFromSingleExpression(expr);
 
-            if (!POSTPROCESSING) { 
-                  if (el.getClass().toString().endsWith("SPhraseSpec")) {
-                      post.filters.add(new Filter(new Sentence(((SPhraseSpec) el),false,post.id)));
-                      post.id++;
-                  }
-                  else if (el.getClass().toString().endsWith("CoordinatedPhraseElement")) {
-                      String coord = ((CoordinatedPhraseElement) el).getConjunction();
-                      Set<Sentence> csents = new HashSet<Sentence>();
-                      for (NLGElement compl : ((CoordinatedPhraseElement) el).getChildren()) {
-                          if (compl.getClass().toString().endsWith("SPhraseSpec")) {
-                              csents.add(new Sentence(((SPhraseSpec) compl),false,post.id));
-                              post.id++;
-                          }
-                          else if (compl.getClass().toString().endsWith("CoordinatePhraseElement")) {
-                              for (NLGElement c : ((CoordinatedPhraseElement) compl).getChildren()) {
-                                   if (c.getClass().toString().endsWith("SPhraseSpec")) {
-                                       csents.add(new Sentence(((SPhraseSpec) compl),false,post.id));
-                                       post.id++;
-                                   } 
-                                   else System.out.println("[WARNING] This filter is too deep nested for me... Tell Christina to implement me recursively!");
-                              }
-                          }
-                      }
-                      post.filters.add(new Filter(csents,coord));
-                  }
+            if (!POSTPROCESSING) {
+                if (el.getClass().toString().endsWith("SPhraseSpec")) {
+                    post.filters.add(new Filter(new Sentence(((SPhraseSpec) el), false, post.id)));
+                    post.id++;
+                } else if (el.getClass().toString().endsWith("CoordinatedPhraseElement")) {
+                    String coord = ((CoordinatedPhraseElement) el).getConjunction();
+                    Set<Sentence> csents = new HashSet<Sentence>();
+                    for (NLGElement compl : ((CoordinatedPhraseElement) el).getChildren()) {
+                        if (compl.getClass().toString().endsWith("SPhraseSpec")) {
+                            csents.add(new Sentence(((SPhraseSpec) compl), false, post.id));
+                            post.id++;
+                        } else if (compl.getClass().toString().endsWith("CoordinatePhraseElement")) {
+                            for (NLGElement c : ((CoordinatedPhraseElement) compl).getChildren()) {
+                                if (c.getClass().toString().endsWith("SPhraseSpec")) {
+                                    csents.add(new Sentence(((SPhraseSpec) compl), false, post.id));
+                                    post.id++;
+                                } else {
+                                    System.out.println("[WARNING] This filter is too deep nested for me... Tell Christina to implement me recursively!");
+                                }
+                            }
+                        }
+                    }
+                    post.filters.add(new Filter(csents, coord));
+                }
             }
             return el;
         }
-	if (e instanceof ElementGroup) {
-            if (UNIONSWITCH) union = new HashSet<SPhraseSpec>();
-            
+        if (e instanceof ElementGroup) {
+            if (UNIONSWITCH) {
+                union = new HashSet<SPhraseSpec>();
+            }
+
             if (((ElementGroup) e).getElements().size() == 1) {
-		NLGElement el = getNLFromSingleClause(((ElementGroup) e).getElements().get(0));
-                if (UNIONSWITCH) UNION.add(union);
+                NLGElement el = getNLFromSingleClause(((ElementGroup) e).getElements().get(0));
+                if (UNIONSWITCH) {
+                    UNION.add(union);
+                }
                 return el;
             } else {
-	          CoordinatedPhraseElement cpe;
-		  List<NLGElement> list = new ArrayList<NLGElement>();
-		  for (Element elt : ((ElementGroup) e).getElements()) {
-		       list.add(getNLFromSingleClause(elt));
-		  }
-                  if (UNIONSWITCH) UNION.add(union);
-                  
-		  cpe = nlgFactory.createCoordinatedPhrase(list.get(0), list.get(1));
-		  for(int i=2; i<list.size(); i++) 
-                      cpe.addCoordinate(list.get(i));
-                  cpe.setConjunction("and");
-                  return cpe;
-	    }  
-	}
+                CoordinatedPhraseElement cpe;
+                List<NLGElement> list = new ArrayList<NLGElement>();
+                for (Element elt : ((ElementGroup) e).getElements()) {
+                    list.add(getNLFromSingleClause(elt));
+                }
+                if (UNIONSWITCH) {
+                    UNION.add(union);
+                }
+
+                cpe = nlgFactory.createCoordinatedPhrase(list.get(0), list.get(1));
+                for (int i = 2; i < list.size(); i++) {
+                    cpe.addCoordinate(list.get(i));
+                }
+                cpe.setConjunction("and");
+                return cpe;
+            }
+        }
 
         return null;
     }
@@ -921,9 +961,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
 
             //then process the object
-            Object object;
+            NPPhraseSpec object;
             if (t.getObject().isVariable()) {
-                object = t.getObject().toString();
+                object = nlgFactory.createNounPhrase(t.getObject().toString());
             } else if (t.getObject().isLiteral()) {
                 LiteralLabel lit = t.getObject().getLiteral();
                 NPPhraseSpec np = nlgFactory.createNounPhrase(
@@ -947,9 +987,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             }
 
             //then process the object
-            Object object;
+            NPPhraseSpec object;
             if (t.getObject().isVariable()) {
-                object = t.getObject().toString();
+                object = nlgFactory.createNounPhrase(t.getObject().toString());
             } else if (t.getObject().isLiteral()) {
                 LiteralLabel lit = t.getObject().getLiteral();
                 NPPhraseSpec np = nlgFactory.createNounPhrase(
@@ -982,29 +1022,34 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             // if the predicate is rdf:type
             if (t.getPredicate().matches(RDF.type.asNode())) {
                 p.setSubject(subj);
-                p.setVerb("be a");
+                p.setVerb("be");
+                object.setSpecifier("a");
                 p.setObject(object);
+                
             } else // now if the predicate is a noun
             if (type == Type.NOUN) {
-                String realisedsubj = realiser.realise(subj).getRealisation();
-                if (realisedsubj.endsWith("s")) {
-                    realisedsubj += "\' ";
+                NLGElement subject = nlgFactory.createWord(realiser.realise(subj).getRealisation(), LexicalCategory.NOUN);
+                subject.setFeature(Feature.POSSESSIVE, true);
+
+//                String realisedsubj = realiser.realise(subj).getRealisation();
+//                if (realisedsubj.endsWith("s")) {
+//                    realisedsubj += "\' ";
+//                } else {
+//                    realisedsubj += "\'s ";
+//                }
+
+                if (t.getObject().isVariable()) {// && functionalityDetector.isFunctional(t.getPredicate().getURI())){
+                    NLGElement nnp = nlgFactory.createInflectedWord(PlingStemmer.stem(predicateAsString), LexicalCategory.NOUN);
+                    if (!functionalityDetector.isFunctional(t.getPredicate().getURI())) {
+                        nnp.setPlural(true);
+                        p.setPlural(true);
+                    }
+                    
+                    p.setSubject(nlgFactory.createNounPhrase(subject, nnp));
                 } else {
-                    realisedsubj += "\'s ";
+                    p.setSubject(nlgFactory.createNounPhrase(subject, predicateAsString));// + PlingStemmer.stem(predicateAsString));
                 }
-               
-                if(t.getObject().isVariable()){// && functionalityDetector.isFunctional(t.getPredicate().getURI())){
-                	 NLGElement nnp = nlgFactory.createInflectedWord(PlingStemmer.stem(predicateAsString), LexicalCategory.NOUN);
-                	 if(!functionalityDetector.isFunctional(t.getPredicate().getURI())){
-                		 nnp.setPlural(true);
-                		 p.setPlural(true);
-                	 }
-                		 
-                     p.setSubject(realisedsubj + realiser.realise(nnp).getRealisation());
-                } else {
-                	p.setSubject(realisedsubj +predicateAsString);// + PlingStemmer.stem(predicateAsString));
-                }
-            	
+
                 p.setVerb("be");
                 p.setObject(object);
 //                FileOutputStream fos = null;
@@ -1105,8 +1150,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             p.setSubject("the number of " + expr);
         } else if (aggregator instanceof AggSum) {
             p.setSubject("the number of " + expr);
-        } else if(aggregator instanceof AggAvg){
-        	
+        } else if (aggregator instanceof AggAvg) {
         }
         return p.getSubject();
     }
@@ -1136,14 +1180,17 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             return cpe;
         }
     }
-    
+
     private void addTo(Set<Sentence> sentences, Sentence sent) {
         boolean duplicate = false;
         for (Sentence s : sentences) {
-            if (realiser.realise(s.sps).toString().equals(realiser.realise(sent.sps).toString())) 
-                duplicate = true; 
-         }
-         if (!duplicate) sentences.add(sent);
+            if (realiser.realise(s.sps).toString().equals(realiser.realise(sent.sps).toString())) {
+                duplicate = true;
+            }
+        }
+        if (!duplicate) {
+            sentences.add(sent);
+        }
 
     }
 
@@ -1292,70 +1339,70 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 + "        OPTIONAL {?person rdfs:label ?string"
                 + "        FILTER ( lang(?string) = \"en\" ) } }";
 
-        String argentina = "PREFIX  res:  <http://dbpedia.org/resource/> " +
-"PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> " + 
-"PREFIX  dbo:  <http://dbpedia.org/ontology/> " +
-"PREFIX  dbp:  <http://dbpedia.org/property/> " +
-"PREFIX  yago: <http://dbpedia.org/class/yago/> " +
-"PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  " +
-"SELECT DISTINCT  ?uri ?string " +
-"WHERE " +
-"  {   { ?uri rdf:type yago:ArgentineFilms }  " +
-"    UNION " +
-"      { ?uri rdf:type dbo:Film  " +
-"        { ?uri dbo:country res:Argentina } " +
-"      } " +
-"    UNION " +
-"      { ?uri rdf:type dbo:Film  " +
-"        { ?uri dbp:country \"Argentina\"@en }  " +
-"      }  " +
-"    OPTIONAL  " +
-"      { ?uri rdfs:label ?string  " +
-"        FILTER ( lang(?string) = \"en\" ) " +
-"      } " +
-"  }";
-        
-                String argentina1 = "PREFIX  res:  <http://dbpedia.org/resource/> " +
-"PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> " + 
-"PREFIX  dbo:  <http://dbpedia.org/ontology/> " +
-"PREFIX  dbp:  <http://dbpedia.org/property/> " +
-"PREFIX  yago: <http://dbpedia.org/class/yago/> " +
-"PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  " +
-"SELECT DISTINCT  ?uri ?string " +
-"WHERE " +
-"  {   { ?uri rdf:type yago:ArgentineFilms }  " +
-"    UNION " +
-"      { ?uri rdf:type dbo:Film . ?uri dbo:country res:Argentina } " +
-"    UNION " +
-"      { ?uri rdf:type dbo:Film . ?uri dbp:country \"Argentina\"@en }  " +
-"    OPTIONAL  " +
-"      { ?uri rdfs:label ?string  " +
-"        FILTER ( lang(?string) = \"en\" ) " +
-"      } " +
-"  }";
+        String argentina = "PREFIX  res:  <http://dbpedia.org/resource/> "
+                + "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
+                + "PREFIX  dbo:  <http://dbpedia.org/ontology/> "
+                + "PREFIX  dbp:  <http://dbpedia.org/property/> "
+                + "PREFIX  yago: <http://dbpedia.org/class/yago/> "
+                + "PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  "
+                + "SELECT DISTINCT  ?uri ?string "
+                + "WHERE "
+                + "  {   { ?uri rdf:type yago:ArgentineFilms }  "
+                + "    UNION "
+                + "      { ?uri rdf:type dbo:Film  "
+                + "        { ?uri dbo:country res:Argentina } "
+                + "      } "
+                + "    UNION "
+                + "      { ?uri rdf:type dbo:Film  "
+                + "        { ?uri dbp:country \"Argentina\"@en }  "
+                + "      }  "
+                + "    OPTIONAL  "
+                + "      { ?uri rdfs:label ?string  "
+                + "        FILTER ( lang(?string) = \"en\" ) "
+                + "      } "
+                + "  }";
+
+        String argentina1 = "PREFIX  res:  <http://dbpedia.org/resource/> "
+                + "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
+                + "PREFIX  dbo:  <http://dbpedia.org/ontology/> "
+                + "PREFIX  dbp:  <http://dbpedia.org/property/> "
+                + "PREFIX  yago: <http://dbpedia.org/class/yago/> "
+                + "PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>  "
+                + "SELECT DISTINCT  ?uri ?string "
+                + "WHERE "
+                + "  {   { ?uri rdf:type yago:ArgentineFilms }  "
+                + "    UNION "
+                + "      { ?uri rdf:type dbo:Film . ?uri dbo:country res:Argentina } "
+                + "    UNION "
+                + "      { ?uri rdf:type dbo:Film . ?uri dbp:country \"Argentina\"@en }  "
+                + "    OPTIONAL  "
+                + "      { ?uri rdfs:label ?string  "
+                + "        FILTER ( lang(?string) = \"en\" ) "
+                + "      } "
+                + "  }";
 //        query8 = "SELECT * WHERE {" +
 //        		"?s <http://dbpedia.org/ontology/PopulatedPlace/areaTotal> \"12\"^^<http://dbpedia.org/datatypes/squareKilometre>.} ";
-        
+
         query = "PREFIX res: <http://dbpedia.org/resource/> PREFIX dbo: <http://dbpedia.org/ontology/> SELECT DISTINCT ?string WHERE {res:Angela_Merkel dbo:birthName ?string.}";
 
 //        query = "PREFIX dbo: <http://dbpedia.org/ontology/> SELECT ?s  WHERE {?s a dbo:Company.?s dbo:numberOfEmployees ?value.} GROUP BY ?s LIMIT 10";
-        
+
 //        query = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
 //        		"SELECT ?x0 WHERE {	" +
 //        		"?x0 rdf:type <http://diadem.cs.ox.ac.uk/ontologies/real-estate#House>." +
 //        		"	?x0 <http://diadem.cs.ox.ac.uk/ontologies/real-estate#receptions> ?y.	" +
 //        		"FILTER(?y > 1).}";
-        
+
 //        query = "PREFIX res:<http://dbpedia.org/resource/> PREFIX dbo:<http://dbpedia.org/ontology/> PREFIX xsd:<http://www.w3.org/2001/XMLSchema#> " +
 //        		"SELECT DISTINCT  ?person WHERE  { ?person a dbo:Person ;  dbo:occupation res:Writer;            dbo:occupation res:Musician.}";
-       
-        query = "SELECT DISTINCT  ?person ?height WHERE  { " +
-        		"?person <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person>." +
-        		"?person <http://dbpedia.org/ontology/height> ?height.}";
-        
-        query = "SELECT DISTINCT  ?person ?height WHERE  { " +
-        		"?person <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person>." +
-        		"OPTIONAL{?person <http://dbpedia.org/ontology/height> ?height.}}";
+
+        query = "SELECT DISTINCT  ?person ?height WHERE  { "
+                + "?person <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person>."
+                + "?person <http://dbpedia.org/ontology/height> ?height.}";
+
+        query = "SELECT DISTINCT  ?person ?height WHERE  { "
+                + "?person <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person>."
+                + "OPTIONAL{?person <http://dbpedia.org/ontology/height> ?height.}}";
         try {
             SparqlEndpoint ep = new SparqlEndpoint(new URL("http://dbpedia.org/sparql"));
 //            ep = new SparqlEndpoint(new URL("http://[2001:638:902:2010:0:168:35:138]/sparql"));

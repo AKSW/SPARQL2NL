@@ -71,7 +71,7 @@ public class SubjectMergeRule {
         SPhraseSpec p1, p2;
         String subj1, subj2;
 
-        // get mapping o's
+        // get mapping subjects
         Multimap<Integer, Integer> map = TreeMultimap.create();
         for (int i = 0; i < phrases.size(); i++) {
             p1 = phrases.get(i);

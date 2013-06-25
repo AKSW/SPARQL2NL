@@ -457,17 +457,19 @@ public class Rouge {
 
     public static void main(String args[]) {
         Rouge rouge = new Rouge();
+        rouge.multipleMode = MULTIPLE_MAX;
         String[] summaries = new String[]{"I like apples", "I love apples", "I enjoy apples"};
-        String reference = "I dislike apples";
+        String reference = "A. J. Edds (born September 18, 1987 in Greenwood, Indiana) is an American football linebacker for the Indianapolis Colts of the National Football League. He was drafted by the Miami Dolphins in the fourth round of the 2010 NFL Draft. He played college football at Iowa. He has also been a member of the New England Patriots.";
         rouge.evaluate(reference, summaries);
         for (int i = 0; i < rouge.evaStat.length; i++) {
             for (int j = 0; j < rouge.evaStat[i].length; j++) {
-                System.out.print(rouge.evaStat[i][j]+"\t");
+                System.out.print(rouge.evaStat[i][j] + "\t");
             }
             System.out.println();
         }
-        System.out.println(rouge.getEvaResult(0));
-        System.out.println(rouge.getEvaResult(1));
+        System.out.println(rouge.getPrecision());
+        System.out.println(rouge.getRecall());
+        System.out.println(rouge.getFScore());
     }
 }
 
