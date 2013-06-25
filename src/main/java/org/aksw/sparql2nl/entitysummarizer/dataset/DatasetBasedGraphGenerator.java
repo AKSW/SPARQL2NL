@@ -36,11 +36,8 @@ import com.google.common.collect.Sets;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
-import java.util.List;
-import org.aksw.sparql2nl.entitysummarizer.clustering.BorderFlowX;
 
 import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
-import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory;
 
 /**
  * @author Lorenz Buehmann
@@ -53,6 +50,11 @@ public class DatasetBasedGraphGenerator {
     private SPARQLReasoner reasoner;
     private Set<String> blacklist = Sets.newHashSet("http://dbpedia.org/ontology/wikiPageExternalLink", "http://dbpedia.org/ontology/abstract",
             "http://dbpedia.org/ontology/thumbnail");
+
+    public enum Cooccurrence {
+
+        PROPERTIES, TRIPLESTORE
+    };
 
     public DatasetBasedGraphGenerator(SparqlEndpoint endpoint) {
         this(endpoint, null);
@@ -105,11 +107,19 @@ public class DatasetBasedGraphGenerator {
     }
 
     public WeightedGraph generateGraph(NamedClass cls, double threshold, String namespace) {
+        return generateGraph(cls, threshold, namespace, Cooccurrence.TRIPLESTORE);
+    }
+
+    public WeightedGraph generateGraph(NamedClass cls, double threshold, String namespace, Cooccurrence c) {
         //get the properties with a prominence score above threshold
         SortedSet<ObjectProperty> properties = getMostProminentProperties(cls, threshold, namespace);
         //compute the frequency for each pair of properties
-        Map<Set<ObjectProperty>, Double> cooccurrences = getCooccurrences(cls, properties);
-//        Map<Set<ObjectProperty>, Double> cooccurrences = getPropertySimilarities(cls, properties);
+        Map<Set<ObjectProperty>, Double> cooccurrences;
+        if (c.equals(Cooccurrence.TRIPLESTORE)) {
+            cooccurrences = getCooccurrences(cls, properties);
+        } else {
+            cooccurrences = getPropertySimilarities(cls, properties);
+        }
 
         //create the weighted graph
         WeightedGraph wg = new WeightedGraph();
@@ -156,7 +166,7 @@ public class DatasetBasedGraphGenerator {
                             + "}";
                     rs = executeSelectQuery(query);
                     double frequency = (double) (rs.next().getLiteral("cnt").getInt());
-                    pair2Frequency.put(pair, frequency);                    
+                    pair2Frequency.put(pair, frequency);
                 }
             }
         }
@@ -309,7 +319,7 @@ public class DatasetBasedGraphGenerator {
     public static void main(String[] args) throws Exception {
         SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
         //endpoint.getDefaultGraphURIs().add("http://dbpedia.org/sparql");
-        WeightedGraph wg = new DatasetBasedGraphGenerator(endpoint, "cache").generateGraph(new NamedClass("http://dbpedia.org/ontology/AmericanFootballPlayer"), 0.5, "http://dbpedia.org/ontology/");
+        WeightedGraph wg = new DatasetBasedGraphGenerator(endpoint, "cache").generateGraph(new NamedClass("http://dbpedia.org/ontology/AmericanFootballPlayer"), 0.5, "http://dbpedia.org/ontology/", Cooccurrence.PROPERTIES);
 //		generateGraph(0.5, "http://dbpedia.org/ontology/");
     }
 }

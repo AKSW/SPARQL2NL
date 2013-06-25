@@ -99,7 +99,6 @@ public class SubjectMergeRule {
         }
 
         //now merge ** this needs to be improved
-        NLGFactory nlgFactory = new NLGFactory(Lexicon.getDefaultLexicon());
         Collection<Integer> toMerge = map.get(phraseIndex);
         toMerge.add(phraseIndex);
         CoordinatedPhraseElement elt = nlgFactory.createCoordinatedPhrase();

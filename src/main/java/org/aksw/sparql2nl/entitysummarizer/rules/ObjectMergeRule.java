@@ -42,17 +42,11 @@ public class ObjectMergeRule implements Rule {
         String subj1, subj2;
 
         for (int i = 0; i < phrases.size(); i++) {
-            p1 = phrases.get(i);
-            verb1 = realiser.realiseSentence(p1.getVerb());
-            subj1 = realiser.realiseSentence(p1.getSubject());
-
+            p1 = phrases.get(i);            
             count = 0;
             for (int j = i + 1; j < phrases.size(); j++) {
                 p2 = phrases.get(j);
-                verb2 = realiser.realiseSentence(p2.getVerb());
-                subj2 = realiser.realiseSentence(p2.getSubject());
-
-                if (verb1.equals(verb2) && subj1.equals(subj2)) {
+                if (p1.getVerb().equals(p2.getVerb()) && p1.getSubject().equals(p1.getSubject())) {
                     count++;
                 }
             }

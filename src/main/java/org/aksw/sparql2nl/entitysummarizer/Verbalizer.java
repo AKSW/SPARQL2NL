@@ -17,7 +17,9 @@ import org.aksw.sparql2nl.entitysummarizer.clustering.BorderFlowX;
 import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
 import org.aksw.sparql2nl.entitysummarizer.clustering.WeightedGraph;
 import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory;
+import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory.HardeningType;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator;
+import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator.Cooccurrence;
 import org.aksw.sparql2nl.entitysummarizer.rules.ObjectMergeRule;
 import org.aksw.sparql2nl.entitysummarizer.rules.PredicateMergeRule;
 import org.aksw.sparql2nl.entitysummarizer.rules.Rule;
@@ -26,12 +28,8 @@ import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.openrdf.model.vocabulary.RDF;
-import simplenlg.features.Feature;
-import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
-import simplenlg.framework.PhraseElement;
 import simplenlg.lexicon.Lexicon;
-import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
@@ -41,13 +39,13 @@ import simplenlg.realiser.english.Realiser;
  * @author ngonga
  */
 public class Verbalizer {
-    
+
     SimpleNLGwithPostprocessing nlg;
     SparqlEndpoint endpoint;
     String language = "en";
     Realiser realiser = new Realiser(Lexicon.getDefaultLexicon());
     Map<Resource, String> labels;
-    
+
     public Verbalizer(SparqlEndpoint endpoint) {
         nlg = new SimpleNLGwithPostprocessing(endpoint);
         this.endpoint = endpoint;
@@ -90,7 +88,7 @@ public class Verbalizer {
         List<NLGElement> elts = generateSentencesFromClusters(properties, resource);
         return realize(elts);
     }
-    
+
     public String realize(List<NLGElement> elts) {
         String realization = "";
         for (NLGElement elt : elts) {
@@ -108,18 +106,26 @@ public class Verbalizer {
      * @return List of NLGElement
      */
     public List<NLGElement> generateSentencesFromClusters(List<Set<Node>> clusters, Resource resource) {
-        List<NLGElement> result = new ArrayList<NLGElement>();
-        Set<Triple> triples;
+        List<SPhraseSpec> buffer = new ArrayList<SPhraseSpec>();
+        Set<Triple> triples = new HashSet<Triple>();
+//        PredicateMergeRule pr = new PredicateMergeRule();
+                ObjectMergeRule or = new ObjectMergeRule();
+
         for (Set<Node> propertySet : clusters) {
+            //add up all triples for the given set of properties
+            triples = new HashSet<Triple>();
             for (Node property : propertySet) {
-                triples = new HashSet<Triple>();
-                triples.addAll(getTriples(resource, ResourceFactory.createProperty(property.label)));
-                if (triples.size() > 0) {
-                    result.addAll(generateSentencesFromTriples(triples));
+                triples = getTriples(resource, ResourceFactory.createProperty(property.label));
+                //all share the same property, thus they can be merged
+                buffer.addAll(or.apply(getPhraseSpecsFromTriples(triples)));
+                System.out.println("===========");
+                for (SPhraseSpec s : buffer) {
+                    System.out.println("+" + realiser.realise(s));
                 }
             }
         }
-        return result;
+
+        return applyMergeRules(buffer);
     }
 
     /**
@@ -129,11 +135,21 @@ public class Verbalizer {
      * @return A set of sentences representing these triples
      */
     public List<NLGElement> generateSentencesFromTriples(Set<Triple> triples) {
+        return applyMergeRules(getPhraseSpecsFromTriples(triples));
+    }
+
+    /**
+     * Generates sentence for a given set of triples
+     *
+     * @param triples A set of triples
+     * @return A set of sentences representing these triples
+     */
+    public List<SPhraseSpec> getPhraseSpecsFromTriples(Set<Triple> triples) {
         List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
         for (Triple t : triples) {
             phrases.add(generateSimplePhraseFromTriple(t));
         }
-        return applyMergeRules(phrases);
+        return phrases;
     }
 
     /**
@@ -146,9 +162,9 @@ public class Verbalizer {
     public List<NLGElement> applyMergeRules(List<SPhraseSpec> triples) {
         List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
         phrases.addAll(triples);
-        
+
         int newSize = phrases.size(), oldSize = phrases.size() + 1;
-        Rule mr = new ObjectMergeRule();
+        Rule or = new ObjectMergeRule();
         Rule pr = new PredicateMergeRule();
 
         //apply merging rules if more than one sentence to merge
@@ -156,16 +172,19 @@ public class Verbalizer {
             //fix point iteration for object and predicate merging
             while (newSize < oldSize) {
                 oldSize = newSize;
-                int mrCount = mr.isApplicable(phrases);
+                int mrCount = or.isApplicable(phrases);
                 int prCount = pr.isApplicable(phrases);
-                if (prCount > mrCount) {
-                    phrases = pr.apply(phrases);
-                } else {
-                    phrases = mr.apply(phrases);
+                if (prCount > 0 || mrCount > 0) {
+                    if (prCount > mrCount) {
+                        phrases = pr.apply(phrases);
+                    } else {
+                        phrases = or.apply(phrases);
+                    }
                 }
                 newSize = phrases.size();
             }
         }
+
         return (new SubjectMergeRule()).apply(phrases);
     }
 
@@ -178,39 +197,39 @@ public class Verbalizer {
     public SPhraseSpec generateSimplePhraseFromTriple(Triple triple) {
         return nlg.getNLForTriple(triple);
     }
-    
-    public List<NLGElement> verbalize(Resource r, NamedClass nc, double threshold) {
+
+    public List<NLGElement> verbalize(Resource r, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
         //first get graph for nc
-        WeightedGraph wg = new DatasetBasedGraphGenerator(endpoint, "cache").generateGraph(nc, threshold, "http://dbpedia.org/ontology/");
+        WeightedGraph wg = new DatasetBasedGraphGenerator(endpoint, "cache").generateGraph(nc, threshold, "http://dbpedia.org/ontology/", cooccurrence);
 
         //then cluster the graph
         BorderFlowX bf = new BorderFlowX(wg);
         Set<Set<Node>> clusters = bf.cluster();
         //then harden the results
-        List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(HardeningFactory.HardeningType.AVERAGE).harden(clusters, wg);
+        List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
         System.out.println("Cluster = " + sortedPropertyClusters);
 
         //finally generateSentencesFromClusters
         List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, r);
-        
+
         Triple t = Triple.create(r.asNode(), ResourceFactory.createProperty(RDF.TYPE.toString()).asNode(),
                 ResourceFactory.createResource(nc.getName()).asNode());
         result = Lists.reverse(result);
         result.add(generateSimplePhraseFromTriple(t));
         result = Lists.reverse(result);
-        
+
         return result;
     }
-    
+
     public static void main(String args[]) {
         Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpedia());
-        
+
         Resource r = ResourceFactory.createResource("http://dbpedia.org/resource/Chad_Ochocinco");
-        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AmericanFootballPlayer");        
+        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AmericanFootballPlayer");
 //        Resource r = ResourceFactory.createResource("http://dbpedia.org/resource/Minority_Report_(film)");
 //        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Film");
-        List<NLGElement> text = v.verbalize(r, nc, 0.5);
+        List<NLGElement> text = v.verbalize(r, nc, 0.5, Cooccurrence.PROPERTIES, HardeningType.AVERAGE);
         System.out.println(v.realize(text));
-        
+
     }
 }
