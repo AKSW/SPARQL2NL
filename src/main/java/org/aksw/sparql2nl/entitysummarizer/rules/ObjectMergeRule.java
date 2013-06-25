@@ -46,7 +46,7 @@ public class ObjectMergeRule implements Rule {
             count = 0;
             for (int j = i + 1; j < phrases.size(); j++) {
                 p2 = phrases.get(j);
-                if (p1.getVerb().equals(p2.getVerb()) && p1.getSubject().equals(p1.getSubject())) {
+                if (p1.getVerb().equals(p2.getVerb()) && p1.getSubject().equals(p2.getSubject())) {
                     count++;
                 }
             }
@@ -93,8 +93,8 @@ public class ObjectMergeRule implements Rule {
         int phraseIndex = 0;
 
         //find the index with the highest number of mappings
-        List<Integer> phraseIndexes = new ArrayList<Integer>(map.keySet());
-        for (int key = 0; key < phraseIndexes.size(); key++) {
+//        List<Integer> phraseIndexes = new ArrayList<Integer>(map.keySet());
+        for (int key : map.keySet()) {
             if (map.get(key).size() > maxSize) {
                 maxSize = map.get(key).size();
                 phraseIndex = key;

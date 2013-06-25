@@ -124,7 +124,7 @@ public class Verbalizer {
                 }
             }
         }
-
+        
         return applyMergeRules(buffer);
     }
 
@@ -172,10 +172,10 @@ public class Verbalizer {
             //fix point iteration for object and predicate merging
             while (newSize < oldSize) {
                 oldSize = newSize;
-                int mrCount = or.isApplicable(phrases);
+                int orCount = or.isApplicable(phrases);
                 int prCount = pr.isApplicable(phrases);
-                if (prCount > 0 || mrCount > 0) {
-                    if (prCount > mrCount) {
+                if (prCount > 0 || orCount > 0) {
+                    if (prCount > orCount) {
                         phrases = pr.apply(phrases);
                     } else {
                         phrases = or.apply(phrases);
@@ -184,7 +184,6 @@ public class Verbalizer {
                 newSize = phrases.size();
             }
         }
-
         return (new SubjectMergeRule()).apply(phrases);
     }
 

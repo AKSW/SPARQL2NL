@@ -84,8 +84,7 @@ public class PredicateMergeRule implements Rule {
         int phraseIndex = 0;
 
         //find the index with the highest number of mappings
-        List<Integer> phraseIndexes = new ArrayList<Integer>(map.keySet());
-        for (int key = 0; key < phraseIndexes.size(); key++) {
+        for (int key: map.keySet()) {
             if (map.get(key).size() > maxSize) {
                 maxSize = map.get(key).size();
                 phraseIndex = key;
