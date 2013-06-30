@@ -1044,10 +1044,18 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                         nnp.setPlural(true);
                         p.setPlural(true);
                     }
-                    
-                    p.setSubject(nlgFactory.createNounPhrase(subject, nnp));
+                    NPPhraseSpec nounPhrase = nlgFactory.createNounPhrase(nnp);
+                    nounPhrase.setPreModifier(subject);
+                    p.setSubject(nounPhrase);
                 } else {
-                    p.setSubject(nlgFactory.createNounPhrase(subject, predicateAsString));// + PlingStemmer.stem(predicateAsString));
+                	NLGElement nnp = nlgFactory.createInflectedWord(PlingStemmer.stem(predicateAsString), LexicalCategory.NOUN);
+                    if (!functionalityDetector.isFunctional(t.getPredicate().getURI())) {
+                        nnp.setPlural(true);
+                        p.setPlural(true);
+                    }
+                    NPPhraseSpec nounPhrase = nlgFactory.createNounPhrase(nnp);
+                    nounPhrase.setPreModifier(subject);
+                    p.setSubject(nounPhrase);
                 }
 
                 p.setVerb("be");

@@ -4,19 +4,27 @@
  */
 package org.aksw.sparql2nl.entitysummarizer.rules;
 
-import com.google.common.collect.Multimap;
-import com.google.common.collect.TreeMultimap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
+import org.dllearner.kb.sparql.SparqlEndpoint;
+
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
+import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
+
+import com.google.common.collect.Multimap;
+import com.google.common.collect.TreeMultimap;
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.Triple;
 
 /**
  *
@@ -117,11 +125,11 @@ public class ObjectMergeRule implements Rule {
             //does not work yet
             for (NLGElement subjElt : fusedPhrase.getSubject().getChildren()) {
                 if(!subjElt.hasFeature(Feature.POSSESSIVE))
-                ((NPPhraseSpec)subjElt).getHead().setPlural(true);
-//                    fusedPhrase.getSubject().setPlural(true);
+//                ((NPPhraseSpec)subjElt).getHead().setPlural(true);
+                    fusedPhrase.getSubject().setPlural(true);
             }
 
-            fusedPhrase.setSubject(realiser.realise(fusedPhrase.getSubject()));
+            fusedPhrase.setSubject(fusedPhrase.getSubject());
             fusedPhrase.getSubject().setPlural(true);
             fusedPhrase.getVerb().setPlural(true);
         }
@@ -172,5 +180,37 @@ public class ObjectMergeRule implements Rule {
         for (SPhraseSpec p : phrases) {
             System.out.println("=>" + realiser.realiseSentence(p));
         }
+        
+        SimpleNLGwithPostprocessing nlg = new SimpleNLGwithPostprocessing(SparqlEndpoint.getEndpointDBpedia());
+        SPhraseSpec s4 = nlg.getNLForTriple(Triple.create(
+        		Node.createURI("http://dbpedia.org/resource/Aero_Lloyd"), 
+        		Node.createURI("http://dbpedia.org/ontology/headquarter"), 
+        		Node.createURI("http://dbpedia.org/resource/Dublin")));
+        System.out.println(realiser.realiseSentence(s4));
+        s4.getSubject().setPlural(true);
+        System.out.println(realiser.realiseSentence(s4));
+        
+        SPhraseSpec s5 = nlg.getNLForTriple(Triple.create(
+        		Node.createURI("http://dbpedia.org/resource/Aero_Lloyd"), 
+        		Node.createURI("http://dbpedia.org/ontology/headquarter"), 
+        		Node.createURI("http://dbpedia.org/resource/Leipzig")));
+        System.out.println(realiser.realiseSentence(s5));
+//        s5.getSubject().setPlural(true);
+        for (NLGElement child : s5.getSubject().getChildren()) {
+			if(!child.getFeatureAsBoolean("possessive")){
+				child.setPlural(true);
+			}
+		}
+        System.out.println(realiser.realiseSentence(s5));
+        
+        NLGElement subject = nlgFactory.createNounPhrase("Aero Loyd");
+        subject = nlgFactory.createWord("Aero Loyds", LexicalCategory.NOUN);
+        subject.setFeature(Feature.POSSESSIVE, true);
+        NPPhraseSpec object = nlgFactory.createNounPhrase("headquarter");
+        object.setPlural(true);
+        object.setPreModifier(subject);
+        NPPhraseSpec object2 = nlgFactory.createNounPhrase("Leipzig");
+        SPhraseSpec p = nlgFactory.createClause(object, "is", object2);
+        System.out.println(realiser.realise(p));
     }
 }
