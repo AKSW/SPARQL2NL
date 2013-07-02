@@ -1049,10 +1049,6 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     p.setSubject(nounPhrase);
                 } else {
                 	NLGElement nnp = nlgFactory.createInflectedWord(PlingStemmer.stem(predicateAsString), LexicalCategory.NOUN);
-                    if (!functionalityDetector.isFunctional(t.getPredicate().getURI())) {
-                        nnp.setPlural(true);
-                        p.setPlural(true);
-                    }
                     NPPhraseSpec nounPhrase = nlgFactory.createNounPhrase(nnp);
                     nounPhrase.setPreModifier(subject);
                     p.setSubject(nounPhrase);
