@@ -18,6 +18,7 @@ import java.util.*;
 import org.aksw.sparql2nl.entitysummarizer.Verbalizer;
 import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator;
+import org.dllearner.core.owl.Individual;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import simplenlg.framework.NLGElement;
@@ -467,15 +468,15 @@ public class Rouge {
         Rouge rouge = new Rouge();
         rouge.multipleMode = MULTIPLE_MAX;
         Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpedia());
-        Resource r = ResourceFactory.createResource("http://dbpedia.org/resource/Chad_Ochocinco");
+        Individual ind = new Individual("http://dbpedia.org/resource/Chad_Ochocinco");
         NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AmericanFootballPlayer");
 //        Resource r = ResourceFactory.createResource("http://dbpedia.org/resource/Minority_Report_(film)");
 //        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Film");
-        List<NLGElement> text = v.verbalize(r, nc, 0.5, DatasetBasedGraphGenerator.Cooccurrence.PROPERTIES, HardeningFactory.HardeningType.AVERAGE);
+        List<NLGElement> text = v.verbalize(ind, nc, 0.5, DatasetBasedGraphGenerator.Cooccurrence.PROPERTIES, HardeningFactory.HardeningType.AVERAGE);
         String reference = v.realize(text);
-        String[] summaries = new String[]{"Chad Javon Ochocinco (born Chad Javon Johnson; January 9, 1978) is an American football wide receiver for the New England Patriots of the National Football League (NFL). He was drafted by the Cincinnati Bengals in the second round of the 2001 NFL Draft. He played college football at both Oregon State and Santa Monica College. He also played high school football at Miami Beach Senior High School. In April 2011, CNBC listed Ochocinco as #1 on the list of \"Most Influential Athletes In Social Media\". Ochocinco has been selected to the Pro Bowl six times and named an All-Pro three times.", 
-        "Chad Javon Ochocinco (born Chad Javon Johnson; January 9, 1978) is an American football wide receiver for the New England Patriots of the National Football League (NFL). He was drafted by the Cincinnati Bengals in the second round of the 2001 NFL Draft. He played college football at both Oregon State and Santa Monica College. He also played high school football at Miami Beach Senior High School."};
-        
+        String[] summaries = new String[]{"Chad Javon Ochocinco (born Chad Javon Johnson; January 9, 1978) is an American football wide receiver for the New England Patriots of the National Football League (NFL). He was drafted by the Cincinnati Bengals in the second round of the 2001 NFL Draft. He played college football at both Oregon State and Santa Monica College. He also played high school football at Miami Beach Senior High School. In April 2011, CNBC listed Ochocinco as #1 on the list of \"Most Influential Athletes In Social Media\". Ochocinco has been selected to the Pro Bowl six times and named an All-Pro three times.",
+            "Chad Javon Ochocinco (born Chad Javon Johnson; January 9, 1978) is an American football wide receiver for the New England Patriots of the National Football League (NFL). He was drafted by the Cincinnati Bengals in the second round of the 2001 NFL Draft. He played college football at both Oregon State and Santa Monica College. He also played high school football at Miami Beach Senior High School."};
+
         rouge.evaluate(reference, summaries);
 //        for (int i = 0; i < rouge.evaStat.length; i++) {
 //            for (int j = 0; j < rouge.evaStat[i].length; j++) {

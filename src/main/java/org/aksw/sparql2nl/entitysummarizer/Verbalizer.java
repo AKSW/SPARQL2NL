@@ -13,6 +13,7 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 import java.util.*;
+
 import org.aksw.sparql2nl.entitysummarizer.clustering.BorderFlowX;
 import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
 import org.aksw.sparql2nl.entitysummarizer.clustering.WeightedGraph;
@@ -25,6 +26,7 @@ import org.aksw.sparql2nl.entitysummarizer.rules.PredicateMergeRule;
 import org.aksw.sparql2nl.entitysummarizer.rules.Rule;
 import org.aksw.sparql2nl.entitysummarizer.rules.SubjectMergeRule;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
+import org.dllearner.core.owl.Individual;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.openrdf.model.vocabulary.RDF;
@@ -197,7 +199,7 @@ public class Verbalizer {
         return nlg.getNLForTriple(triple);
     }
 
-    public List<NLGElement> verbalize(Resource r, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
+    public List<NLGElement> verbalize(Individual ind, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
         //first get graph for nc
         WeightedGraph wg = new DatasetBasedGraphGenerator(endpoint, "cache").generateGraph(nc, threshold, "http://dbpedia.org/ontology/", cooccurrence);
 
@@ -209,9 +211,9 @@ public class Verbalizer {
         System.out.println("Cluster = " + sortedPropertyClusters);
 
         //finally generateSentencesFromClusters
-        List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, r);
+        List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.getName()));
 
-        Triple t = Triple.create(r.asNode(), ResourceFactory.createProperty(RDF.TYPE.toString()).asNode(),
+        Triple t = Triple.create(ResourceFactory.createResource(ind.getName()).asNode(), ResourceFactory.createProperty(RDF.TYPE.toString()).asNode(),
                 ResourceFactory.createResource(nc.getName()).asNode());
         result = Lists.reverse(result);
         result.add(generateSimplePhraseFromTriple(t));
@@ -219,14 +221,45 @@ public class Verbalizer {
 
         return result;
     }
+    
+    public Map<Individual, List<NLGElement>> verbalize(Set<Individual> individuals, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
+        //first get graph for nc
+        WeightedGraph wg = new DatasetBasedGraphGenerator(endpoint, "cache").generateGraph(nc, threshold, "http://dbpedia.org/ontology/", cooccurrence);
+
+        //then cluster the graph
+        BorderFlowX bf = new BorderFlowX(wg);
+        Set<Set<Node>> clusters = bf.cluster();
+        //then harden the results
+        List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
+        System.out.println("Cluster = " + sortedPropertyClusters);
+
+        Map<Individual, List<NLGElement>> verbalizations = new HashMap<Individual, List<NLGElement>>();
+        
+        for (Individual ind : individuals) {
+        	//finally generateSentencesFromClusters
+            List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.getName()));
+
+            Triple t = Triple.create(ResourceFactory.createResource(ind.getName()).asNode(), ResourceFactory.createProperty(RDF.TYPE.toString()).asNode(),
+                    ResourceFactory.createResource(nc.getName()).asNode());
+            result = Lists.reverse(result);
+            result.add(generateSimplePhraseFromTriple(t));
+            result = Lists.reverse(result);
+            
+            verbalizations.put(ind, result);
+		}
+        
+
+        return verbalizations;
+    }
 
     public static void main(String args[]) {
         Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpedia());
-        Resource r = ResourceFactory.createResource("http://dbpedia.org/resource/Chad_Ochocinco");
+
+        Individual ind = new Individual("http://dbpedia.org/resource/Chad_Ochocinco");
         NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AmericanFootballPlayer");
 //        Resource r = ResourceFactory.createResource("http://dbpedia.org/resource/Minority_Report_(film)");
 //        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Film");
-        List<NLGElement> text = v.verbalize(r, nc, 0.5, Cooccurrence.PROPERTIES, HardeningType.AVERAGE);
+        List<NLGElement> text = v.verbalize(ind, nc, 0.5, Cooccurrence.PROPERTIES, HardeningType.AVERAGE);
         System.out.println(v.realize(text));
 
     }
