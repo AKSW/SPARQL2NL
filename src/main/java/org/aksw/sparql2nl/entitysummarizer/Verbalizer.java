@@ -222,7 +222,6 @@ public class Verbalizer {
 
     public static void main(String args[]) {
         Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpedia());
-
         Resource r = ResourceFactory.createResource("http://dbpedia.org/resource/Chad_Ochocinco");
         NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AmericanFootballPlayer");
 //        Resource r = ResourceFactory.createResource("http://dbpedia.org/resource/Minority_Report_(film)");

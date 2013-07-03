@@ -42,7 +42,7 @@ public class ObjectMergeRule implements Rule {
         String subj1, subj2;
 
         for (int i = 0; i < phrases.size(); i++) {
-            p1 = phrases.get(i);            
+            p1 = phrases.get(i);
             count = 0;
             for (int j = i + 1; j < phrases.size(); j++) {
                 p2 = phrases.get(j);
@@ -116,8 +116,9 @@ public class ObjectMergeRule implements Rule {
         {
             //does not work yet
             for (NLGElement subjElt : fusedPhrase.getSubject().getChildren()) {
-                if(!subjElt.hasFeature(Feature.POSSESSIVE))
-                ((NPPhraseSpec)subjElt).getHead().setPlural(true);
+                if (!subjElt.hasFeature(Feature.POSSESSIVE)) {
+                    ((NPPhraseSpec) subjElt).getHead().setPlural(true);
+                }
 //                    fusedPhrase.getSubject().setPlural(true);
             }
 
@@ -127,9 +128,11 @@ public class ObjectMergeRule implements Rule {
         }
         //now create the final result
         List<SPhraseSpec> result = new ArrayList<SPhraseSpec>();
-        result.add(fusedPhrase);
-        for (int index = 0; index < phrases.size(); index++) {
-            if (!toMerge.contains(index)) {
+        for (int index = 0; index < phrases.size(); index++) {            
+            if (index == phraseIndex) {
+                result.add(fusedPhrase);
+            }
+            else if (!toMerge.contains(index)) {
                 result.add(phrases.get(index));
             }
         }
