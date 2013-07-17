@@ -127,12 +127,6 @@ public class ObjectMergeRule implements Rule {
                 if (!subjElt.hasFeature(Feature.POSSESSIVE)) {
                     ((NPPhraseSpec) subjElt).getHead().setPlural(true);
                 }
-//                    fusedPhrase.getSubject().setPlural(true);
-//=======
-//                if(!subjElt.hasFeature(Feature.POSSESSIVE))
-////                ((NPPhraseSpec)subjElt).getHead().setPlural(true);
-//                    fusedPhrase.getSubject().setPlural(true);
-//>>>>>>> 5e30f7083cee70f3a0e7cec23d003c090c2c18f1
             }
 
             fusedPhrase.setSubject(fusedPhrase.getSubject());
