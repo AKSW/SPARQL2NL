@@ -108,14 +108,17 @@ public class Verbalizer {
      * @return List of NLGElement
      */
     public List<NLGElement> generateSentencesFromClusters(List<Set<Node>> clusters, Resource resource) {
-        List<SPhraseSpec> buffer = new ArrayList<SPhraseSpec>();
+        List<SPhraseSpec> buffer;
+        List<NLGElement> result = new ArrayList<NLGElement>();
         Set<Triple> triples = new HashSet<Triple>();
 //        PredicateMergeRule pr = new PredicateMergeRule();
-                ObjectMergeRule or = new ObjectMergeRule();
+        ObjectMergeRule or = new ObjectMergeRule();
+        SubjectMergeRule sr = new SubjectMergeRule();
 
         for (Set<Node> propertySet : clusters) {
             //add up all triples for the given set of properties
             triples = new HashSet<Triple>();
+            buffer = new ArrayList<SPhraseSpec>();
             for (Node property : propertySet) {
                 triples = getTriples(resource, ResourceFactory.createProperty(property.label));
                 //all share the same property, thus they can be merged
@@ -125,9 +128,9 @@ public class Verbalizer {
                     System.out.println("+" + realiser.realise(s));
                 }
             }
+            result.addAll(sr.apply(buffer));
         }
-        
-        return applyMergeRules(buffer);
+        return result;
     }
 
     /**
@@ -213,6 +216,7 @@ public class Verbalizer {
         //finally generateSentencesFromClusters
         List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.getName()));
 
+        //Add type information at the beginning of the sentence
         Triple t = Triple.create(ResourceFactory.createResource(ind.getName()).asNode(), ResourceFactory.createProperty(RDF.TYPE.toString()).asNode(),
                 ResourceFactory.createResource(nc.getName()).asNode());
         result = Lists.reverse(result);
@@ -221,7 +225,7 @@ public class Verbalizer {
 
         return result;
     }
-    
+
     public Map<Individual, List<NLGElement>> verbalize(Set<Individual> individuals, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
         //first get graph for nc
         WeightedGraph wg = new DatasetBasedGraphGenerator(endpoint, "cache").generateGraph(nc, threshold, "http://dbpedia.org/ontology/", cooccurrence);
@@ -234,9 +238,9 @@ public class Verbalizer {
         System.out.println("Cluster = " + sortedPropertyClusters);
 
         Map<Individual, List<NLGElement>> verbalizations = new HashMap<Individual, List<NLGElement>>();
-        
+
         for (Individual ind : individuals) {
-        	//finally generateSentencesFromClusters
+            //finally generateSentencesFromClusters
             List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.getName()));
 
             Triple t = Triple.create(ResourceFactory.createResource(ind.getName()).asNode(), ResourceFactory.createProperty(RDF.TYPE.toString()).asNode(),
@@ -244,10 +248,9 @@ public class Verbalizer {
             result = Lists.reverse(result);
             result.add(generateSimplePhraseFromTriple(t));
             result = Lists.reverse(result);
-            
+
             verbalizations.put(ind, result);
-		}
-        
+        }
 
         return verbalizations;
     }
