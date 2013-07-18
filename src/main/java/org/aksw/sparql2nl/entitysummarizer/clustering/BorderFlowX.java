@@ -30,6 +30,7 @@ public class BorderFlowX implements ClusteringAlgorithm {
 
     public Set<Set<Node>> cluster() {
         Set<Set<Node>> result = new HashSet<Set<Node>>();
+        System.out.println("Graph ===\n"+graph);
         for (Node n : graph.nodes.keySet()) {
             result.add(cluster(n));
         }
@@ -59,6 +60,7 @@ public class BorderFlowX implements ClusteringAlgorithm {
                 newBorderFlow = computeBorderFlowRatio(cluster);
             }
         } while (oldBorderFlow < newBorderFlow);
+        System.out.println("Cluster("+n.label+") = "+cluster);
         return cluster;
     }
 
