@@ -258,11 +258,11 @@ public class Verbalizer {
     public static void main(String args[]) {
         Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpedia());
 
-        Individual ind = new Individual("http://dbpedia.org/resource/Chad_Ochocinco");
-        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AmericanFootballPlayer");
-//        Resource r = ResourceFactory.createResource("http://dbpedia.org/resource/Minority_Report_(film)");
-//        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Film");
-        List<NLGElement> text = v.verbalize(ind, nc, 0.5, Cooccurrence.PROPERTIES, HardeningType.AVERAGE);
+//        Individual ind = new Individual("http://dbpedia.org/resource/Chad_Ochocinco");
+//        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AmericanFootballPlayer");
+        Individual ind = new Individual("http://dbpedia.org/resource/Minority_Report_(film)");
+        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Film");
+        List<NLGElement> text = v.verbalize(ind, nc, 0.5, Cooccurrence.PROPERTIES, HardeningType.SMALLEST);
         System.out.println(v.realize(text));
 
     }
