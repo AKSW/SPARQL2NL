@@ -81,7 +81,7 @@ public class PredicateMergeRule implements Rule {
         }
 
         int maxSize = 0;
-        int phraseIndex = 0;
+        int phraseIndex = -1;
 
         //find the index with the highest number of mappings
         for (int key: map.keySet()) {
@@ -90,7 +90,7 @@ public class PredicateMergeRule implements Rule {
                 phraseIndex = key;
             }
         }
-
+        if(phraseIndex == -1) return phrases;
         //now merge
         NLGFactory nlgFactory = new NLGFactory(Lexicon.getDefaultLexicon());
         Collection<Integer> toMerge = map.get(phraseIndex);

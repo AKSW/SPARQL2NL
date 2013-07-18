@@ -80,7 +80,6 @@ public class SubjectMergeRule {
             p1 = phrases.get(i);
             if (!((NPPhraseSpec) p1.getSubject()).getPreModifiers().isEmpty()) {
                 subj1 = realiser.realiseSentence(((NPPhraseSpec) p1.getSubject()).getPreModifiers().get(0));
-                System.out.println(subj1);
                 for (int j = i + 1; j < phrases.size(); j++) {
                     p2 = phrases.get(j);
                     if (!((NPPhraseSpec) p2.getSubject()).getPreModifiers().isEmpty()) {
@@ -93,10 +92,10 @@ public class SubjectMergeRule {
             }
         }
 
-        System.out.println(map);
+//        System.out.println(map);
 
         int maxSize = 0;
-        int phraseIndex = 0;
+        int phraseIndex = -1;
 
         //find the index with the highest number of mappings
         List<Integer> phraseIndexes = new ArrayList<Integer>(map.keySet());
@@ -107,15 +106,22 @@ public class SubjectMergeRule {
             }
         }
 
+        if (phraseIndex == -1) {
+            List<NLGElement> results = new ArrayList<NLGElement>();
+            for (SPhraseSpec phrase : phrases) {
+                results.add((NLGElement) phrase);
+            }
+            return results;
+        }
         //now merge ** this needs to be improved
         Collection<Integer> toMerge = map.get(phraseIndex);
         CoordinatedPhraseElement elt = nlgFactory.createCoordinatedPhrase();
         elt.addCoordinate(phrases.get(phraseIndex));
         for (int index : toMerge) {
-            NPPhraseSpec np= nlgFactory.createNounPhrase("he");
+            NPPhraseSpec np = nlgFactory.createNounPhrase("he");
             np.setFeature(Feature.POSSESSIVE, true);
             ((NPPhraseSpec) phrases.get(index).getSubject()).setPreModifier(np);
-            
+
             elt.addCoordinate(phrases.get(index));
         }
         toMerge.add(phraseIndex);

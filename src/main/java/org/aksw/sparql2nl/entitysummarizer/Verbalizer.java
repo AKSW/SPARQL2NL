@@ -128,7 +128,7 @@ public class Verbalizer {
                     System.out.println("+" + realiser.realise(s));
                 }
             }
-            result.addAll(sr.apply(buffer));
+            result.addAll(sr.apply(or.apply(buffer)));
         }
         return result;
     }
