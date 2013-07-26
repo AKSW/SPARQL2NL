@@ -98,7 +98,7 @@ public class ObjectMergeRule implements Rule {
         }
 
         int maxSize = 0;
-        int phraseIndex = 0;
+        int phraseIndex = -1;
 
         //find the index with the highest number of mappings
 //        List<Integer> phraseIndexes = new ArrayList<Integer>(map.keySet());
@@ -108,7 +108,8 @@ public class ObjectMergeRule implements Rule {
                 phraseIndex = key;
             }
         }
-
+        
+        if(phraseIndex == -1) return phrases;
         //now merge
         Collection<Integer> toMerge = map.get(phraseIndex);
         toMerge.add(phraseIndex);

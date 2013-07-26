@@ -139,11 +139,16 @@ public class DatasetBasedGraphGenerator {
             ObjectProperty property2 = iterator.next();
 
             try {
-                Node node1 = property2Node.get(property1);
-                Node node2 = property2Node.get(property2);
-                wg.addNode(node1, 0d);
-                wg.addNode(node2, 0d);
-                wg.addEdge(node1, node2, frequency);
+                if (frequency > 0) {
+                    Node node1 = property2Node.get(property1);
+                    Node node2 = property2Node.get(property2);
+                    wg.addNode(node1, 0d);
+                    wg.addNode(node2, 0d);
+                    wg.addEdge(node1, node2, frequency);
+                    if (c.equals(Cooccurrence.PROPERTIES)) {
+                        wg.addEdge(node2, node1, frequency);
+                    }
+                }
             } catch (ExecutionException e) {
                 e.printStackTrace();
             }
