@@ -11,8 +11,17 @@ import com.aliasi.sentences.SentenceModel;
 import com.aliasi.sentences.IndoEuropeanSentenceModel;
 import com.aliasi.tokenizer.*;
 import com.aliasi.util.Streams;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import java.io.*;
 import java.util.*;
+import org.aksw.sparql2nl.entitysummarizer.Verbalizer;
+import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory;
+import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator;
+import org.dllearner.core.owl.Individual;
+import org.dllearner.core.owl.NamedClass;
+import org.dllearner.kb.sparql.SparqlEndpoint;
+import simplenlg.framework.NLGElement;
 
 public class Rouge {
 
@@ -458,15 +467,23 @@ public class Rouge {
     public static void main(String args[]) {
         Rouge rouge = new Rouge();
         rouge.multipleMode = MULTIPLE_MAX;
-        String[] summaries = new String[]{"I like apples", "I love apples", "I enjoy apples"};
-        String reference = "A. J. Edds (born September 18, 1987 in Greenwood, Indiana) is an American football linebacker for the Indianapolis Colts of the National Football League. He was drafted by the Miami Dolphins in the fourth round of the 2010 NFL Draft. He played college football at Iowa. He has also been a member of the New England Patriots.";
+        Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpediaLiveAKSW());
+        Individual ind = new Individual("http://dbpedia.org/resource/Chad_Ochocinco");
+        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AmericanFootballPlayer");
+//        Resource r = ResourceFactory.createResource("http://dbpedia.org/resource/Minority_Report_(film)");
+//        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Film");
+        List<NLGElement> text = v.verbalize(ind, nc, 0.5, DatasetBasedGraphGenerator.Cooccurrence.PROPERTIES, HardeningFactory.HardeningType.AVERAGE);
+        String reference = v.realize(text);
+        String[] summaries = new String[]{"Chad Javon Ochocinco (born Chad Javon Johnson; January 9, 1978) is an American football wide receiver for the New England Patriots of the National Football League (NFL). He was drafted by the Cincinnati Bengals in the second round of the 2001 NFL Draft. He played college football at both Oregon State and Santa Monica College. He also played high school football at Miami Beach Senior High School. In April 2011, CNBC listed Ochocinco as #1 on the list of \"Most Influential Athletes In Social Media\". Ochocinco has been selected to the Pro Bowl six times and named an All-Pro three times.",
+            "Chad Javon Ochocinco (born Chad Javon Johnson; January 9, 1978) is an American football wide receiver for the New England Patriots of the National Football League (NFL). He was drafted by the Cincinnati Bengals in the second round of the 2001 NFL Draft. He played college football at both Oregon State and Santa Monica College. He also played high school football at Miami Beach Senior High School."};
+
         rouge.evaluate(reference, summaries);
-        for (int i = 0; i < rouge.evaStat.length; i++) {
-            for (int j = 0; j < rouge.evaStat[i].length; j++) {
-                System.out.print(rouge.evaStat[i][j] + "\t");
-            }
-            System.out.println();
-        }
+//        for (int i = 0; i < rouge.evaStat.length; i++) {
+//            for (int j = 0; j < rouge.evaStat[i].length; j++) {
+//                System.out.print(rouge.evaStat[i][j] + "\t");
+//            }
+//            System.out.println();
+//        }
         System.out.println(rouge.getPrecision());
         System.out.println(rouge.getRecall());
         System.out.println(rouge.getFScore());

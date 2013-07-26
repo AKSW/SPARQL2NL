@@ -4,16 +4,25 @@
  */
 package org.aksw.sparql2nl.entitysummarizer.rules;
 
+import com.clarkparsia.pellet.sparqldl.model.CoreNewImpl;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
+
+import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.aksw.sparql2nl.entitysummarizer.gender.StanfordGenderDetector;
+
+import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.framework.PhraseElement;
 import simplenlg.lexicon.Lexicon;
+import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
@@ -22,7 +31,7 @@ import simplenlg.realiser.english.Realiser;
  * @author ngonga
  */
 public class SubjectMergeRule {
-    
+
     /**
      * Checks whether a rule is applicable and returns the number of pairs on
      * which it can be applied
@@ -53,21 +62,22 @@ public class SubjectMergeRule {
         return count;
     }
 
-    /** Applies this rule to the phrases
-     * 
+    /**
+     * Applies this rule to the phrases
+     *
      * @param phrases Set of phrases
      * @return Result of the rule being applied
      */
     public List<NLGElement> apply(List<SPhraseSpec> phrases) {
-        
-        if(phrases.size() <= 1)
-        {
+
+        if (phrases.size() <= 1) {
             List<NLGElement> result = new ArrayList<NLGElement>();
-            for(SPhraseSpec s: phrases)
+            for (SPhraseSpec s : phrases) {
                 result.add(s);
+            }
             return result;
         }
-        
+
         SPhraseSpec p1, p2;
         String subj1, subj2;
 
@@ -75,16 +85,22 @@ public class SubjectMergeRule {
         Multimap<Integer, Integer> map = TreeMultimap.create();
         for (int i = 0; i < phrases.size(); i++) {
             p1 = phrases.get(i);
-            subj1 = realiser.realiseSentence(p1.getSubject());
-
-            for (int j = i + 1; j < phrases.size(); j++) {
-                p2 = phrases.get(j);
-                subj2 = realiser.realiseSentence(p2.getSubject());
-                if (subj1.equals(subj2)) {
-                    map.put(i, j);
+            if (!((NPPhraseSpec) p1.getSubject()).getPreModifiers().isEmpty()) {
+                subj1 = realiser.realiseSentence(((NPPhraseSpec) p1.getSubject()).getPreModifiers().get(0));
+                System.out.println(subj1);
+                for (int j = i + 1; j < phrases.size(); j++) {
+                    p2 = phrases.get(j);
+                    if (!((NPPhraseSpec) p2.getSubject()).getPreModifiers().isEmpty()) {
+                        subj2 = realiser.realiseSentence(((NPPhraseSpec) p2.getSubject()).getPreModifiers().get(0));
+                        if (subj1.equals(subj2)) {
+                            map.put(i, j);
+                        }
+                    }
                 }
             }
         }
+
+        System.out.println(map);
 
         int maxSize = 0;
         int phraseIndex = 0;
@@ -100,11 +116,16 @@ public class SubjectMergeRule {
 
         //now merge ** this needs to be improved
         Collection<Integer> toMerge = map.get(phraseIndex);
-        toMerge.add(phraseIndex);
         CoordinatedPhraseElement elt = nlgFactory.createCoordinatedPhrase();
+        elt.addCoordinate(phrases.get(phraseIndex));
         for (int index : toMerge) {
+            NPPhraseSpec np= nlgFactory.createNounPhrase("he");
+            np.setFeature(Feature.POSSESSIVE, true);
+            ((NPPhraseSpec) phrases.get(index).getSubject()).setPreModifier(np);
+            
             elt.addCoordinate(phrases.get(index));
         }
+        toMerge.add(phraseIndex);
 
 
         //now create the final result
@@ -124,13 +145,22 @@ public class SubjectMergeRule {
         Realiser realiser = new Realiser(lexicon);
 
         SPhraseSpec s1 = nlgFactory.createClause();
-        s1.setSubject("Mike");
+        NPPhraseSpec np1 = nlgFactory.createNounPhrase("mother");
+        NPPhraseSpec subj1 = nlgFactory.createNounPhrase("Mike");
+        subj1.setFeature(Feature.POSSESSIVE, true);
+        np1.setPreModifier(subj1);
+        s1.setSubject(np1);
         s1.setVerb("like");
         s1.setObject("apples");
         s1.getObject().setPlural(true);
 
         SPhraseSpec s2 = nlgFactory.createClause();
-        s2.setSubject("Mike");
+        NPPhraseSpec np2 = nlgFactory.createNounPhrase("father");
+        NPPhraseSpec subj2 = nlgFactory.createNounPhrase("Mike");
+        subj2.setFeature(Feature.POSSESSIVE, true);
+        np2.setPreModifier(subj2);
+        s2.setSubject(np2);
+
         s2.setVerb("eat");
         s2.setObject("apples");
         s2.getObject().setPlural(true);
@@ -154,5 +184,6 @@ public class SubjectMergeRule {
         for (NLGElement p : phrases2) {
             System.out.println("=>" + realiser.realiseSentence(p));
         }
+        
     }
 }
