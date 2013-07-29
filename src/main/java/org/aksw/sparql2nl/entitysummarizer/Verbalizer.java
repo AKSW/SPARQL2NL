@@ -30,8 +30,12 @@ import org.dllearner.core.owl.Individual;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.openrdf.model.vocabulary.RDF;
+import simplenlg.features.Feature;
+import simplenlg.framework.CoordinatedPhraseElement;
+import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
 import simplenlg.lexicon.Lexicon;
+import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
@@ -86,8 +90,8 @@ public class Verbalizer {
      * @param resource Resource to summarize
      * @return Textual representation
      */
-    public String realize(List<Set<Node>> properties, Resource resource) {
-        List<NLGElement> elts = generateSentencesFromClusters(properties, resource);
+    public String realize(List<Set<Node>> properties, Resource resource, NamedClass nc) {
+        List<NLGElement> elts = generateSentencesFromClusters(properties, resource, nc);
         return realize(elts);
     }
 
@@ -107,8 +111,10 @@ public class Verbalizer {
      * @param resource Resource to summarize
      * @return List of NLGElement
      */
-    public List<NLGElement> generateSentencesFromClusters(List<Set<Node>> clusters, Resource resource) {
+    public List<NLGElement> generateSentencesFromClusters(List<Set<Node>> clusters,
+            Resource resource, NamedClass namedClass) {
         List<SPhraseSpec> buffer;
+        List<NPPhraseSpec> subjects = generateSubjects(resource, namedClass);
         List<NLGElement> result = new ArrayList<NLGElement>();
         Set<Triple> triples = new HashSet<Triple>();
 //        PredicateMergeRule pr = new PredicateMergeRule();
@@ -123,12 +129,12 @@ public class Verbalizer {
                 triples = getTriples(resource, ResourceFactory.createProperty(property.label));
                 //all share the same property, thus they can be merged
                 buffer.addAll(or.apply(getPhraseSpecsFromTriples(triples)));
-                System.out.println("===========");
-                for (SPhraseSpec s : buffer) {
-                    System.out.println("+" + realiser.realise(s));
-                }
             }
             result.addAll(sr.apply(or.apply(buffer)));
+        }
+
+        for (int i = 0; i < result.size(); i++) {
+            result.set(i, replaceSubject(result.get(i), subjects));
         }
         return result;
     }
@@ -214,7 +220,7 @@ public class Verbalizer {
         System.out.println("Cluster = " + sortedPropertyClusters);
 
         //finally generateSentencesFromClusters
-        List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.getName()));
+        List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.getName()), nc);
 
         //Add type information at the beginning of the sentence
         Triple t = Triple.create(ResourceFactory.createResource(ind.getName()).asNode(), ResourceFactory.createProperty(RDF.TYPE.toString()).asNode(),
@@ -241,7 +247,7 @@ public class Verbalizer {
 
         for (Individual ind : individuals) {
             //finally generateSentencesFromClusters
-            List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.getName()));
+            List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.getName()), nc);
 
             Triple t = Triple.create(ResourceFactory.createResource(ind.getName()).asNode(), ResourceFactory.createProperty(RDF.TYPE.toString()).asNode(),
                     ResourceFactory.createResource(nc.getName()).asNode());
@@ -255,6 +261,15 @@ public class Verbalizer {
         return verbalizations;
     }
 
+    public List<NPPhraseSpec> generateSubjects(Resource resource, NamedClass nc) {
+        List<NPPhraseSpec> result = new ArrayList<NPPhraseSpec>();
+        result.add(nlg.getNPPhrase(resource.getURI(), false, false));
+        NPPhraseSpec np = nlg.getNPPhrase(nc.getName(), false);
+        np.addPreModifier("This");
+        result.add(np);
+        return result;
+    }
+
     public static void main(String args[]) {
         Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpedia());
 
@@ -264,6 +279,46 @@ public class Verbalizer {
         NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Film");
         List<NLGElement> text = v.verbalize(ind, nc, 0.5, Cooccurrence.PROPERTIES, HardeningType.SMALLEST);
         System.out.println(v.realize(text));
+        for (NLGElement p : text) {
+            if (p instanceof CoordinatedPhraseElement) {
+                for(NLGElement p2: p.getChildren())
+                System.out.println("==="+v.realiser.realiseSentence(p2));
+            }
+        }
 
+    }
+
+    /** Replaces the subject of a coordinated phrase or simple phrase with a 
+     * subject from a list of precomputed subjects
+     * 
+     * @param phrase
+     * @param subjects
+     * @return Phrase with replaced subject
+     */
+    private NLGElement replaceSubject(NLGElement phrase, List<NPPhraseSpec> subjects) {
+        SPhraseSpec sphrase;
+        if (phrase instanceof SPhraseSpec) {
+            sphrase = (SPhraseSpec) phrase;
+        } else if (phrase instanceof CoordinatedPhraseElement) {
+            sphrase = (SPhraseSpec) ((CoordinatedPhraseElement) phrase).getChildren().get(0);
+        }
+        else return phrase;
+        int index = (int)Math.floor(Math.random()*subjects.size());
+        if(sphrase.getChildren().size() > 1) //possesive subject
+        {
+            NPPhraseSpec subject = nlg.nlgFactory.createNounPhrase(((NPPhraseSpec)sphrase.getSubject()).getHead());
+            NPPhraseSpec modifier = nlg.nlgFactory.createNounPhrase(subjects.get(index));
+            modifier.setFeature(Feature.POSSESSIVE, true);
+                subject.setPreModifier(modifier);
+                if(sphrase.getSubject().isPlural())
+                    subject.setPlural(true);
+                sphrase.setSubject(subject);
+//            ((NPPhraseSpec)sphrase.getSubject()).setPreModifier(subjects.get(index));
+//            ((NPPhraseSpec)sphrase.getSubject()).setFeature(Feature.POSSESSIVE, true);
+//            ((NPPhraseSpec)sphrase.getSubject()).getHead().setFeature(Feature.POSSESSIVE, true);
+        }
+        
+        else sphrase.setSubject(subjects.get(index));
+        return phrase;
     }
 }
