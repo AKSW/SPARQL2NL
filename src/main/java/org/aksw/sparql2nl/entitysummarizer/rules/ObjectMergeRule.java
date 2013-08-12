@@ -121,16 +121,14 @@ public class ObjectMergeRule implements Rule {
 
         SPhraseSpec fusedPhrase = phrases.get(phraseIndex);
         fusedPhrase.setObject(elt);
-        if (fusedPhrase.getSubject().getChildren().size() > 0) //possessive subject
+        if (fusedPhrase.getSubject().getChildren().size() > 1) //possessive subject
         {
-            //does not work yet
             for (NLGElement subjElt : fusedPhrase.getSubject().getChildren()) {
                 if (!subjElt.hasFeature(Feature.POSSESSIVE)) {
                     ((NPPhraseSpec) subjElt).getHead().setPlural(true);
                 }
             }
 
-            fusedPhrase.setSubject(fusedPhrase.getSubject());
             fusedPhrase.getSubject().setPlural(true);
             fusedPhrase.getVerb().setPlural(true);
         }

@@ -64,7 +64,7 @@ public class SubjectMergeRule {
 
     /**
      * Applies this rule to the phrases
-     *
+     * Returns a list of either CoordinatedPhraseElement or SPhraseSpec
      * @param phrases Set of phrases
      * @return Result of the rule being applied
      */
@@ -120,9 +120,14 @@ public class SubjectMergeRule {
             }
             return results;
         }
-        //now merge ** this needs to be improved
+    
         Collection<Integer> toMerge = map.get(phraseIndex);
         CoordinatedPhraseElement elt = nlgFactory.createCoordinatedPhrase();
+        
+        //change subject here
+        phrases.get(phraseIndex).getSubject();
+        
+        
         elt.addCoordinate(phrases.get(phraseIndex));
         for (int index : toMerge) {
             NPPhraseSpec np = nlgFactory.createNounPhrase("he");
