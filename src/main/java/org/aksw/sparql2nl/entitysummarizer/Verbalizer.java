@@ -271,21 +271,15 @@ public class Verbalizer {
     }
 
     public static void main(String args[]) {
-        Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpedia());
+        Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpediaLiveAKSW());
 
-//        Individual ind = new Individual("http://dbpedia.org/resource/Chad_Ochocinco");
-//        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AmericanFootballPlayer");
-        Individual ind = new Individual("http://dbpedia.org/resource/Minority_Report_(film)");
-        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Film");
+        Individual ind = new Individual("http://dbpedia.org/resource/John_Passmore");
+        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Philosopher");
+//        Individual ind = new Individual("http://dbpedia.org/resource/Minority_Report_(film)");
+//        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Film");
         List<NLGElement> text = v.verbalize(ind, nc, 0.5, Cooccurrence.PROPERTIES, HardeningType.SMALLEST);
         System.out.println(v.realize(text));
-        for (NLGElement p : text) {
-            if (p instanceof CoordinatedPhraseElement) {
-                for(NLGElement p2: p.getChildren())
-                System.out.println("==="+v.realiser.realiseSentence(p2));
-            }
-        }
-
+        
     }
 
     /** Replaces the subject of a coordinated phrase or simple phrase with a 
