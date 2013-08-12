@@ -50,6 +50,13 @@ public class Verbalizer {
     Map<Resource, String> labels;
     NumericLiteralFilter litFilter;
 
+    public Verbalizer(SparqlEndpoint endpoint, String wordnetDirectory) {
+        nlg = new SimpleNLGwithPostprocessing(endpoint, wordnetDirectory);
+        this.endpoint = endpoint;
+        labels = new HashMap<Resource, String>();
+        litFilter = new NumericLiteralFilter(endpoint);
+    }
+    
     public Verbalizer(SparqlEndpoint endpoint) {
         nlg = new SimpleNLGwithPostprocessing(endpoint);
         this.endpoint = endpoint;

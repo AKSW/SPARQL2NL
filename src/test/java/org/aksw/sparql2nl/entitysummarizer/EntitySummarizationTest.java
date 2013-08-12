@@ -38,7 +38,7 @@ public class EntitySummarizationTest {
 	/**
 	 * @throws java.lang.Exception
 	 */
-	@Before
+//	@Before
 	public void setUp() throws Exception {
 		if(maxNrOfLogEntries == -1){
 			logEntries = dumpProcessor.processDump(queryLog);
@@ -51,7 +51,7 @@ public class EntitySummarizationTest {
 	/**
 	 * Test method for {@link org.aksw.sparql2nl.entitysummarizer.EntitySummarizationModelGenerator#generateModel(java.util.Collection)}.
 	 */
-	@Test
+//	@Test
 	public void testGenerateModel() {
 		EntitySummarizationModel model = generator.generateModel(logEntries);
 		System.out.println(model);
@@ -61,7 +61,7 @@ public class EntitySummarizationTest {
 	 * Test method for {@link org.aksw.sparql2nl.entitysummarizer.EntitySummarizationModelGenerator#generateModel(java.util.Collection)},
 	 * but this time generating the model for each user agent occurring in the query log dump
 	 */
-	@Test
+//	@Test
 	public void testGenerateModelByUserAgent() {
 		Multimap<String, LogEntry> groupedByUserAgent = LogEntryGrouping.groupByUserAgent(logEntries);
 		
