@@ -50,7 +50,7 @@ public class Verbalizer {
     SimpleNLGwithPostprocessing nlg;
     SparqlEndpoint endpoint;
     String language = "en";
-    Realiser realiser = new Realiser(Lexicon.getDefaultLexicon());
+    Realiser realiser;
     Map<Resource, String> labels;
     NumericLiteralFilter litFilter;
 
@@ -59,13 +59,15 @@ public class Verbalizer {
         this.endpoint = endpoint;
         labels = new HashMap<Resource, String>();
         litFilter = new NumericLiteralFilter(endpoint);
+        realiser = nlg.realiser;
     }
-    
+
     public Verbalizer(SparqlEndpoint endpoint) {
         nlg = new SimpleNLGwithPostprocessing(endpoint);
         this.endpoint = endpoint;
         labels = new HashMap<Resource, String>();
         litFilter = new NumericLiteralFilter(endpoint);
+        realiser = nlg.realiser;
     }
 
     /**
@@ -144,10 +146,11 @@ public class Verbalizer {
             result.addAll(sr.apply(or.apply(buffer)));
         }
 
+        List<NLGElement> phrases = new ArrayList<NLGElement>();
         for (int i = 0; i < result.size(); i++) {
-            result.set(i, replaceSubject(result.get(i), subjects));
+            phrases.add(replaceSubject(result.get(i), subjects));
         }
-        return result;
+        return phrases;
     }
 
     /**
@@ -232,14 +235,12 @@ public class Verbalizer {
 
         //finally generateSentencesFromClusters
         List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.getName()), nc);
-
         //Add type information at the beginning of the sentence
         Triple t = Triple.create(ResourceFactory.createResource(ind.getName()).asNode(), ResourceFactory.createProperty(RDF.TYPE.toString()).asNode(),
                 ResourceFactory.createResource(nc.getName()).asNode());
         result = Lists.reverse(result);
         result.add(generateSimplePhraseFromTriple(t));
         result = Lists.reverse(result);
-
         return result;
     }
 
@@ -277,12 +278,15 @@ public class Verbalizer {
         result.add(nlg.getNPPhrase(resource.getURI(), false, false));
         NPPhraseSpec np = nlg.getNPPhrase(nc.getName(), false);
         np.addPreModifier("This");
+        System.out.println(np);
         result.add(np);
         return result;
     }
 
     public static void main(String args[]) {
-        Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpediaLiveAKSW());
+        SparqlEndpoint endpoint = SparqlEndpoint.getEndpointLOD2Cloud();
+        endpoint.getDefaultGraphURIs().add("http://dbpedia.org");
+        Verbalizer v = new Verbalizer(endpoint);
 
         Individual ind = new Individual("http://dbpedia.org/resource/John_Passmore");
         NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Philosopher");
@@ -290,12 +294,13 @@ public class Verbalizer {
 //        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Film");
         List<NLGElement> text = v.verbalize(ind, nc, 0.5, Cooccurrence.PROPERTIES, HardeningType.SMALLEST);
         System.out.println(v.realize(text));
-        
+
     }
 
-    /** Replaces the subject of a coordinated phrase or simple phrase with a 
+    /**
+     * Replaces the subject of a coordinated phrase or simple phrase with a
      * subject from a list of precomputed subjects
-     * 
+     *
      * @param phrase
      * @param subjects
      * @return Phrase with replaced subject
@@ -306,24 +311,29 @@ public class Verbalizer {
             sphrase = (SPhraseSpec) phrase;
         } else if (phrase instanceof CoordinatedPhraseElement) {
             sphrase = (SPhraseSpec) ((CoordinatedPhraseElement) phrase).getChildren().get(0);
+        } else {
+            return phrase;
         }
-        else return phrase;
-        int index = (int)Math.floor(Math.random()*subjects.size());
-        if(sphrase.getChildren().size() > 1) //possesive subject
+        int index = (int) Math.floor(Math.random() * subjects.size());
+        
+        if (((NPPhraseSpec) sphrase.getSubject()).getPreModifiers().size() > 0) //possesive subject
         {
-            NPPhraseSpec subject = nlg.nlgFactory.createNounPhrase(((NPPhraseSpec)sphrase.getSubject()).getHead());
+            NPPhraseSpec subject = nlg.nlgFactory.createNounPhrase(((NPPhraseSpec) sphrase.getSubject()).getHead());
             NPPhraseSpec modifier = nlg.nlgFactory.createNounPhrase(subjects.get(index));
             modifier.setFeature(Feature.POSSESSIVE, true);
-                subject.setPreModifier(modifier);
-                if(sphrase.getSubject().isPlural())
-                    subject.setPlural(true);
-                sphrase.setSubject(subject);
+            subject.setPreModifier(modifier);
+            if (sphrase.getSubject().isPlural()) {
+                subject.setPlural(true);
+            }
+            sphrase.setSubject(subject);
 //            ((NPPhraseSpec)sphrase.getSubject()).setPreModifier(subjects.get(index));
 //            ((NPPhraseSpec)sphrase.getSubject()).setFeature(Feature.POSSESSIVE, true);
 //            ((NPPhraseSpec)sphrase.getSubject()).getHead().setFeature(Feature.POSSESSIVE, true);
+        } else {
+            sphrase.setSubject(subjects.get(index));
+//            System.out.println(realiser.realiseSentence(phrase));
+//            sphrase.getSubject().setFeature(Feature.POSSESSIVE, false);
         }
-        
-        else sphrase.setSubject(subjects.get(index));
         return phrase;
     }
 }
