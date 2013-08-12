@@ -115,7 +115,6 @@ public class Verbalizer {
     public String realize(List<NLGElement> elts) {
         String realization = "";
         for (NLGElement elt : elts) {
-            System.out.println("=== " + realiser.realiseSentence(elt));
             realization = realization + realiser.realiseSentence(elt) + " ";
         }
         return realization.substring(0, realization.length() - 1);
@@ -295,7 +294,6 @@ public class Verbalizer {
         result.add(nlg.getNPPhrase(resource.getURI(), false, false));
         NPPhraseSpec np = nlg.getNPPhrase(nc.getName(), false);
         np.addPreModifier("This");
-        System.out.println(np);
         result.add(np);
         return result;
     }
