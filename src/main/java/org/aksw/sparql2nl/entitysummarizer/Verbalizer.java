@@ -12,6 +12,7 @@ import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
+import edu.stanford.nlp.dcoref.Dictionaries;
 import java.util.*;
 
 import org.aksw.sparql2nl.entitysummarizer.clustering.BorderFlowX;
@@ -21,6 +22,9 @@ import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory
 import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory.HardeningType;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator.Cooccurrence;
+import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector;
+import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector.Gender;
+import org.aksw.sparql2nl.entitysummarizer.gender.LexiconBasedGenderDetector;
 import org.aksw.sparql2nl.entitysummarizer.rules.NumericLiteralFilter;
 import org.aksw.sparql2nl.entitysummarizer.rules.ObjectMergeRule;
 import org.aksw.sparql2nl.entitysummarizer.rules.PredicateMergeRule;
@@ -33,9 +37,7 @@ import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.openrdf.model.vocabulary.RDF;
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
-import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
-import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
@@ -53,6 +55,7 @@ public class Verbalizer {
     Realiser realiser;
     Map<Resource, String> labels;
     NumericLiteralFilter litFilter;
+    GenderDetector gender;
 
     public Verbalizer(SparqlEndpoint endpoint, String wordnetDirectory) {
         nlg = new SimpleNLGwithPostprocessing(endpoint, wordnetDirectory);
@@ -60,6 +63,7 @@ public class Verbalizer {
         labels = new HashMap<Resource, String>();
         litFilter = new NumericLiteralFilter(endpoint);
         realiser = nlg.realiser;
+        gender = new LexiconBasedGenderDetector();
     }
 
     public Verbalizer(SparqlEndpoint endpoint) {
@@ -68,6 +72,7 @@ public class Verbalizer {
         labels = new HashMap<Resource, String>();
         litFilter = new NumericLiteralFilter(endpoint);
         realiser = nlg.realiser;
+        gender = new LexiconBasedGenderDetector();
     }
 
     /**
@@ -110,6 +115,7 @@ public class Verbalizer {
     public String realize(List<NLGElement> elts) {
         String realization = "";
         for (NLGElement elt : elts) {
+            System.out.println("=== " + realiser.realiseSentence(elt));
             realization = realization + realiser.realiseSentence(elt) + " ";
         }
         return realization.substring(0, realization.length() - 1);
@@ -153,13 +159,15 @@ public class Verbalizer {
 
         List<NLGElement> phrases = new ArrayList<NLGElement>();
         if (replaceSubjects) {
+
             for (int i = 0; i < result.size(); i++) {
                 phrases.add(replaceSubject(result.get(i), subjects));
             }
             return phrases;
+        } else {
+            return result;
         }
-        else return result;
-        
+
     }
 
     /**
@@ -243,7 +251,7 @@ public class Verbalizer {
         System.out.println("Cluster = " + sortedPropertyClusters);
 
         //finally generateSentencesFromClusters
-        List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.getName()), nc);
+        List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.getName()), nc, true);
         //Add type information at the beginning of the sentence
         Triple t = Triple.create(ResourceFactory.createResource(ind.getName()).asNode(), ResourceFactory.createProperty(RDF.TYPE.toString()).asNode(),
                 ResourceFactory.createResource(nc.getName()).asNode());
@@ -324,7 +332,6 @@ public class Verbalizer {
             return phrase;
         }
         int index = (int) Math.floor(Math.random() * subjects.size());
-
         if (((NPPhraseSpec) sphrase.getSubject()).getPreModifiers().size() > 0) //possesive subject
         {
             NPPhraseSpec subject = nlg.nlgFactory.createNounPhrase(((NPPhraseSpec) sphrase.getSubject()).getHead());
@@ -339,9 +346,19 @@ public class Verbalizer {
 //            ((NPPhraseSpec)sphrase.getSubject()).setFeature(Feature.POSSESSIVE, true);
 //            ((NPPhraseSpec)sphrase.getSubject()).getHead().setFeature(Feature.POSSESSIVE, true);
         } else {
-            sphrase.setSubject(subjects.get(index));
-            System.out.println(realiser.realiseSentence(phrase));
-//            sphrase.getSubject().setFeature(Feature.POSSESSIVE, false);
+// does not fully work due to bug in SimpleNLG code      
+            String name = realiser.realiseSentence(subjects.get(0));
+            name = name.split(" ")[0];
+            if (gender != null) {
+                Gender g = gender.getGender(name);
+                if (g.equals(Gender.MALE)) {
+                    sphrase.setSubject("He");
+                } else if (g.equals(Gender.FEMALE)) {
+                    sphrase.setSubject("She");
+                } else {
+                    sphrase.setSubject("It");
+                }
+            }
         }
         return phrase;
     }
