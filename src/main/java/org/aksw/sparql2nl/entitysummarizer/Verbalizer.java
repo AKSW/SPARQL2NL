@@ -115,6 +115,11 @@ public class Verbalizer {
         return realization.substring(0, realization.length() - 1);
     }
 
+    public List<NLGElement> generateSentencesFromClusters(List<Set<Node>> clusters,
+            Resource resource, NamedClass namedClass) {
+        return generateSentencesFromClusters(clusters, resource, namedClass, false);
+    }
+
     /**
      * Takes the output of the clustering for a given class and a resource.
      * Returns the verbalization for the resource
@@ -124,7 +129,7 @@ public class Verbalizer {
      * @return List of NLGElement
      */
     public List<NLGElement> generateSentencesFromClusters(List<Set<Node>> clusters,
-            Resource resource, NamedClass namedClass) {
+            Resource resource, NamedClass namedClass, boolean replaceSubjects) {
         List<SPhraseSpec> buffer;
         List<NPPhraseSpec> subjects = generateSubjects(resource, namedClass);
         List<NLGElement> result = new ArrayList<NLGElement>();
@@ -147,10 +152,14 @@ public class Verbalizer {
         }
 
         List<NLGElement> phrases = new ArrayList<NLGElement>();
-        for (int i = 0; i < result.size(); i++) {
-            phrases.add(replaceSubject(result.get(i), subjects));
+        if (replaceSubjects) {
+            for (int i = 0; i < result.size(); i++) {
+                phrases.add(replaceSubject(result.get(i), subjects));
+            }
+            return phrases;
         }
-        return phrases;
+        else return result;
+        
     }
 
     /**
@@ -315,7 +324,7 @@ public class Verbalizer {
             return phrase;
         }
         int index = (int) Math.floor(Math.random() * subjects.size());
-        
+
         if (((NPPhraseSpec) sphrase.getSubject()).getPreModifiers().size() > 0) //possesive subject
         {
             NPPhraseSpec subject = nlg.nlgFactory.createNounPhrase(((NPPhraseSpec) sphrase.getSubject()).getHead());
@@ -331,7 +340,7 @@ public class Verbalizer {
 //            ((NPPhraseSpec)sphrase.getSubject()).getHead().setFeature(Feature.POSSESSIVE, true);
         } else {
             sphrase.setSubject(subjects.get(index));
-//            System.out.println(realiser.realiseSentence(phrase));
+            System.out.println(realiser.realiseSentence(phrase));
 //            sphrase.getSubject().setFeature(Feature.POSSESSIVE, false);
         }
         return phrase;
