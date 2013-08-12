@@ -4,11 +4,18 @@
  */
 package org.aksw.sparql2nl.entitysummarizer.rules;
 
+import com.clarkparsia.pellet.sparqldl.model.CoreNewImpl;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
+
+import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.aksw.sparql2nl.entitysummarizer.gender.StanfordGenderDetector;
+
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.NLGElement;
@@ -188,5 +195,6 @@ public class SubjectMergeRule {
         for (NLGElement p : phrases2) {
             System.out.println("=>" + realiser.realiseSentence(p));
         }
+        
     }
 }

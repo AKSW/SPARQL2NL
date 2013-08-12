@@ -21,6 +21,7 @@ import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory
 import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory.HardeningType;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator.Cooccurrence;
+import org.aksw.sparql2nl.entitysummarizer.rules.NumericLiteralFilter;
 import org.aksw.sparql2nl.entitysummarizer.rules.ObjectMergeRule;
 import org.aksw.sparql2nl.entitysummarizer.rules.PredicateMergeRule;
 import org.aksw.sparql2nl.entitysummarizer.rules.Rule;
@@ -51,11 +52,20 @@ public class Verbalizer {
     String language = "en";
     Realiser realiser = new Realiser(Lexicon.getDefaultLexicon());
     Map<Resource, String> labels;
+    NumericLiteralFilter litFilter;
 
+    public Verbalizer(SparqlEndpoint endpoint, String wordnetDirectory) {
+        nlg = new SimpleNLGwithPostprocessing(endpoint, wordnetDirectory);
+        this.endpoint = endpoint;
+        labels = new HashMap<Resource, String>();
+        litFilter = new NumericLiteralFilter(endpoint);
+    }
+    
     public Verbalizer(SparqlEndpoint endpoint) {
         nlg = new SimpleNLGwithPostprocessing(endpoint);
         this.endpoint = endpoint;
         labels = new HashMap<Resource, String>();
+        litFilter = new NumericLiteralFilter(endpoint);
     }
 
     /**
@@ -127,6 +137,7 @@ public class Verbalizer {
             buffer = new ArrayList<SPhraseSpec>();
             for (Node property : propertySet) {
                 triples = getTriples(resource, ResourceFactory.createProperty(property.label));
+//                litFilter.filter(triples);
                 //all share the same property, thus they can be merged
                 buffer.addAll(or.apply(getPhraseSpecsFromTriples(triples)));
             }

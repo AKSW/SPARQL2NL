@@ -193,7 +193,7 @@ public class ObjectMergeRule implements Rule {
         
         SPhraseSpec s5 = nlg.getNLForTriple(Triple.create(
         		Node.createURI("http://dbpedia.org/resource/Aero_Lloyd"), 
-        		Node.createURI("http://dbpedia.org/ontology/headquarter"), 
+        		Node.createURI("http://dbpedia.org/ontology/weight"), 
         		Node.createURI("http://dbpedia.org/resource/Leipzig")));
         System.out.println(realiser.realiseSentence(s5));
 //        s5.getSubject().setPlural(true);
@@ -207,11 +207,12 @@ public class ObjectMergeRule implements Rule {
         NLGElement subject = nlgFactory.createNounPhrase("Aero Loyd");
         subject = nlgFactory.createWord("Aero Loyds", LexicalCategory.NOUN);
         subject.setFeature(Feature.POSSESSIVE, true);
-        NPPhraseSpec object = nlgFactory.createNounPhrase("headquarter");
+        NPPhraseSpec object = nlgFactory.createNounPhrase("weight");
         object.setPlural(true);
         object.setPreModifier(subject);
         NPPhraseSpec object2 = nlgFactory.createNounPhrase("Leipzig");
         SPhraseSpec p = nlgFactory.createClause(object, "is", object2);
+        System.out.println(p);
         System.out.println(realiser.realise(p));
     }
 }
