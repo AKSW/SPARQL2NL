@@ -31,7 +31,14 @@ public class LexiconBasedGenderDetector implements GenderDetector {
      */
     @Override
     public Gender getGender(String name) {
-        if (male.contains(name)) {
+    	String searchName = name;
+    	//check if name is compound
+    	String[] words = name.split(" ");
+    	if(words.length > 1){
+    		searchName = words[0];
+    	}
+    	
+        if (male.contains(searchName)) {
             return Gender.MALE;
         } else if (female.contains(name)) {
             return Gender.FEMALE;
@@ -82,6 +89,6 @@ public class LexiconBasedGenderDetector implements GenderDetector {
             }
         }
         LexiconBasedGenderDetector genderDetector = new LexiconBasedGenderDetector(male, female);
-        System.out.println(genderDetector.getGender("Axel"));
+        System.out.println(genderDetector.getGender("Axel Ngonga"));
     }
 }

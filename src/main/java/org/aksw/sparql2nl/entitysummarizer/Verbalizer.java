@@ -311,12 +311,14 @@ public class Verbalizer {
     }
 
     public static void main(String args[]) {
-        SparqlEndpoint endpoint = SparqlEndpoint.getEndpointLOD2Cloud();
-        endpoint.getDefaultGraphURIs().add("http://dbpedia.org");
+    	SparqlEndpoint endpoint = SparqlEndpoint.getEndpointLOD2Cloud();
+    	endpoint.getDefaultGraphURIs().add("http://dbpedia.org");
+    	
         Verbalizer v = new Verbalizer(endpoint);
 
 //        Individual ind = new Individual("http://dbpedia.org/resource/Barbara_Aland");
-        Individual ind = new Individual("http://dbpedia.org/resource/John_Passmore");
+//        Individual ind = new Individual("http://dbpedia.org/resource/John_Passmore");
+        Individual ind = new Individual("http://dbpedia.org/resource/Emma_Goldman");
         NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Philosopher");
 //        Individual ind = new Individual("http://dbpedia.org/resource/Minority_Report_(film)");
 //        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Film");
