@@ -282,7 +282,9 @@ public class Verbalizer {
     }
 
     public static void main(String args[]) {
-        Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpediaLiveAKSW());
+    	SparqlEndpoint endpoint = SparqlEndpoint.getEndpointLOD2Cloud();
+    	endpoint.getDefaultGraphURIs().add("http://dbpedia.org");
+        Verbalizer v = new Verbalizer(endpoint);
 
         Individual ind = new Individual("http://dbpedia.org/resource/John_Passmore");
         NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Philosopher");
