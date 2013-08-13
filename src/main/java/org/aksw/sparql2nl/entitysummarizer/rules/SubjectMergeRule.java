@@ -25,6 +25,7 @@ import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
+import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector.Gender;
 
 /**
  *
@@ -63,12 +64,13 @@ public class SubjectMergeRule {
     }
 
     /**
-     * Applies this rule to the phrases
-     * Returns a list of either CoordinatedPhraseElement or SPhraseSpec
+     * Applies this rule to the phrases Returns a list of either
+     * CoordinatedPhraseElement or SPhraseSpec
+     *
      * @param phrases Set of phrases
      * @return Result of the rule being applied
      */
-    public List<NLGElement> apply(List<SPhraseSpec> phrases) {
+    public List<NLGElement> apply(List<SPhraseSpec> phrases, Gender gender) {
 
         if (phrases.size() <= 1) {
             List<NLGElement> result = new ArrayList<NLGElement>();
@@ -120,20 +122,26 @@ public class SubjectMergeRule {
             }
             return results;
         }
-    
+
         Collection<Integer> toMerge = map.get(phraseIndex);
         CoordinatedPhraseElement elt = nlgFactory.createCoordinatedPhrase();
-        
+
         //change subject here
         phrases.get(phraseIndex).getSubject();
-        
-        
+
+
         elt.addCoordinate(phrases.get(phraseIndex));
         for (int index : toMerge) {
-            NPPhraseSpec np = nlgFactory.createNounPhrase("he");
-            np.setFeature(Feature.POSSESSIVE, true);
-            ((NPPhraseSpec) phrases.get(index).getSubject()).setPreModifier(np);
+            if (gender.equals(Gender.MALE)) {
+                ((NPPhraseSpec) phrases.get(index).getSubject()).setPreModifier("his");
 
+            } else if (gender.equals(Gender.FEMALE)) {
+                ((NPPhraseSpec) phrases.get(index).getSubject()).setPreModifier("her");
+            } else {
+                ((NPPhraseSpec) phrases.get(index).getSubject()).setPreModifier("its");
+            }
+//            np.setFeature(Feature.POSSESSIVE, true);
+//            ((NPPhraseSpec) phrases.get(index).getSubject()).setPreModifier("her");
             elt.addCoordinate(phrases.get(index));
         }
         toMerge.add(phraseIndex);
@@ -190,11 +198,11 @@ public class SubjectMergeRule {
         for (SPhraseSpec p : phrases) {
             System.out.println("=>" + realiser.realiseSentence(p));
         }
-        List<NLGElement> phrases2 = (new SubjectMergeRule()).apply(phrases);
+        List<NLGElement> phrases2 = (new SubjectMergeRule()).apply(phrases, Gender.FEMALE);
 
         for (NLGElement p : phrases2) {
             System.out.println("=>" + realiser.realiseSentence(p));
         }
-        
+
     }
 }

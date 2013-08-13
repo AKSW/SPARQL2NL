@@ -5,7 +5,6 @@
 package org.aksw.sparql2nl.entitysummarizer.rules;
 
 import java.util.List;
-import simplenlg.framework.NLGElement;
 import simplenlg.phrasespec.SPhraseSpec;
 
 /**

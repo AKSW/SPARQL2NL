@@ -136,13 +136,18 @@ public class Verbalizer {
     public List<NLGElement> generateSentencesFromClusters(List<Set<Node>> clusters,
             Resource resource, NamedClass namedClass, boolean replaceSubjects) {
         List<SPhraseSpec> buffer;
-        List<NPPhraseSpec> subjects = generateSubjects(resource, namedClass);
-        List<NLGElement> result = new ArrayList<NLGElement>();
-        Set<Triple> triples = new HashSet<Triple>();
-//        PredicateMergeRule pr = new PredicateMergeRule();
+        PredicateMergeRule pr = new PredicateMergeRule();
         ObjectMergeRule or = new ObjectMergeRule();
         SubjectMergeRule sr = new SubjectMergeRule();
 
+        String label = realiser.realiseSentence(nlg.getNPPhrase(resource.getURI(), false, false));
+        String firstToken = label.split(" ")[0];
+        Gender g = gender.getGender(firstToken);
+
+        List<NPPhraseSpec> subjects = generateSubjects(resource, namedClass, g);
+        List<NLGElement> result = new ArrayList<NLGElement>();
+        Set<Triple> triples = new HashSet<Triple>();
+//      
         for (Set<Node> propertySet : clusters) {
             //add up all triples for the given set of properties
             triples = new HashSet<Triple>();
@@ -153,14 +158,14 @@ public class Verbalizer {
                 //all share the same property, thus they can be merged
                 buffer.addAll(or.apply(getPhraseSpecsFromTriples(triples)));
             }
-            result.addAll(sr.apply(or.apply(buffer)));
+            result.addAll(sr.apply(or.apply(buffer), g));
         }
 
         List<NLGElement> phrases = new ArrayList<NLGElement>();
         if (replaceSubjects) {
 
             for (int i = 0; i < result.size(); i++) {
-                phrases.add(replaceSubject(result.get(i), subjects));
+                phrases.add(replaceSubject(result.get(i), subjects, g));
             }
             return phrases;
         } else {
@@ -175,8 +180,8 @@ public class Verbalizer {
      * @param triples A set of triples
      * @return A set of sentences representing these triples
      */
-    public List<NLGElement> generateSentencesFromTriples(Set<Triple> triples) {
-        return applyMergeRules(getPhraseSpecsFromTriples(triples));
+    public List<NLGElement> generateSentencesFromTriples(Set<Triple> triples, Gender g) {
+        return applyMergeRules(getPhraseSpecsFromTriples(triples), g);
     }
 
     /**
@@ -200,7 +205,7 @@ public class Verbalizer {
      * @param triples List of triles
      * @return List of sentences
      */
-    public List<NLGElement> applyMergeRules(List<SPhraseSpec> triples) {
+    public List<NLGElement> applyMergeRules(List<SPhraseSpec> triples, Gender g) {
         List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
         phrases.addAll(triples);
 
@@ -225,7 +230,7 @@ public class Verbalizer {
                 newSize = phrases.size();
             }
         }
-        return (new SubjectMergeRule()).apply(phrases);
+        return (new SubjectMergeRule()).apply(phrases, g);
     }
 
     /**
@@ -289,12 +294,19 @@ public class Verbalizer {
         return verbalizations;
     }
 
-    public List<NPPhraseSpec> generateSubjects(Resource resource, NamedClass nc) {
+    public List<NPPhraseSpec> generateSubjects(Resource resource, NamedClass nc, Gender g) {
         List<NPPhraseSpec> result = new ArrayList<NPPhraseSpec>();
         result.add(nlg.getNPPhrase(resource.getURI(), false, false));
         NPPhraseSpec np = nlg.getNPPhrase(nc.getName(), false);
         np.addPreModifier("This");
         result.add(np);
+        if (g.equals(Gender.MALE)) {
+            result.add(nlg.nlgFactory.createNounPhrase("he"));
+        } else if (g.equals(Gender.FEMALE)) {
+            result.add(nlg.nlgFactory.createNounPhrase("she"));
+        } else {
+            result.add(nlg.nlgFactory.createNounPhrase("it"));
+        }
         return result;
     }
 
@@ -303,6 +315,7 @@ public class Verbalizer {
         endpoint.getDefaultGraphURIs().add("http://dbpedia.org");
         Verbalizer v = new Verbalizer(endpoint);
 
+//        Individual ind = new Individual("http://dbpedia.org/resource/Barbara_Aland");
         Individual ind = new Individual("http://dbpedia.org/resource/John_Passmore");
         NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Philosopher");
 //        Individual ind = new Individual("http://dbpedia.org/resource/Minority_Report_(film)");
@@ -320,7 +333,7 @@ public class Verbalizer {
      * @param subjects
      * @return Phrase with replaced subject
      */
-    private NLGElement replaceSubject(NLGElement phrase, List<NPPhraseSpec> subjects) {
+    private NLGElement replaceSubject(NLGElement phrase, List<NPPhraseSpec> subjects, Gender g) {
         SPhraseSpec sphrase;
         if (phrase instanceof SPhraseSpec) {
             sphrase = (SPhraseSpec) phrase;
@@ -330,32 +343,43 @@ public class Verbalizer {
             return phrase;
         }
         int index = (int) Math.floor(Math.random() * subjects.size());
+//        index = 2;
         if (((NPPhraseSpec) sphrase.getSubject()).getPreModifiers().size() > 0) //possesive subject
         {
+
             NPPhraseSpec subject = nlg.nlgFactory.createNounPhrase(((NPPhraseSpec) sphrase.getSubject()).getHead());
-            NPPhraseSpec modifier = nlg.nlgFactory.createNounPhrase(subjects.get(index));
-            modifier.setFeature(Feature.POSSESSIVE, true);
-            subject.setPreModifier(modifier);
+            NPPhraseSpec modifier;
+            if (index < subjects.size() - 1) {
+                modifier = nlg.nlgFactory.createNounPhrase(subjects.get(index));
+                modifier.setFeature(Feature.POSSESSIVE, true);
+                subject.setPreModifier(modifier);
+                modifier.setFeature(Feature.POSSESSIVE, true);
+
+            } else {
+
+                if (g.equals(Gender.MALE)) {
+                    subject.setPreModifier("his");
+                } else if (g.equals(Gender.FEMALE)) {
+                    subject.setPreModifier("her");
+                } else {
+                    subject.setPreModifier("its");
+                }
+            }
             if (sphrase.getSubject().isPlural()) {
+
+//                subject.getSpecifier().setPlural(false);
                 subject.setPlural(true);
             }
             sphrase.setSubject(subject);
-//            ((NPPhraseSpec)sphrase.getSubject()).setPreModifier(subjects.get(index));
-//            ((NPPhraseSpec)sphrase.getSubject()).setFeature(Feature.POSSESSIVE, true);
-//            ((NPPhraseSpec)sphrase.getSubject()).getHead().setFeature(Feature.POSSESSIVE, true);
+
         } else {
 // does not fully work due to bug in SimpleNLG code      
-            String name = realiser.realiseSentence(subjects.get(0));
-            name = name.split(" ")[0];
-            if (gender != null) {
-                Gender g = gender.getGender(name);
-                if (g.equals(Gender.MALE)) {
-                    sphrase.setSubject("He");
-                } else if (g.equals(Gender.FEMALE)) {
-                    sphrase.setSubject("She");
-                } else {
-                    sphrase.setSubject("It");
-                }
+            if (g.equals(Gender.MALE)) {
+                sphrase.setSubject("He");
+            } else if (g.equals(Gender.FEMALE)) {
+                sphrase.setSubject("She");
+            } else {
+                sphrase.setSubject("It");
             }
         }
         return phrase;
