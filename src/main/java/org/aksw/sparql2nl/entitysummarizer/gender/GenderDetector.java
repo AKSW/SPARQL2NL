@@ -1,11 +1,7 @@
 /**
- * 
+ *
  */
 package org.aksw.sparql2nl.entitysummarizer.gender;
-
-enum Gender {
-	MALE, FEMALE, UNKNOWN;
-}
 
 /**
  * @author Lorenz Buehmann
@@ -13,5 +9,10 @@ enum Gender {
  */
 public interface GenderDetector {
 
-	Gender getGender(String name);
+    Gender getGender(String name);
+
+    enum Gender {
+
+        MALE, FEMALE, UNKNOWN;
+    }
 }
