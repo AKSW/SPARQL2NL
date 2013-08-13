@@ -81,13 +81,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>uk.ac.shef.wit</groupId>
-            <artifactId>simmetrics</artifactId>
-            <version>1.6.2</version>
-            <type>jar</type>
-            <scope>compile</scope>
-        </dependency>
+        
         <dependency>
             <groupId>ifi.uzh</groupId>
             <artifactId>simpack</artifactId>
