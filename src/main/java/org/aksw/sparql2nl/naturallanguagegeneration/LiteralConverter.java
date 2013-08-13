@@ -7,7 +7,9 @@ import java.util.Date;
 
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.joda.time.DateTime;
 
+import com.clarkparsia.pellet.datatypes.types.datetime.XSDGYear;
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.impl.LiteralLabel;
@@ -19,6 +21,7 @@ public class LiteralConverter {
 
     private static final Logger logger = Logger.getLogger(LiteralConverter.class);
     private URIConverter uriConverter;
+    private DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.LONG);
 
     public LiteralConverter(URIConverter uriConverter) {
         this.uriConverter = uriConverter;
@@ -41,13 +44,14 @@ public class LiteralConverter {
                     try {
                         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-DD");
                         Date date = simpleDateFormat.parse(s);
-                        DateFormat format = DateFormat.getDateInstance(DateFormat.LONG);
-                        String newDate = format.format(date);
+                        String newDate = dateFormat.format(date);
                         s = newDate;
                     } catch (ParseException e) {
                         logger.error("Could not parse literal with date datatype: " + lit, e);
                     }
-                }
+                } else if (dt.equals(XSDDatatype.XSDgYear)) {
+                	s = dateFormat.format(new DateTime(lit.getLexicalForm()).toDate());
+                } 
             } else {// user-defined datatype
                 s = lit.getLexicalForm() + " " + splitAtCamelCase(uriConverter.convert(dt.getURI(), false));
             }
@@ -81,13 +85,16 @@ public class LiteralConverter {
     public static void main(String[] args) {
         LiteralConverter conv = new LiteralConverter(new URIConverter(
                 SparqlEndpoint.getEndpointDBpediaLiveAKSW()));
-        LiteralLabel lit = NodeFactory.createLiteralNode("123", null,
-                "http://dbpedia.org/datatypes/squareKilometre").getLiteral();
-        System.out.println(lit);
-        System.out.println(conv.convert(lit));
+        LiteralLabel lit;// = NodeFactory.createLiteralNode("123", null,"http://dbpedia.org/datatypes/squareKilometre").getLiteral();
+//        System.out.println(lit);
+//        System.out.println(conv.convert(lit));
 
         lit = NodeFactory.createLiteralNode("1999-10-24", null,
                 XSD.date.getURI()).getLiteral();
+        System.out.println(lit);
+        System.out.println(conv.convert(lit));
+        
+        lit = NodeFactory.createLiteralNode("1914-01-01T00:00:00+02:00", null, "http://www.w3.org/2001/XMLSchema#gYear").getLiteral();
         System.out.println(lit);
         System.out.println(conv.convert(lit));
 
