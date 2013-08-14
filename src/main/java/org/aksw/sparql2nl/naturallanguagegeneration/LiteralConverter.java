@@ -4,6 +4,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
@@ -35,14 +36,14 @@ public class LiteralConverter {
     public String convert(LiteralLabel lit) {
         RDFDatatype dt = lit.getDatatype();
 
-        String s = lit.getLexicalForm();
+        String s = lit.getLexicalForm();System.out.println(s);
         if (dt == null) {// plain literal, i.e. omit language tag if exists
             s = lit.getLexicalForm();
         } else {// typed literal
             if (dt instanceof XSDDatatype) {// built-in XSD datatype
                 if (dt.equals(XSDDatatype.XSDdate) || dt.equals(XSDDatatype.XSDdateTime)) {
                     try {
-                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-DD");
+                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.UK);
                         Date date = simpleDateFormat.parse(s);
                         String newDate = dateFormat.format(date);
                         s = newDate;
@@ -89,7 +90,7 @@ public class LiteralConverter {
 //        System.out.println(lit);
 //        System.out.println(conv.convert(lit));
 
-        lit = NodeFactory.createLiteralNode("1999-10-24", null,
+        lit = NodeFactory.createLiteralNode("1869-06-27", null,
                 XSD.date.getURI()).getLiteral();
         System.out.println(lit);
         System.out.println(conv.convert(lit));

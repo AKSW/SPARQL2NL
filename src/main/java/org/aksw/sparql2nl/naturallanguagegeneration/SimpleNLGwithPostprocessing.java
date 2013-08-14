@@ -1048,7 +1048,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     nounPhrase.setPreModifier(subject);
                     p.setSubject(nounPhrase);
                 } else {
-                	NLGElement nnp = nlgFactory.createInflectedWord(PlingStemmer.stem(predicateAsString), LexicalCategory.NOUN);
+                	//TODO build singular of verbal phrase or not?
+//                	predicateAsString = PlingStemmer.stem(predicateAsString);
+                	NLGElement nnp = nlgFactory.createInflectedWord(predicateAsString, LexicalCategory.NOUN);
                     NPPhraseSpec nounPhrase = nlgFactory.createNounPhrase(nnp);
                     nounPhrase.setPreModifier(subject);
                     p.setSubject(nounPhrase);

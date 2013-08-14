@@ -4,16 +4,12 @@
  */
 package org.aksw.sparql2nl.entitysummarizer;
 
-import com.google.common.collect.Lists;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.rdf.model.Property;
-import com.hp.hpl.jena.rdf.model.RDFNode;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.ResourceFactory;
-import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
-import edu.stanford.nlp.dcoref.Dictionaries;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.aksw.sparql2nl.entitysummarizer.clustering.BorderFlowX;
 import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
@@ -35,12 +31,22 @@ import org.dllearner.core.owl.Individual;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.openrdf.model.vocabulary.RDF;
+
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.NLGElement;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
+
+import com.google.common.collect.Lists;
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.ResourceFactory;
+import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 
 /**
  * A verbalizer for triples without variables.
@@ -56,6 +62,7 @@ public class Verbalizer {
     Map<Resource, String> labels;
     NumericLiteralFilter litFilter;
     GenderDetector gender;
+    Map<Resource, Set<Triple>> resource2Triples;
 
     public Verbalizer(SparqlEndpoint endpoint, String wordnetDirectory) {
         nlg = new SimpleNLGwithPostprocessing(endpoint, wordnetDirectory);
@@ -146,17 +153,18 @@ public class Verbalizer {
 
         List<NPPhraseSpec> subjects = generateSubjects(resource, namedClass, g);
         List<NLGElement> result = new ArrayList<NLGElement>();
-        Set<Triple> triples = new HashSet<Triple>();
+        Set<Triple> allTriples = new HashSet<Triple>();
 //      
         for (Set<Node> propertySet : clusters) {
             //add up all triples for the given set of properties
-            triples = new HashSet<Triple>();
+            Set<Triple> triples = new HashSet<Triple>();
             buffer = new ArrayList<SPhraseSpec>();
             for (Node property : propertySet) {
                 triples = getTriples(resource, ResourceFactory.createProperty(property.label));
 //                litFilter.filter(triples);
                 //all share the same property, thus they can be merged
                 buffer.addAll(or.apply(getPhraseSpecsFromTriples(triples)));
+                allTriples.addAll(triples);
             }
             result.addAll(sr.apply(or.apply(buffer), g));
         }
@@ -172,6 +180,14 @@ public class Verbalizer {
             return result;
         }
 
+    }
+    
+    public Set<Triple> getSummaryTriples(Resource resource){
+    	return resource2Triples.get(resource);
+    }
+    
+    public Set<Triple> getSummaryTriples(Individual individual){
+    	return resource2Triples.get(ResourceFactory.createResource(individual.getName()));
     }
 
     /**
@@ -266,7 +282,8 @@ public class Verbalizer {
     }
 
     public Map<Individual, List<NLGElement>> verbalize(Set<Individual> individuals, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
-        //first get graph for nc
+        resource2Triples = new HashMap<Resource, Set<Triple>>();
+    	//first get graph for nc
         WeightedGraph wg = new DatasetBasedGraphGenerator(endpoint, "cache").generateGraph(nc, threshold, "http://dbpedia.org/ontology/", cooccurrence);
 
         //then cluster the graph
@@ -312,7 +329,7 @@ public class Verbalizer {
 
     public static void main(String args[]) {
     	SparqlEndpoint endpoint = SparqlEndpoint.getEndpointLOD2Cloud();
-    	endpoint.getDefaultGraphURIs().add("http://dbpedia.org");
+    	endpoint.getDefaultGraphURIs().add("http://dbpedia.org");endpoint = SparqlEndpoint.getEndpointDBpedia();
     	
         Verbalizer v = new Verbalizer(endpoint);
 
