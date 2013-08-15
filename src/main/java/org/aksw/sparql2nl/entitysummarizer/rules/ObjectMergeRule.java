@@ -33,6 +33,17 @@ import com.hp.hpl.jena.graph.Triple;
  */
 public class ObjectMergeRule implements Rule {
 
+   
+	Lexicon lexicon;
+    NLGFactory nlgFactory;
+    Realiser realiser;
+
+    public ObjectMergeRule(Lexicon lexicon, NLGFactory nlgFactory, Realiser realiser) {
+		this.lexicon = lexicon;
+		this.nlgFactory = nlgFactory;
+		this.realiser = realiser;
+	}
+
     /**
      * Checks whether a rule is applicable and returns the number of pairs on
      * which it can be applied
@@ -40,10 +51,6 @@ public class ObjectMergeRule implements Rule {
      * @param phrases List of phrases
      * @return Number of mapping pairs
      */
-    Lexicon lexicon = Lexicon.getDefaultLexicon();
-    NLGFactory nlgFactory = new NLGFactory(lexicon);
-    Realiser realiser = new Realiser(lexicon);
-
     public int isApplicable(List<SPhraseSpec> phrases) {
         int max = 0, count = 0;
         SPhraseSpec p1, p2;
@@ -182,7 +189,7 @@ public class ObjectMergeRule implements Rule {
         for (SPhraseSpec p : phrases) {
             System.out.println("=>" + realiser.realiseSentence(p));
         }
-        phrases = (new ObjectMergeRule()).apply(phrases);
+        phrases = (new ObjectMergeRule(lexicon, nlgFactory, realiser)).apply(phrases);
 
         for (SPhraseSpec p : phrases) {
             System.out.println("=>" + realiser.realiseSentence(p));

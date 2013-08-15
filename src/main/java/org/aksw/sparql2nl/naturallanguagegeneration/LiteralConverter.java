@@ -10,7 +10,6 @@ import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.joda.time.DateTime;
 
-import com.clarkparsia.pellet.datatypes.types.datetime.XSDGYear;
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.impl.LiteralLabel;
@@ -36,7 +35,7 @@ public class LiteralConverter {
     public String convert(LiteralLabel lit) {
         RDFDatatype dt = lit.getDatatype();
 
-        String s = lit.getLexicalForm();System.out.println(s);
+        String s = lit.getLexicalForm();
         if (dt == null) {// plain literal, i.e. omit language tag if exists
             s = lit.getLexicalForm();
         } else {// typed literal

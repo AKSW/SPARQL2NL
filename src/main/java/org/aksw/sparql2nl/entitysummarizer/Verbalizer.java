@@ -4,13 +4,23 @@
  */
 package org.aksw.sparql2nl.entitysummarizer;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
+import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
+import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
+import org.aksw.jena_sparql_api.cache.extra.CacheCoreH2;
+import org.aksw.jena_sparql_api.cache.extra.CacheEx;
+import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
+import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
+import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.entitysummarizer.clustering.BorderFlowX;
 import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
 import org.aksw.sparql2nl.entitysummarizer.clustering.WeightedGraph;
@@ -24,7 +34,6 @@ import org.aksw.sparql2nl.entitysummarizer.gender.LexiconBasedGenderDetector;
 import org.aksw.sparql2nl.entitysummarizer.rules.NumericLiteralFilter;
 import org.aksw.sparql2nl.entitysummarizer.rules.ObjectMergeRule;
 import org.aksw.sparql2nl.entitysummarizer.rules.PredicateMergeRule;
-import org.aksw.sparql2nl.entitysummarizer.rules.Rule;
 import org.aksw.sparql2nl.entitysummarizer.rules.SubjectMergeRule;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.dllearner.core.owl.Individual;
@@ -41,12 +50,12 @@ import simplenlg.realiser.english.Realiser;
 
 import com.google.common.collect.Lists;
 import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
-import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 
 /**
  * A verbalizer for triples without variables.
@@ -62,7 +71,14 @@ public class Verbalizer {
     Map<Resource, String> labels;
     NumericLiteralFilter litFilter;
     GenderDetector gender;
-    Map<Resource, Set<Triple>> resource2Triples;
+    Map<Resource, Collection<Triple>> resource2Triples;
+    
+    private QueryExecutionFactory qef;
+	private String cacheDirectory = "cache/sparql";
+	
+	PredicateMergeRule pr;
+    ObjectMergeRule or;
+    SubjectMergeRule sr;
 
     public Verbalizer(SparqlEndpoint endpoint, String wordnetDirectory) {
         nlg = new SimpleNLGwithPostprocessing(endpoint, wordnetDirectory);
@@ -71,15 +87,28 @@ public class Verbalizer {
         litFilter = new NumericLiteralFilter(endpoint);
         realiser = nlg.realiser;
         gender = new LexiconBasedGenderDetector();
+        
+        pr = new PredicateMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
+        or = new ObjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
+        sr = new SubjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
+        
+        qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
+		if(cacheDirectory != null){
+			try {
+				long timeToLive = TimeUnit.DAYS.toMillis(30);
+				CacheCoreEx cacheBackend = CacheCoreH2.create(cacheDirectory, timeToLive, true);
+				CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
+				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
     }
 
     public Verbalizer(SparqlEndpoint endpoint) {
-        nlg = new SimpleNLGwithPostprocessing(endpoint);
-        this.endpoint = endpoint;
-        labels = new HashMap<Resource, String>();
-        litFilter = new NumericLiteralFilter(endpoint);
-        realiser = nlg.realiser;
-        gender = new LexiconBasedGenderDetector();
+        this(endpoint, null);
     }
 
     /**
@@ -93,14 +122,15 @@ public class Verbalizer {
         Set<Triple> result = new HashSet<Triple>();
         try {
             String q = "SELECT ?o where { <" + r.getURI() + "> <" + p.getURI() + "> ?o.}";// FILTER langMatches( lang(?p), " + language + " )}";
-            QueryEngineHTTP qexec = new QueryEngineHTTP(endpoint.getURL().toString(), q);
-            ResultSet results = qexec.execSelect();
+            QueryExecution qe = qef.createQueryExecution(q);
+            ResultSet results = qe.execSelect();
             if (results.hasNext()) {
                 while (results.hasNext()) {
                     RDFNode n = results.next().get("o");
                     result.add(Triple.create(r.asNode(), p.asNode(), n.asNode()));
                 }
             }
+            qe.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -143,9 +173,7 @@ public class Verbalizer {
     public List<NLGElement> generateSentencesFromClusters(List<Set<Node>> clusters,
             Resource resource, NamedClass namedClass, boolean replaceSubjects) {
         List<SPhraseSpec> buffer;
-        PredicateMergeRule pr = new PredicateMergeRule();
-        ObjectMergeRule or = new ObjectMergeRule();
-        SubjectMergeRule sr = new SubjectMergeRule();
+        
 
         String label = realiser.realiseSentence(nlg.getNPPhrase(resource.getURI(), false, false));
         String firstToken = label.split(" ")[0];
@@ -153,7 +181,7 @@ public class Verbalizer {
 
         List<NPPhraseSpec> subjects = generateSubjects(resource, namedClass, g);
         List<NLGElement> result = new ArrayList<NLGElement>();
-        Set<Triple> allTriples = new HashSet<Triple>();
+        Collection<Triple> allTriples = new ArrayList<Triple>();
 //      
         for (Set<Node> propertySet : clusters) {
             //add up all triples for the given set of properties
@@ -168,6 +196,8 @@ public class Verbalizer {
             }
             result.addAll(sr.apply(or.apply(buffer), g));
         }
+        
+        resource2Triples.put(resource, allTriples);
 
         List<NLGElement> phrases = new ArrayList<NLGElement>();
         if (replaceSubjects) {
@@ -182,11 +212,11 @@ public class Verbalizer {
 
     }
     
-    public Set<Triple> getSummaryTriples(Resource resource){
+    public Collection<Triple> getSummaryTriples(Resource resource){
     	return resource2Triples.get(resource);
     }
     
-    public Set<Triple> getSummaryTriples(Individual individual){
+    public Collection<Triple> getSummaryTriples(Individual individual){
     	return resource2Triples.get(ResourceFactory.createResource(individual.getName()));
     }
 
@@ -226,8 +256,6 @@ public class Verbalizer {
         phrases.addAll(triples);
 
         int newSize = phrases.size(), oldSize = phrases.size() + 1;
-        Rule or = new ObjectMergeRule();
-        Rule pr = new PredicateMergeRule();
 
         //apply merging rules if more than one sentence to merge
         if (newSize > 1) {
@@ -246,7 +274,7 @@ public class Verbalizer {
                 newSize = phrases.size();
             }
         }
-        return (new SubjectMergeRule()).apply(phrases, g);
+        return sr.apply(phrases, g);
     }
 
     /**
@@ -260,8 +288,9 @@ public class Verbalizer {
     }
 
     public List<NLGElement> verbalize(Individual ind, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
-        //first get graph for nc
-        WeightedGraph wg = new DatasetBasedGraphGenerator(endpoint, "cache").generateGraph(nc, threshold, "http://dbpedia.org/ontology/", cooccurrence);
+    	resource2Triples = new HashMap<Resource, Collection<Triple>>();
+    	//first get graph for nc
+        WeightedGraph wg = new DatasetBasedGraphGenerator(endpoint, cacheDirectory).generateGraph(nc, threshold, "http://dbpedia.org/ontology/", cooccurrence);
 
         //then cluster the graph
         BorderFlowX bf = new BorderFlowX(wg);
@@ -282,7 +311,7 @@ public class Verbalizer {
     }
 
     public Map<Individual, List<NLGElement>> verbalize(Set<Individual> individuals, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
-        resource2Triples = new HashMap<Resource, Set<Triple>>();
+        resource2Triples = new HashMap<Resource, Collection<Triple>>();
     	//first get graph for nc
         WeightedGraph wg = new DatasetBasedGraphGenerator(endpoint, "cache").generateGraph(nc, threshold, "http://dbpedia.org/ontology/", cooccurrence);
 
@@ -306,6 +335,8 @@ public class Verbalizer {
             result = Lists.reverse(result);
 
             verbalizations.put(ind, result);
+            
+            resource2Triples.get(ResourceFactory.createResource(ind.getName())).add(t);
         }
 
         return verbalizations;
@@ -331,12 +362,12 @@ public class Verbalizer {
     	SparqlEndpoint endpoint = SparqlEndpoint.getEndpointLOD2Cloud();
     	endpoint.getDefaultGraphURIs().add("http://dbpedia.org");endpoint = SparqlEndpoint.getEndpointDBpedia();
     	
-        Verbalizer v = new Verbalizer(endpoint);
+        Verbalizer v = new Verbalizer(endpoint, "resources/wordnet/dict");
 
 //        Individual ind = new Individual("http://dbpedia.org/resource/Barbara_Aland");
 //        Individual ind = new Individual("http://dbpedia.org/resource/John_Passmore");
-        Individual ind = new Individual("http://dbpedia.org/resource/Emma_Goldman");
-        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Philosopher");
+        Individual ind = new Individual("http://dbpedia.org/resource/Ford_Zetec_engine");
+        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AutomobileEngine");
 //        Individual ind = new Individual("http://dbpedia.org/resource/Minority_Report_(film)");
 //        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Film");
         List<NLGElement> text = v.verbalize(ind, nc, 0.5, Cooccurrence.PROPERTIES, HardeningType.SMALLEST);

@@ -21,7 +21,18 @@ import simplenlg.realiser.english.Realiser;
  * @author ngonga
  */
 public class PredicateMergeRule implements Rule {
+	
+	Lexicon lexicon;
+    NLGFactory nlgFactory;
+    Realiser realiser;
 
+    public PredicateMergeRule(Lexicon lexicon, NLGFactory nlgFactory, Realiser realiser) {
+		this.lexicon = lexicon;
+		this.nlgFactory = nlgFactory;
+		this.realiser = realiser;
+	}
+
+   
     /**
      * Checks whether a rule is applicable and returns the maximal number of
      * matching predicate realizations
@@ -29,10 +40,6 @@ public class PredicateMergeRule implements Rule {
      * @param phrases List of phrases
      * @return Maximal number of mapping predicate realizations
      */
-    Lexicon lexicon = Lexicon.getDefaultLexicon();
-    NLGFactory nlgFactory = new NLGFactory(lexicon);
-    Realiser realiser = new Realiser(lexicon);
-
     public int isApplicable(List<SPhraseSpec> phrases) {
         int max = 0, count;
         SPhraseSpec p1, p2;
@@ -146,7 +153,7 @@ public class PredicateMergeRule implements Rule {
         for (SPhraseSpec p : phrases) {
             System.out.println("=>" + realiser.realiseSentence(p));
         }
-        phrases = (new PredicateMergeRule()).apply(phrases);
+        phrases = (new PredicateMergeRule(lexicon, nlgFactory, realiser)).apply(phrases);
 
         for (SPhraseSpec p : phrases) {
             System.out.println("=>" + realiser.realiseSentence(p));
