@@ -311,7 +311,7 @@ public class Verbalizer {
     }
 
     public static void main(String args[]) {
-    	SparqlEndpoint endpoint = SparqlEndpoint.getEndpointLOD2Cloud();
+    	SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
     	endpoint.getDefaultGraphURIs().add("http://dbpedia.org");
     	
         Verbalizer v = new Verbalizer(endpoint);
