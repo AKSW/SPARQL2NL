@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
+import org.aksw.sparql2nl.nlp.stemming.PlingStemmer;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
 import simplenlg.features.Feature;
@@ -32,6 +33,17 @@ import com.hp.hpl.jena.graph.Triple;
  */
 public class ObjectMergeRule implements Rule {
 
+   
+	Lexicon lexicon;
+    NLGFactory nlgFactory;
+    Realiser realiser;
+
+    public ObjectMergeRule(Lexicon lexicon, NLGFactory nlgFactory, Realiser realiser) {
+		this.lexicon = lexicon;
+		this.nlgFactory = nlgFactory;
+		this.realiser = realiser;
+	}
+
     /**
      * Checks whether a rule is applicable and returns the number of pairs on
      * which it can be applied
@@ -39,10 +51,6 @@ public class ObjectMergeRule implements Rule {
      * @param phrases List of phrases
      * @return Number of mapping pairs
      */
-    Lexicon lexicon = Lexicon.getDefaultLexicon();
-    NLGFactory nlgFactory = new NLGFactory(lexicon);
-    Realiser realiser = new Realiser(lexicon);
-
     public int isApplicable(List<SPhraseSpec> phrases) {
         int max = 0, count = 0;
         SPhraseSpec p1, p2;
@@ -125,10 +133,15 @@ public class ObjectMergeRule implements Rule {
         {
             for (NLGElement subjElt : fusedPhrase.getSubject().getChildren()) {
                 if (!subjElt.hasFeature(Feature.POSSESSIVE)) {
+                	System.out.println(((NPPhraseSpec) subjElt).getHead().getRealisation());
                     ((NPPhraseSpec) subjElt).getHead().setPlural(true);
-                }
+                } 
             }
-
+            //we need to transform the head of the possessive clause into singular, otherwise we could get something like "number of pageses"
+            String realisedHead = realiser.realise(((NPPhraseSpec)fusedPhrase.getSubject()).getHead()).getRealisation();
+            realisedHead = PlingStemmer.stem(realisedHead);
+            ((NPPhraseSpec)fusedPhrase.getSubject()).setHead(nlgFactory.createInflectedWord(realisedHead, LexicalCategory.NOUN));
+            
             fusedPhrase.getSubject().setPlural(true);
             fusedPhrase.getVerb().setPlural(true);
         }
@@ -176,7 +189,7 @@ public class ObjectMergeRule implements Rule {
         for (SPhraseSpec p : phrases) {
             System.out.println("=>" + realiser.realiseSentence(p));
         }
-        phrases = (new ObjectMergeRule()).apply(phrases);
+        phrases = (new ObjectMergeRule(lexicon, nlgFactory, realiser)).apply(phrases);
 
         for (SPhraseSpec p : phrases) {
             System.out.println("=>" + realiser.realiseSentence(p));

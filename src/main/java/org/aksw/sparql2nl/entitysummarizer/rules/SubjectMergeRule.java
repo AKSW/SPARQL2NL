@@ -4,34 +4,40 @@
  */
 package org.aksw.sparql2nl.entitysummarizer.rules;
 
-import com.clarkparsia.pellet.sparqldl.model.CoreNewImpl;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.TreeMultimap;
-
-import edu.stanford.nlp.pipeline.StanfordCoreNLP;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.aksw.sparql2nl.entitysummarizer.gender.StanfordGenderDetector;
+import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector.Gender;
 
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
-import simplenlg.framework.PhraseElement;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
-import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector.Gender;
+
+import com.google.common.collect.Multimap;
+import com.google.common.collect.TreeMultimap;
 
 /**
  *
  * @author ngonga
  */
 public class SubjectMergeRule {
+
+   
+    Lexicon lexicon;
+    NLGFactory nlgFactory;
+    Realiser realiser;
+
+    public SubjectMergeRule(Lexicon lexicon, NLGFactory nlgFactory, Realiser realiser) {
+		this.lexicon = lexicon;
+		this.nlgFactory = nlgFactory;
+		this.realiser = realiser;
+	}
 
     /**
      * Checks whether a rule is applicable and returns the number of pairs on
@@ -40,11 +46,7 @@ public class SubjectMergeRule {
      * @param phrases List of phrases
      * @return Number of mapping pairs
      */
-    Lexicon lexicon = Lexicon.getDefaultLexicon();
-    NLGFactory nlgFactory = new NLGFactory(lexicon);
-    Realiser realiser = new Realiser(lexicon);
-
-    public int isApplicable(List<SPhraseSpec> phrases) {
+	public int isApplicable(List<SPhraseSpec> phrases) {
         int count = 0;
         SPhraseSpec p1, p2;
         String subj1, subj2;
@@ -198,7 +200,7 @@ public class SubjectMergeRule {
         for (SPhraseSpec p : phrases) {
             System.out.println("=>" + realiser.realiseSentence(p));
         }
-        List<NLGElement> phrases2 = (new SubjectMergeRule()).apply(phrases, Gender.FEMALE);
+        List<NLGElement> phrases2 = (new SubjectMergeRule(lexicon, nlgFactory, realiser)).apply(phrases, Gender.FEMALE);
 
         for (NLGElement p : phrases2) {
             System.out.println("=>" + realiser.realiseSentence(p));

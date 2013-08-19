@@ -4,12 +4,12 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.joda.time.DateTime;
 
-import com.clarkparsia.pellet.datatypes.types.datetime.XSDGYear;
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.impl.LiteralLabel;
@@ -42,7 +42,7 @@ public class LiteralConverter {
             if (dt instanceof XSDDatatype) {// built-in XSD datatype
                 if (dt.equals(XSDDatatype.XSDdate) || dt.equals(XSDDatatype.XSDdateTime)) {
                     try {
-                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-DD");
+                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.UK);
                         Date date = simpleDateFormat.parse(s);
                         String newDate = dateFormat.format(date);
                         s = newDate;
@@ -89,7 +89,7 @@ public class LiteralConverter {
 //        System.out.println(lit);
 //        System.out.println(conv.convert(lit));
 
-        lit = NodeFactory.createLiteralNode("1999-10-24", null,
+        lit = NodeFactory.createLiteralNode("1869-06-27", null,
                 XSD.date.getURI()).getLiteral();
         System.out.println(lit);
         System.out.println(conv.convert(lit));
