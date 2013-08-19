@@ -4,6 +4,7 @@
  */
 package org.aksw.sparql2nl.entitysummarizer.clustering.hardening;
 
+import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +45,7 @@ public class SmallestClusterHardening extends LargestClusterHardening{
             result.add(bestCluster);
             nodes.removeAll(bestCluster);
         }
+        result = Lists.reverse(result);
         return result;
     }
 }
