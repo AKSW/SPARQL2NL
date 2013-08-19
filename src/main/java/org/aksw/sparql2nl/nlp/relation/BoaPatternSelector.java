@@ -17,9 +17,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 
-import org.aksw.sparql2nl.naturallanguagegeneration.PropertyProcessor;
-import org.aksw.sparql2nl.naturallanguagegeneration.URIConverter;
-import org.aksw.sparql2nl.queryprocessing.TriplePatternExtractor;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
@@ -27,9 +24,8 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.dllearner.kb.sparql.SparqlEndpoint;
 
-import edu.stanford.nlp.util.StringUtils;
+import com.google.common.base.Joiner;
 
 /**
  * 
@@ -135,8 +131,8 @@ public class BoaPatternSelector {
         wordTokensList.removeAll(Arrays.asList("", null));
         posTagTokens.removeAll(Arrays.asList("", null));
 
-        pattern.naturalLanguageRepresentation = StringUtils.join(wordTokensList, " ");
-        pattern.posTags = StringUtils.join(posTagTokens, " ");
+        pattern.naturalLanguageRepresentation = Joiner.on(" ").join(wordTokensList);
+        pattern.posTags = Joiner.on(" ").join(posTagTokens);
 
         wordTokensList.removeAll(BE_TOKENS);
         wordTokensList.remove("a");
