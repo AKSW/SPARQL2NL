@@ -56,6 +56,7 @@ import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
+import org.aksw.sparql2nl.naturallanguagegeneration.PropertyProcessor;
 
 /**
  * A verbalizer for triples without variables.
@@ -362,14 +363,20 @@ public class Verbalizer {
     	SparqlEndpoint endpoint = SparqlEndpoint.getEndpointLOD2Cloud();
     	endpoint.getDefaultGraphURIs().add("http://dbpedia.org");endpoint = SparqlEndpoint.getEndpointDBpedia();
     	
-        Verbalizer v = new Verbalizer(endpoint, "resources/wordnet/dict");
+        Verbalizer v;
+        if (SimpleNLGwithPostprocessing.isWindows()) {
+            v = new Verbalizer(endpoint, "E:/Work/Java/SPARQL2NL/resources/wordnetWindows/");
+        } else {
+            v = new Verbalizer(endpoint, "resources/wordnet/dict");
+        }
+        
 
 //        Individual ind = new Individual("http://dbpedia.org/resource/Barbara_Aland");
 //        Individual ind = new Individual("http://dbpedia.org/resource/John_Passmore");
-        Individual ind = new Individual("http://dbpedia.org/resource/Ford_Zetec_engine");
-        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AutomobileEngine");
-//        Individual ind = new Individual("http://dbpedia.org/resource/Minority_Report_(film)");
-//        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Film");
+//        Individual ind = new Individual("http://dbpedia.org/resource/Ford_Zetec_engine");
+//        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AutomobileEngine");
+        Individual ind = new Individual("http://dbpedia.org/resource/69_Love_Songs");
+        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Album");
         List<NLGElement> text = v.verbalize(ind, nc, 0.5, Cooccurrence.PROPERTIES, HardeningType.SMALLEST);
         System.out.println(v.realize(text));
 
@@ -404,9 +411,7 @@ public class Verbalizer {
                 modifier.setFeature(Feature.POSSESSIVE, true);
                 subject.setPreModifier(modifier);
                 modifier.setFeature(Feature.POSSESSIVE, true);
-
             } else {
-
                 if (g.equals(Gender.MALE)) {
                     subject.setPreModifier("his");
                 } else if (g.equals(Gender.FEMALE)) {
