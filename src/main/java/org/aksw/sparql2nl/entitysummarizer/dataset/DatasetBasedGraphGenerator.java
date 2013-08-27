@@ -57,25 +57,41 @@ public class DatasetBasedGraphGenerator {
     };
 
     public DatasetBasedGraphGenerator(SparqlEndpoint endpoint) {
-        this(endpoint, null);
+        this(endpoint, (String)null);
     }
 
-    public DatasetBasedGraphGenerator(SparqlEndpoint endpoint, String cacheDirectory) {
+    public DatasetBasedGraphGenerator(SparqlEndpoint endpoint, CacheCoreEx cacheBackend) {
         this.endpoint = endpoint;
 
         qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-        if (cacheDirectory != null) {
-            try {
-                long timeToLive = TimeUnit.DAYS.toMillis(30);
-                CacheCoreEx cacheBackend = CacheCoreH2.create(cacheDirectory, timeToLive, true);
-                CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
-                qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+        if(cacheBackend != null){
+        	CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
+            qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
         }
+        
+//		qef = new QueryExecutionFactoryPaginated(qef, 10000);
+//		qef = new QueryExecutionFactoryDelay(qef, 500);
+
+        reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint), cacheBackend);
+    }
+    
+    public DatasetBasedGraphGenerator(SparqlEndpoint endpoint, String cacheDirectory ) {
+        this.endpoint = endpoint;
+
+        qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
+        if(cacheDirectory != null){
+        	try {
+				long timeToLive = TimeUnit.DAYS.toMillis(30);
+				CacheCoreEx cacheBackend = CacheCoreH2.create(true, cacheDirectory, "sparql", timeToLive, true);
+				CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
+				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+        }
+        
 //		qef = new QueryExecutionFactoryPaginated(qef, 10000);
 //		qef = new QueryExecutionFactoryDelay(qef, 500);
 

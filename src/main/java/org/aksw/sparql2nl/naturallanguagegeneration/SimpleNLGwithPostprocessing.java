@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
 import org.aksw.sparql2nl.naturallanguagegeneration.PropertyProcessor.Type;
 import org.aksw.sparql2nl.nlp.relation.BoaPatternSelector;
 import org.aksw.sparql2nl.nlp.stemming.PlingStemmer;
@@ -61,6 +62,7 @@ import com.hp.hpl.jena.sparql.syntax.PatternVars;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
+
 import simplenlg.framework.*;
 
 /**
@@ -132,6 +134,48 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         post.id = 0;
 
         uriConverter = new URIConverter(endpoint);
+        literalConverter = new LiteralConverter(uriConverter);
+        expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
+
+        pp = new PropertyProcessor(wordnetDir);
+        functionalityDetector = new StatisticalFunctionalityDetector(
+                this.getClass().getClassLoader().getResourceAsStream("dbpedia_functional_axioms.owl"),
+                0.8);
+
+    }
+    
+    public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint, CacheCoreEx cache, String cacheDirectory, String wordnetDir) {
+        this.endpoint = endpoint;
+
+        lexicon = Lexicon.getDefaultLexicon();
+        nlgFactory = new NLGFactory(lexicon);
+        realiser = new Realiser(lexicon);
+
+        post = new Postprocessor();
+        post.id = 0;
+
+        uriConverter = new URIConverter(endpoint, cache, cacheDirectory);
+        literalConverter = new LiteralConverter(uriConverter);
+        expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
+
+        pp = new PropertyProcessor(wordnetDir);
+        functionalityDetector = new StatisticalFunctionalityDetector(
+                this.getClass().getClassLoader().getResourceAsStream("dbpedia_functional_axioms.owl"),
+                0.8);
+
+    }
+    
+    public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDir) {
+        this.endpoint = endpoint;
+
+        lexicon = Lexicon.getDefaultLexicon();
+        nlgFactory = new NLGFactory(lexicon);
+        realiser = new Realiser(lexicon);
+
+        post = new Postprocessor();
+        post.id = 0;
+
+        uriConverter = new URIConverter(endpoint, cacheDirectory);
         literalConverter = new LiteralConverter(uriConverter);
         expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
 

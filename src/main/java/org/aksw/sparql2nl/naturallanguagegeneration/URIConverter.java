@@ -51,14 +51,46 @@ public class URIConverter {
 	private LRUMap uri2LabelCache = new LRUMap(50);
 	
 	private static QueryExecutionFactory qef;
-	private static String cacheDirectory = "cache/sparql";
+	private String cacheDirectory = "cache/sparql";
 	
-	private File dereferencingCache = new File("cache/dereferenced");
+	private File dereferencingCache;
 	HashFunction hf = Hashing.md5();
 	
 	private List<String> labelProperties = Lists.newArrayList(
 			"http://www.w3.org/2000/01/rdf-schema#label",
 			"http://xmlns.com/foaf/0.1/name");
+	
+	public URIConverter(SparqlEndpoint endpoint, String cacheDirectory) {
+		this.endpoint = endpoint;
+		this.cacheDirectory = cacheDirectory;
+		
+		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
+		if(cacheDirectory != null){
+			try {
+				long timeToLive = TimeUnit.DAYS.toMillis(30);
+				CacheCoreEx cacheBackend = CacheCoreH2.create(cacheDirectory, timeToLive, true);
+				CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
+				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		dereferencingCache = new File(cacheDirectory, "dereferenced");
+		dereferencingCache.mkdir();
+	}
+	
+	public URIConverter(SparqlEndpoint endpoint, CacheCoreEx cacheBackend, String cacheDirectory) {
+		this.endpoint = endpoint;
+		this.cacheDirectory = cacheDirectory;
+		
+		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
+		CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
+		qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
+		dereferencingCache = new File(cacheDirectory, "dereferenced");
+		dereferencingCache.mkdir();
+	}
 	
 	public URIConverter(SparqlEndpoint endpoint) {
 		this.endpoint = endpoint;
