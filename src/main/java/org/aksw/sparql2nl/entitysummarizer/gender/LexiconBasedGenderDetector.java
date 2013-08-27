@@ -3,7 +3,10 @@
  */
 package org.aksw.sparql2nl.entitysummarizer.gender;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -51,20 +54,27 @@ public class LexiconBasedGenderDetector implements GenderDetector {
         try {
             male = new HashSet<String>();
             female = new HashSet<String>();
-            List<String> lines = Files.readLines(new File("src/main/resources/male.txt"), Charsets.UTF_8);
-            for (String l : lines) {
-                l = l.trim();
+            
+            InputStream is = this.getClass().getClassLoader().getResourceAsStream("male.txt");
+            BufferedReader br = new BufferedReader(new InputStreamReader(is));
+            String l;
+            while((l = br.readLine()) != null){
+            	l = l.trim();
                 if (!l.startsWith("#") && !l.isEmpty()) {
                     male.add(l);
                 }
             }
-            lines = Files.readLines(new File("src/main/resources/female.txt"), Charsets.UTF_8);
-            for (String l : lines) {
-                l = l.trim();
+            br.close();
+            
+            is = this.getClass().getClassLoader().getResourceAsStream("female.txt");
+            br = new BufferedReader(new InputStreamReader(is));
+            while((l = br.readLine()) != null){
+            	l = l.trim();
                 if (!l.startsWith("#") && !l.isEmpty()) {
-                    female.add(l);
+                	female.add(l);
                 }
             }
+            br.close();
             
         } catch (Exception e) {
             
@@ -72,23 +82,7 @@ public class LexiconBasedGenderDetector implements GenderDetector {
     }
 
     public static void main(String[] args) throws Exception {
-        Set<String> male = new HashSet<String>();
-        Set<String> female = new HashSet<String>();
-        List<String> lines = Files.readLines(new File("src/main/resources/male.txt"), Charsets.UTF_8);
-        for (String l : lines) {
-            l = l.trim();
-            if (!l.startsWith("#") && !l.isEmpty()) {
-                male.add(l);
-            }
-        }
-        lines = Files.readLines(new File("src/main/resources/female.txt"), Charsets.UTF_8);
-        for (String l : lines) {
-            l = l.trim();
-            if (!l.startsWith("#") && !l.isEmpty()) {
-                female.add(l);
-            }
-        }
-        LexiconBasedGenderDetector genderDetector = new LexiconBasedGenderDetector(male, female);
-        System.out.println(genderDetector.getGender("Axel Ngonga"));
+        LexiconBasedGenderDetector genderDetector = new LexiconBasedGenderDetector();
+        System.out.println(genderDetector.getGender("Zinedine Ngonga"));
     }
 }
