@@ -20,7 +20,9 @@ import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
+import simplenlg.phrasespec.VPPhraseSpec;
 import simplenlg.realiser.english.Realiser;
+import simplenlg.test.syntax.VerbPhraseTest;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
@@ -70,7 +72,7 @@ public class ObjectMergeRule implements Rule {
         }
         return max;
     }
-
+    
     /**
      * Applies this rule to the phrases
      *
@@ -78,6 +80,16 @@ public class ObjectMergeRule implements Rule {
      * @return Result of the rule being applied
      */
     public List<SPhraseSpec> apply(List<SPhraseSpec> phrases) {
+    	return apply(phrases, false);
+    }
+
+    /**
+     * Applies this rule to the phrases
+     *
+     * @param phrases Set of phrases
+     * @return Result of the rule being applied
+     */
+    public List<SPhraseSpec> apply(List<SPhraseSpec> phrases, boolean amongOthers) {
 
         if (phrases.size() <= 1) {
             return phrases;
@@ -122,6 +134,9 @@ public class ObjectMergeRule implements Rule {
         Collection<Integer> toMerge = map.get(phraseIndex);
         toMerge.add(phraseIndex);
         CoordinatedPhraseElement elt = nlgFactory.createCoordinatedPhrase();
+        if(amongOthers){
+        	 elt.addPreModifier(", among others,");
+        }
 
         for (int index : toMerge) {
             elt.addCoordinate(phrases.get(index).getObject());

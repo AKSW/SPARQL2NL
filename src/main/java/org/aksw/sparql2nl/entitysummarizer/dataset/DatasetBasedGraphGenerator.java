@@ -48,8 +48,15 @@ public class DatasetBasedGraphGenerator {
     private SparqlEndpoint endpoint;
     private QueryExecutionFactory qef;
     private SPARQLReasoner reasoner;
-    private Set<String> blacklist = Sets.newHashSet("http://dbpedia.org/ontology/wikiPageExternalLink", "http://dbpedia.org/ontology/abstract",
-            "http://dbpedia.org/ontology/thumbnail");
+    private Set<String> blacklist = Sets.newHashSet(
+    		"http://dbpedia.org/ontology/wikiPageExternalLink", 
+    		"http://dbpedia.org/ontology/abstract",
+            "http://dbpedia.org/ontology/thumbnail", 
+            "http://dbpedia.org/ontology/wikiPageID",
+            "http://dbpedia.org/ontology/wikiPageRevisionID",
+            "http://dbpedia.org/ontology/wikiPageRedirects",
+            "http://dbpedia.org/ontology/wikiPageDisambiguates",
+            "http://dbpedia.org/ontology/individualisedPnd");
 
     public enum Cooccurrence {
 
@@ -220,6 +227,11 @@ public class DatasetBasedGraphGenerator {
                 + "{SELECT DISTINCT ?p WHERE {?s a <" + cls.getName() + ">. ?s ?p ?o."
                 + (namespace != null ? "FILTER(REGEX(?p,'" + namespace + "'))" : "")
                 + "}}} GROUP BY ?p ORDER BY DESC(?cnt)";
+        query = "SELECT ?p (COUNT(DISTINCT ?s) AS ?cnt) WHERE {"
+        		+ "?s a <" + cls.getName() + ">."
+        		+ " {?p a owl:ObjectProperty.} UNION {?p a owl:DatatypeProperty.} "
+        		+ "?s ?p ?o."
+        		+ "} GROUP BY ?p";
 
         ResultSet rs = executeSelectQuery(query);
         QuerySolution qs;
