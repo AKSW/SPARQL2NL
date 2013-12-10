@@ -367,13 +367,13 @@ public class Verbalizer {
     }
 
     public static void main(String args[]) {
-    	SparqlEndpoint endpoint = SparqlEndpoint.getEndpointLOD2Cloud();
+    	SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpediaLiveAKSW();
     	endpoint.getDefaultGraphURIs().add("http://dbpedia.org");
     	//endpoint = SparqlEndpoint.getEndpointDBpedia();
     	
         Verbalizer v;
         if (SimpleNLGwithPostprocessing.isWindows()) {
-            v = new Verbalizer(endpoint, "cache/sparql", "E:/Work/Java/SPARQL2NL/resources/wordnetWindows/");
+            v = new Verbalizer(endpoint, "cache/sparql", "resources/wordnetWindows/");
         } else {
             v = new Verbalizer(endpoint, "cache/sparql", "resources/wordnet/dict");
         }
