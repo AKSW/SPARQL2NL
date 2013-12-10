@@ -1,6 +1,7 @@
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.text.DateFormat;
+import java.text.DateFormatSymbols;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -38,6 +39,7 @@ public class LiteralConverter {
         String s = lit.getLexicalForm();
         if (dt == null) {// plain literal, i.e. omit language tag if exists
             s = lit.getLexicalForm();
+            s = s.replaceAll("_", " ");
         } else {// typed literal
             if (dt instanceof XSDDatatype) {// built-in XSD datatype
                 if (dt.equals(XSDDatatype.XSDdate) || dt.equals(XSDDatatype.XSDdateTime)) {
@@ -51,7 +53,13 @@ public class LiteralConverter {
                     }
                 } else if (dt.equals(XSDDatatype.XSDgYear)) {
                 	s = dateFormat.format(new DateTime(lit.getLexicalForm()).toDate());
-                } 
+                } else if(dt.equals(XSDDatatype.XSDgMonthDay)){
+                	String month = lit.getLexicalForm().replace("--", "");
+                	int day = Integer.parseInt(month.substring(3));
+                	month = month.substring(0, 2);
+                	month = getMonthName(Integer.parseInt(month));
+                	s = month + " " + day;
+                }
             } else {// user-defined datatype
                 s = lit.getLexicalForm() + " " + splitAtCamelCase(uriConverter.convert(dt.getURI(), false));
             }
@@ -80,6 +88,10 @@ public class LiteralConverter {
         String regex = "([a-z])([A-Z])";
         String replacement = "$1 $2";
         return s.replaceAll(regex, replacement).toLowerCase();
+    }
+    
+    public String getMonthName(int month) {
+        return new DateFormatSymbols().getMonths()[month-1];
     }
 
     public static void main(String[] args) {

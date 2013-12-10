@@ -54,7 +54,9 @@ public class URIConverter {
 	private String cacheDirectory = "cache/sparql";
 	
 	private File dereferencingCache;
-	HashFunction hf = Hashing.md5();
+	final HashFunction hf = Hashing.md5();
+	
+	boolean replaceUnderScores = true;
 	
 	private List<String> labelProperties = Lists.newArrayList(
 			"http://www.w3.org/2000/01/rdf-schema#label",
@@ -169,6 +171,9 @@ public class URIConverter {
 	            e.printStackTrace();
 	        }
 	        return uri;
+		}
+		if(replaceUnderScores){
+			label = label.replace("_", " ");
 		}
 		return label;
 		

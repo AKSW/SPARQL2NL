@@ -9,7 +9,7 @@
     <description>SPARQL query to natural language converter</description>
 
     <properties>
-        <compiler.version>1.6</compiler.version>
+        <compiler.version>1.7</compiler.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
