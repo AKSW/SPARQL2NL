@@ -88,8 +88,10 @@ public class URIConverter {
 		this.cacheDirectory = cacheDirectory;
 		
 		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-		CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
-		qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
+		if(cacheBackend != null){
+			CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
+			qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
+		}
 		dereferencingCache = new File(cacheDirectory, "dereferenced");
 		dereferencingCache.mkdir();
 	}
@@ -110,7 +112,7 @@ public class URIConverter {
 				e.printStackTrace();
 			}
 		}
-		
+		dereferencingCache = new File("dereferencing-cache");
 		dereferencingCache.mkdir();
 	}
 	
