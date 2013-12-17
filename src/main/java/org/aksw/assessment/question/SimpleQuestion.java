@@ -32,6 +32,12 @@ public class SimpleQuestion implements Question {
         return text;
     }
 
+    @Override
+    public String toString()
+    {
+        return text;
+    }
+    
     public List<Answer> getCorrectAnswers() {
         return correctAnswers;
     }

@@ -176,7 +176,7 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
         logger.info("Generating wrong answers...");
         if (!resourceValues.isEmpty()) {
             Resource res = resourceValues.iterator().next();
-            query = "select distinct ?o where {<" + res.getURI() + "> a ?x. ?o a ?x} LIMIT 10";
+            query = "select distinct ?o where {?x <"+property.getURI()+"> ?o. FILTER(isURI(?o))} LIMIT 10";
             rs = executeSelectQuery(query, endpoint);
             while (rs.hasNext()) {
                 qs = rs.next();
@@ -186,7 +186,7 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
             }
         }
         logger.info("...got " + wrongAnswers);
-        return new SimpleQuestion(nlg.getNLR(sparqlQuery), generateAnswers(resourceValues), generateAnswers(wrongAnswers), DIFFICULTY, sparqlQuery);
+        return new SimpleQuestion(nlg.getNLR(sparqlQuery).replaceAll("This query retrieves", "Please select"), generateAnswers(resourceValues), generateAnswers(wrongAnswers), DIFFICULTY, sparqlQuery);
     }
 
     public List<Answer> generateAnswers(Set<Resource> resources) {
@@ -198,7 +198,7 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
     }
 
     public static void main(String args[]) {
-        Resource r = ResourceFactory.createResource("http://dbpedia.org/ontology/Species");
+        Resource r = ResourceFactory.createResource("http://dbpedia.org/ontology/Country");
         Set<Resource> res = new HashSet<Resource>();
         res.add(r);
         SimpleQuestionGenerator sqg = new SimpleQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), res);

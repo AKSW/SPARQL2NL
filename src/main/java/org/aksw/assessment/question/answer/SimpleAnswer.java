@@ -20,4 +20,10 @@ public class SimpleAnswer implements Answer{
     public String getText() {
      return text;
     }
+    
+    @Override
+    public String toString()
+    {
+        return text;
+    }
 }
