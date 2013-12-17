@@ -59,6 +59,7 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
         Set<Resource> questionResources;
         int index;
         Resource res;
+        Question q;
         if (resources.size() < number) {
             questionResources = new HashSet<>(resources);
             for (Resource r : questionResources) {
@@ -66,11 +67,11 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
             }
         } else {
             questionResources = new HashSet<>();
-            while (questionResources.size() <= number) {
+            while (questions.size() <= number) {
                 res = resources.get((int) (Math.random() * resources.size()));
                 if (!questionResources.contains(res)) {
                     questionResources.add(res);
-                    Question q = generateQuestion(res);
+                    q = generateQuestion(res);
                     if (q != null) {
                         questions.add(q);
                     }
