@@ -48,7 +48,22 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
         endpoint = ep;
         types = restrictions;
         blackList = Sets.newHashSet(
-                ResourceFactory.createResource("http://www.w3.org/ns/prov#was"), ResourceFactory.createResource("http://www.w3.org/2002/07/owl#sameAs"), ResourceFactory.createResource("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), ResourceFactory.createResource("http://www.w3.org/ns/prov#wasDerivedFrom"), ResourceFactory.createResource("http://xmlns.com/foaf/0.1/isPrimaryTopicOf"), ResourceFactory.createResource("http://xmlns.com/foaf/0.1/depiction"), ResourceFactory.createResource("http://xmlns.com/foaf/0.1/homepage"), ResourceFactory.createResource("http://purl.org/dc/terms/subject"), ResourceFactory.createResource("http://dbpedia.org/ontology/wikiPageRedirects"), ResourceFactory.createResource("http://dbpedia.org/ontology/wikiPageExternalLink"), ResourceFactory.createResource("http://dbpedia.org/property/hasPhotoCollection"), ResourceFactory.createResource("http://dbpedia.org/ontology/thumbnail"));
+                ResourceFactory.createResource("http://www.w3.org/ns/prov#was"), 
+                ResourceFactory.createResource("http://www.w3.org/2002/07/owl#sameAs"), 
+                ResourceFactory.createResource("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), 
+                ResourceFactory.createResource("http://www.w3.org/ns/prov#wasDerivedFrom"), 
+                ResourceFactory.createResource("http://xmlns.com/foaf/0.1/isPrimaryTopicOf"), 
+                ResourceFactory.createResource("http://xmlns.com/foaf/0.1/depiction"), 
+                ResourceFactory.createResource("http://xmlns.com/foaf/0.1/homepage"), 
+                ResourceFactory.createResource("http://purl.org/dc/terms/subject"), 
+                ResourceFactory.createResource("http://dbpedia.org/ontology/wikiPageRedirects"), 
+                ResourceFactory.createResource("http://dbpedia.org/ontology/wikiPageExternalLink"), 
+                ResourceFactory.createResource("http://dbpedia.org/ontology/thumbnail"),
+                ResourceFactory.createResource("http://dbpedia.org/property/hasPhotoCollection"), 
+                ResourceFactory.createResource("http://dbpedia.org/property/link"),
+                ResourceFactory.createResource("http://dbpedia.org/property/url")
+                
+        		);
         nlg = new SimpleNLGwithPostprocessing(endpoint);
     }
 
