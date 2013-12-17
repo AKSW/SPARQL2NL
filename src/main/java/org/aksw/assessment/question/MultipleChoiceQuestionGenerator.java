@@ -35,16 +35,16 @@ import org.dllearner.kb.sparql.SparqlEndpoint;
  *
  * @author ngonga
  */
-public class SimpleQuestionGenerator implements QuestionGenerator {
+public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 
-    private static final Logger logger = Logger.getLogger(SimpleQuestionGenerator.class.getName());
+    private static final Logger logger = Logger.getLogger(MultipleChoiceQuestionGenerator.class.getName());
     static int DIFFICULTY = 1;
     SparqlEndpoint endpoint;
     Set<Resource> types;
     Set<Resource> blackList;
     SimpleNLGwithPostprocessing nlg;
 
-    public SimpleQuestionGenerator(SparqlEndpoint ep, Set<Resource> restrictions) {
+    public MultipleChoiceQuestionGenerator(SparqlEndpoint ep, Set<Resource> restrictions) {
         endpoint = ep;
         types = restrictions;
         blackList = Sets.newHashSet(
@@ -202,7 +202,7 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
         Resource r = ResourceFactory.createResource("http://dbpedia.org/ontology/Country");
         Set<Resource> res = new HashSet<Resource>();
         res.add(r);
-        SimpleQuestionGenerator sqg = new SimpleQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), res);
+        MultipleChoiceQuestionGenerator sqg = new MultipleChoiceQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), res);
         Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
         for (Question q : questions) {
             if (q != null) {
