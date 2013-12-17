@@ -24,6 +24,7 @@ import org.aksw.assessment.question.answer.SimpleAnswer;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
+import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing2;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
 /**
@@ -36,24 +37,24 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
     SparqlEndpoint endpoint;
     Set<Resource> types;
     Set<Resource> blackList;
-    SimpleNLGwithPostprocessing nlg;
+    SimpleNLGwithPostprocessing2 nlg;
 
     public SimpleQuestionGenerator(SparqlEndpoint ep, Set<Resource> restrictions) {
         endpoint = ep;
         types = restrictions;
-        blackList = new HashSet<Resource>();
-        nlg = new SimpleNLGwithPostprocessing(endpoint);
+        blackList = new HashSet<>();
+        nlg = new SimpleNLGwithPostprocessing2(endpoint);
     }
 
     @Override
     public Set<Question> getQuestions(Map<Triple, Double> informativenessMap, int difficulty, int number) {
-        Set<Question> questions = new HashSet<Question>();
+        Set<Question> questions = new HashSet<>();
         List<Resource> resources = getResources();
         Set<Resource> questionResources;
         if (resources.size() < number) {
-            questionResources = new HashSet<Resource>(resources);
+            questionResources = new HashSet<>(resources);
         } else {
-            questionResources = new HashSet<Resource>();
+            questionResources = new HashSet<>();
             while (questionResources.size() < number) {
                 questionResources.add(resources.get((int) (Math.random() * resources.size())));
             }
@@ -70,7 +71,7 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
             return null;
         }
         if (types.isEmpty()) {
-            return new ArrayList<Resource>();
+            return new ArrayList<>();
         }
         String query;
         if (types.size() == 1) {
@@ -83,7 +84,7 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
             query = query.substring(0, query.lastIndexOf("UNION"));
         }
 
-        List<Resource> result = new ArrayList<Resource>();
+        List<Resource> result = new ArrayList<>();
         ResultSet rs = executeSelectQuery(query, endpoint);
         QuerySolution qs;
         while (rs.hasNext()) {
@@ -109,15 +110,15 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
 
     public Question generateQuestion(Resource r) {
         //get properties
-        String query = "select distinct ?p ?o where {<" + r.getURI() + "> ?p ?o}";
-        Set<Resource> result = new HashSet<Resource>();
+        String query = "select distinct ?p where {<" + r.getURI() + "> ?p ?o. FILTER(isURI(?o))}";
+        Set<Resource> result = new HashSet<>();
         ResultSet rs = executeSelectQuery(query, endpoint);
         QuerySolution qs;
         Resource property;
         while (rs.hasNext()) {
             qs = rs.next();
             property = qs.getResource("p");
-            if (!blackList.contains(property) && qs.getResource("o").isResource()) {
+            if (!blackList.contains(property)) {
                 result.add(property);
             }
         }
@@ -174,13 +175,13 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
     }
 
     public static void main(String args[]) {
-        Resource r = ResourceFactory.createResource("http://dbpedia.org/resource/Country");
+        Resource r = ResourceFactory.createResource("http://dbpedia.org/ontology/Species");
         Set<Resource> res = new HashSet<Resource>();
         res.add(r);
         SimpleQuestionGenerator sqg = new SimpleQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), res);
         Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
         for (Question q : questions) {
-            System.out.println(q.getText());
+            System.out.println(">>"+q.getText());
         }
     }
 }

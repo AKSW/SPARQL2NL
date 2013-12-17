@@ -66,9 +66,9 @@ import com.hp.hpl.jena.vocabulary.RDFS;
  */
 public class SimpleNLGwithPostprocessing2 implements Sparql2NLConverter {
 
-    Lexicon lexicon;
-    NLGFactory nlgFactory;
-    Realiser realiser;
+    public Lexicon lexicon;
+    public NLGFactory nlgFactory;
+    public Realiser realiser;
     private URIConverter uriConverter;
     private LiteralConverter literalConverter;
     private FilterExpressionConverter expressionConverter;
