@@ -36,10 +36,8 @@ import org.dllearner.kb.sparql.SparqlEndpoint;
  * @author ngonga
  */
 public class SimpleQuestionGenerator implements QuestionGenerator {
-	
-	
-	private static final Logger logger = Logger.getLogger(SimpleQuestionGenerator.class.getName());
 
+    private static final Logger logger = Logger.getLogger(SimpleQuestionGenerator.class.getName());
     static int DIFFICULTY = 1;
     SparqlEndpoint endpoint;
     Set<Resource> types;
@@ -50,20 +48,7 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
         endpoint = ep;
         types = restrictions;
         blackList = Sets.newHashSet(
-        		ResourceFactory.createResource("http://www.w3.org/ns/prov#was")
-        		,ResourceFactory.createResource("http://www.w3.org/2002/07/owl#sameAs")
-        		,ResourceFactory.createResource("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
-        		,ResourceFactory.createResource("http://www.w3.org/ns/prov#wasDerivedFrom")
-        		,ResourceFactory.createResource("http://xmlns.com/foaf/0.1/isPrimaryTopicOf")
-        		,ResourceFactory.createResource("http://xmlns.com/foaf/0.1/depiction")
-        		,ResourceFactory.createResource("http://xmlns.com/foaf/0.1/homepage")
-        		,ResourceFactory.createResource("http://purl.org/dc/terms/subject")
-        		,ResourceFactory.createResource("http://dbpedia.org/ontology/wikiPageRedirects")
-        		,ResourceFactory.createResource("http://dbpedia.org/ontology/wikiPageExternalLink")
-        		,ResourceFactory.createResource("http://dbpedia.org/property/hasPhotoCollection")
-        		,ResourceFactory.createResource("http://dbpedia.org/ontology/thumbnail")
-        			
-        		);
+                ResourceFactory.createResource("http://www.w3.org/ns/prov#was"), ResourceFactory.createResource("http://www.w3.org/2002/07/owl#sameAs"), ResourceFactory.createResource("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), ResourceFactory.createResource("http://www.w3.org/ns/prov#wasDerivedFrom"), ResourceFactory.createResource("http://xmlns.com/foaf/0.1/isPrimaryTopicOf"), ResourceFactory.createResource("http://xmlns.com/foaf/0.1/depiction"), ResourceFactory.createResource("http://xmlns.com/foaf/0.1/homepage"), ResourceFactory.createResource("http://purl.org/dc/terms/subject"), ResourceFactory.createResource("http://dbpedia.org/ontology/wikiPageRedirects"), ResourceFactory.createResource("http://dbpedia.org/ontology/wikiPageExternalLink"), ResourceFactory.createResource("http://dbpedia.org/property/hasPhotoCollection"), ResourceFactory.createResource("http://dbpedia.org/ontology/thumbnail"));
         nlg = new SimpleNLGwithPostprocessing(endpoint);
     }
 
@@ -72,23 +57,31 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
         Set<Question> questions = new HashSet<>();
         List<Resource> resources = getResources();
         Set<Resource> questionResources;
+        int index;
+        Resource res;
         if (resources.size() < number) {
             questionResources = new HashSet<>(resources);
+            for (Resource r : questionResources) {
+                questions.add(generateQuestion(r));
+            }
         } else {
             questionResources = new HashSet<>();
-            while (questionResources.size() < number) {
-                questionResources.add(resources.get((int) (Math.random() * resources.size())));
+            while (questionResources.size() <= number) {
+                res = resources.get((int) (Math.random() * resources.size()));
+                if (!questionResources.contains(res)) {
+                    questionResources.add(res);
+                    Question q = generateQuestion(res);
+                    if (q != null) {
+                        questions.add(q);
+                    }
+                }
             }
-        }
-
-        for (Resource r : questionResources) {
-            questions.add(generateQuestion(r));
         }
         return questions;
     }
 
     public List<Resource> getResources() {
-    	logger.info("Getting possible resources for types " + types + "...");
+        logger.info("Getting possible resources for types " + types + "...");
         if (types == null || types.isEmpty()) {
             return null;
         }
@@ -132,9 +125,9 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
     }
 
     public Question generateQuestion(Resource r) {
-    	logger.info("Generating question for resource " + r + "...");
+        logger.info("Generating question for resource " + r + "...");
         //get properties
-    	logger.info("Getting property candidates...");
+        logger.info("Getting property candidates...");
         String query = "select distinct ?p where {<" + r.getURI() + "> ?p ?o. FILTER(isURI(?o))}";
         Set<Resource> result = new HashSet<Resource>();
         ResultSet rs = executeSelectQuery(query, endpoint);
@@ -149,15 +142,15 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
         }
         logger.info("...got " + result);
         //early termination if resource has no meaningful properties
-        if(result.isEmpty()){
-        	return null;
+        if (result.isEmpty()) {
+            return null;
         }
 
         //pick random property
         Random rnd = new Random(123);
         property = result.toArray(new Resource[]{})[rnd.nextInt(result.size())];
         logger.info("Chosen property: " + property);
-        
+
         //get values for property, i.e. the correct answers
         logger.info("Generating correct answers...");
         query = "select distinct ?o where {<" + r.getURI() + "> <" + property.getURI() + "> ?o}";
@@ -211,13 +204,13 @@ public class SimpleQuestionGenerator implements QuestionGenerator {
         SimpleQuestionGenerator sqg = new SimpleQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), res);
         Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
         for (Question q : questions) {
-        	if(q != null){
-        		System.out.println(q.getText());
+            if (q != null) {
+                System.out.println(">>" + q.getText());
                 List<Answer> correctAnswers = q.getCorrectAnswers();
                 System.out.println(correctAnswers);
                 List<Answer> wrongAnswers = q.getWrongAnswers();
                 System.out.println(wrongAnswers);
-        	}
+            }
         }
     }
 }
