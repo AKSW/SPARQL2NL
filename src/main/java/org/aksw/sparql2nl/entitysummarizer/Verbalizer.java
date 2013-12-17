@@ -68,7 +68,7 @@ import com.hp.hpl.jena.rdf.model.ResourceFactory;
  */
 public class Verbalizer {
 
-    SimpleNLGwithPostprocessing nlg;
+    public SimpleNLGwithPostprocessing nlg;
     SparqlEndpoint endpoint;
     String language = "en";
     Realiser realiser;
@@ -76,19 +76,15 @@ public class Verbalizer {
     NumericLiteralFilter litFilter;
     TypeAwareGenderDetector gender;
     Map<Resource, Collection<Triple>> resource2Triples;
-    
     private QueryExecutionFactory qef;
-	private String cacheDirectory = "cache/sparql";
-	
-	PredicateMergeRule pr;
+    private String cacheDirectory = "cache/sparql";
+    PredicateMergeRule pr;
     ObjectMergeRule or;
     SubjectMergeRule sr;
-    
     DatasetBasedGraphGenerator graphGenerator;
-    
     int maxShownValuesPerProperty = 5;
     boolean omitContentInBrackets = true;
-    
+
     public Verbalizer(SparqlEndpoint endpoint, CacheCoreEx cache, String cacheDirectory, String wordnetDirectory) {
         nlg = new SimpleNLGwithPostprocessing(endpoint, cache, cacheDirectory, wordnetDirectory);
         this.endpoint = endpoint;
@@ -96,67 +92,66 @@ public class Verbalizer {
         litFilter = new NumericLiteralFilter(endpoint, cache, cacheDirectory);
         realiser = nlg.realiser;
         gender = new TypeAwareGenderDetector(endpoint, new LexiconBasedGenderDetector());
-        
+
         pr = new PredicateMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
         or = new ObjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
         sr = new SubjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
-        
+
         qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-		if(cache != null){
-			CacheEx cacheFrontend = new CacheExImpl(cache);
-			qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-		}
-		
-		graphGenerator = new DatasetBasedGraphGenerator(endpoint, cache);
+        if (cache != null) {
+            CacheEx cacheFrontend = new CacheExImpl(cache);
+            qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
+        }
+
+        graphGenerator = new DatasetBasedGraphGenerator(endpoint, cache);
     }
-    
+
     public Verbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
         nlg = new SimpleNLGwithPostprocessing(endpoint, cacheDirectory, wordnetDirectory);
         this.endpoint = endpoint;
         labels = new HashMap<Resource, String>();
         litFilter = new NumericLiteralFilter(endpoint, cacheDirectory);
         realiser = nlg.realiser;
-        
+
         pr = new PredicateMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
         or = new ObjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
         sr = new SubjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
-        
+
         qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
         CacheCoreEx cacheBackend = null;
-		if(cacheDirectory != null){
-			try {
-				long timeToLive = TimeUnit.DAYS.toMillis(30);
-				cacheBackend = CacheCoreH2.create(cacheDirectory, timeToLive, true);
-				CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
-				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-		}
-		gender = new TypeAwareGenderDetector(endpoint, cacheBackend, new LexiconBasedGenderDetector());
-		
-		graphGenerator = new DatasetBasedGraphGenerator(endpoint, cacheDirectory);
+        if (cacheDirectory != null) {
+            try {
+                long timeToLive = TimeUnit.DAYS.toMillis(30);
+                cacheBackend = CacheCoreH2.create(cacheDirectory, timeToLive, true);
+                CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
+                qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        gender = new TypeAwareGenderDetector(endpoint, cacheBackend, new LexiconBasedGenderDetector());
+
+        graphGenerator = new DatasetBasedGraphGenerator(endpoint, cacheDirectory);
     }
-    
+
     /**
-	 * @param personTypes the personTypes to set
-	 */
-	public void setPersonTypes(Set<String> personTypes) {
-		gender.setPersonTypes(personTypes);
-	}
-	
-	/**
-	 * @param omitContentInBrackets the omitContentInBrackets to set
-	 */
-	public void setOmitContentInBrackets(boolean omitContentInBrackets) {
-		this.omitContentInBrackets = omitContentInBrackets;
-	}
-    
+     * @param personTypes the personTypes to set
+     */
+    public void setPersonTypes(Set<String> personTypes) {
+        gender.setPersonTypes(personTypes);
+    }
+
+    /**
+     * @param omitContentInBrackets the omitContentInBrackets to set
+     */
+    public void setOmitContentInBrackets(boolean omitContentInBrackets) {
+        this.omitContentInBrackets = omitContentInBrackets;
+    }
 
     public Verbalizer(SparqlEndpoint endpoint) {
-        this(endpoint, (String)null, null);
+        this(endpoint, (String) null, null);
     }
 
     /**
@@ -221,7 +216,7 @@ public class Verbalizer {
     public List<NLGElement> generateSentencesFromClusters(List<Set<Node>> clusters,
             Resource resource, NamedClass namedClass, boolean replaceSubjects) {
         List<SPhraseSpec> buffer;
-        
+
 
         String label = realiser.realiseSentence(nlg.getNPPhrase(resource.getURI(), false, false));
         String firstToken = label.split(" ")[0];
@@ -242,9 +237,9 @@ public class Verbalizer {
                 dateFilter.filter(triples);
                 //restrict the number of shown values for the same property
                 boolean subsetShown = false;
-                if(triples.size() > maxShownValuesPerProperty){
-                	triples = getSubsetToShow(triples);
-                	subsetShown = true;
+                if (triples.size() > maxShownValuesPerProperty) {
+                    triples = getSubsetToShow(triples);
+                    subsetShown = true;
                 }
                 //all share the same property, thus they can be merged
                 buffer.addAll(or.apply(getPhraseSpecsFromTriples(triples), subsetShown));
@@ -252,7 +247,7 @@ public class Verbalizer {
             }
             result.addAll(sr.apply(or.apply(buffer), g));
         }
-        
+
         resource2Triples.put(resource, allTriples);
 
         List<NLGElement> phrases = new ArrayList<NLGElement>();
@@ -267,54 +262,54 @@ public class Verbalizer {
         }
 
     }
-    
-    private Set<Triple> getSubsetToShow(Set<Triple> triples){
-    	Set<Triple> triplesToShow = new HashSet<>(maxShownValuesPerProperty);
-    	for (Triple triple : orderByObjectPopularity(triples)) {
-			if(triplesToShow.size() < maxShownValuesPerProperty){
-				triplesToShow.add(triple);
-			}
-		}
-    	
-    	return triplesToShow;
+
+    private Set<Triple> getSubsetToShow(Set<Triple> triples) {
+        Set<Triple> triplesToShow = new HashSet<>(maxShownValuesPerProperty);
+        for (Triple triple : orderByObjectPopularity(triples)) {
+            if (triplesToShow.size() < maxShownValuesPerProperty) {
+                triplesToShow.add(triple);
+            }
+        }
+
+        return triplesToShow;
     }
-    
-    private List<Triple> orderByObjectPopularity(Set<Triple> triples){
-    	List<Triple> orderedTriples = new ArrayList<>();
-    	
-    	//if one of the objects is a literal we do not sort 
-    	if(triples.iterator().next().getObject().isLiteral()){
-    		orderedTriples.addAll(triples);
-    	} else {
-    		//we get the popularity of the object
-    		Map<Triple, Integer> triple2ObjectPopularity = new HashMap<>();
-        	for (Triple triple : triples) {
-        		if(triple.getObject().isURI()){
-        			String query = "SELECT (COUNT(*) AS ?cnt) WHERE {<" + triple.getObject().getURI() + "> ?p ?o.}";
-        			QueryExecution qe = qef.createQueryExecution(query);
-        			ResultSet rs = qe.execSelect();
-        			int popularity = rs.next().getLiteral("cnt").getInt();
-        			triple2ObjectPopularity.put(triple, popularity);
-        			qe.close();
-        		}
-    		}
-        	List<Entry<Triple, Integer>> sortedByValues = MapUtils.sortByValues(triple2ObjectPopularity);
-        	
-			for (Entry<Triple, Integer> entry : sortedByValues) {
-				Triple triple = entry.getKey();
-				orderedTriples.add(triple);
-			}
-    	}
-    	
-    	return orderedTriples;
+
+    private List<Triple> orderByObjectPopularity(Set<Triple> triples) {
+        List<Triple> orderedTriples = new ArrayList<>();
+
+        //if one of the objects is a literal we do not sort 
+        if (triples.iterator().next().getObject().isLiteral()) {
+            orderedTriples.addAll(triples);
+        } else {
+            //we get the popularity of the object
+            Map<Triple, Integer> triple2ObjectPopularity = new HashMap<>();
+            for (Triple triple : triples) {
+                if (triple.getObject().isURI()) {
+                    String query = "SELECT (COUNT(*) AS ?cnt) WHERE {<" + triple.getObject().getURI() + "> ?p ?o.}";
+                    QueryExecution qe = qef.createQueryExecution(query);
+                    ResultSet rs = qe.execSelect();
+                    int popularity = rs.next().getLiteral("cnt").getInt();
+                    triple2ObjectPopularity.put(triple, popularity);
+                    qe.close();
+                }
+            }
+            List<Entry<Triple, Integer>> sortedByValues = MapUtils.sortByValues(triple2ObjectPopularity);
+
+            for (Entry<Triple, Integer> entry : sortedByValues) {
+                Triple triple = entry.getKey();
+                orderedTriples.add(triple);
+            }
+        }
+
+        return orderedTriples;
     }
-    
-    public Collection<Triple> getSummaryTriples(Resource resource){
-    	return resource2Triples.get(resource);
+
+    public Collection<Triple> getSummaryTriples(Resource resource) {
+        return resource2Triples.get(resource);
     }
-    
-    public Collection<Triple> getSummaryTriples(Individual individual){
-    	return resource2Triples.get(ResourceFactory.createResource(individual.getName()));
+
+    public Collection<Triple> getSummaryTriples(Individual individual) {
+        return resource2Triples.get(ResourceFactory.createResource(individual.getName()));
     }
 
     /**
@@ -385,12 +380,12 @@ public class Verbalizer {
     }
 
     public List<NLGElement> verbalize(Individual ind, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
-    	return verbalize(Sets.newHashSet(ind), nc, threshold, cooccurrence, hType).get(ind);
+        return verbalize(Sets.newHashSet(ind), nc, threshold, cooccurrence, hType).get(ind);
     }
 
     public Map<Individual, List<NLGElement>> verbalize(Set<Individual> individuals, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
         resource2Triples = new HashMap<Resource, Collection<Triple>>();
-    	//first get graph for nc
+        //first get graph for nc
         WeightedGraph wg = graphGenerator.generateGraph(nc, threshold, "http://dbpedia.org/ontology/", cooccurrence);
 
         //then cluster the graph
@@ -413,43 +408,45 @@ public class Verbalizer {
             result = Lists.reverse(result);
 
             verbalizations.put(ind, result);
-            
+
             resource2Triples.get(ResourceFactory.createResource(ind.getName())).add(t);
         }
 
         return verbalizations;
     }
-    
+
     /**
      * Returns a textual summary of the given entity.
+     *
      * @return
      */
-    public String getSummary(Individual individual, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType){
-    	List<NLGElement> elements = verbalize(individual, nc, threshold, cooccurrence, hType);
-    	String summary = realize(elements);
+    public String getSummary(Individual individual, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
+        List<NLGElement> elements = verbalize(individual, nc, threshold, cooccurrence, hType);
+        String summary = realize(elements);
         summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
         summary = summary.replace(" , among others,", ", among others,");
         return summary;
     }
-    
+
     /**
      * Returns a textual summary of the given entity.
+     *
      * @return
      */
-    public Map<Individual, String> getSummaries(Set<Individual> individuals, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType){
-    	Map<Individual, String> entity2Summaries = new HashMap<>(); 
-    	
-    	Map<Individual, List<NLGElement>> verbalize = verbalize(individuals, nc, threshold, cooccurrence, hType);
-		for (Entry<Individual, List<NLGElement>> entry : verbalize.entrySet()) {
-			Individual individual = entry.getKey();
-			List<NLGElement> elements = entry.getValue();
-			String summary = realize(elements);
-	        summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
-	        summary = summary.replace(" , among others,", ", among others,");
-	        entity2Summaries.put(individual, summary);
-		}
-		
-		return entity2Summaries;
+    public Map<Individual, String> getSummaries(Set<Individual> individuals, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
+        Map<Individual, String> entity2Summaries = new HashMap<>();
+
+        Map<Individual, List<NLGElement>> verbalize = verbalize(individuals, nc, threshold, cooccurrence, hType);
+        for (Entry<Individual, List<NLGElement>> entry : verbalize.entrySet()) {
+            Individual individual = entry.getKey();
+            List<NLGElement> elements = entry.getValue();
+            String summary = realize(elements);
+            summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
+            summary = summary.replace(" , among others,", ", among others,");
+            entity2Summaries.put(individual, summary);
+        }
+
+        return entity2Summaries;
     }
 
     public List<NPPhraseSpec> generateSubjects(Resource resource, NamedClass nc, Gender g) {
@@ -467,12 +464,12 @@ public class Verbalizer {
         }
         return result;
     }
-    
+
     public static void main(String args[]) {
-    	SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
-    	endpoint.getDefaultGraphURIs().add("http://dbpedia.org");
-    	//endpoint = SparqlEndpoint.getEndpointDBpedia();
-    	
+        SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
+        endpoint.getDefaultGraphURIs().add("http://dbpedia.org");
+        //endpoint = SparqlEndpoint.getEndpointDBpedia();
+
         Verbalizer v;
         if (SimpleNLGwithPostprocessing.isWindows()) {
             v = new Verbalizer(endpoint, "cache/sparql", "resources/wordnetWindows/");
@@ -497,15 +494,14 @@ public class Verbalizer {
         summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
         summary = summary.replace(" , among others,", ", among others,");
         System.out.println(summary);
-
     }
-    
+
     /**
-	 * @param maxShownValuesPerProperty the maxShownValuesPerProperty to set
-	 */
-	public void setMaxShownValuesPerProperty(int maxShownValuesPerProperty) {
-		this.maxShownValuesPerProperty = maxShownValuesPerProperty;
-	}
+     * @param maxShownValuesPerProperty the maxShownValuesPerProperty to set
+     */
+    public void setMaxShownValuesPerProperty(int maxShownValuesPerProperty) {
+        this.maxShownValuesPerProperty = maxShownValuesPerProperty;
+    }
 
     /**
      * Replaces the subject of a coordinated phrase or simple phrase with a

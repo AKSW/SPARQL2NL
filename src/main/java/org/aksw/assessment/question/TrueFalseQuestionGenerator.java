@@ -62,15 +62,15 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
         logger.info("Chosen (property, object) = (" + property + "," + object + ")");
         query = "ASK {<" + r.getURI() + "> <" + property.getURI() + "> <" + object.getURI() + ">}";
         Query questionQuery = QueryFactory.create(query);
-        List<Answer> trueAsAnswer = new ArrayList<Answer>();
+        List<Answer> trueAsAnswer = new ArrayList<>();
         trueAsAnswer.add(new SimpleAnswer("True"));
-        List<Answer> falseAsAnswer = new ArrayList<Answer>();
-        trueAsAnswer.add(new SimpleAnswer("False"));
+        List<Answer> falseAsAnswer = new ArrayList<>();
+        falseAsAnswer.add(new SimpleAnswer("False"));
         // generate wrong object is answer should be false
-        if (Math.random() < 0.5) {
+        if (Math.random() <= 0.5) {
             //true answer
             Triple t = new Triple(r.asNode(), property.asNode(), object.asNode());
-            return new SimpleQuestion(nlg.realiser.realiseSentence(nlg.getNLForTriple(t)), trueAsAnswer, falseAsAnswer, DIFFICULTY, questionQuery);
+            return new SimpleQuestion("Is the following statement correct:\n"+nlg.realiser.realiseSentence(nlg.getNLForTriple(t)), trueAsAnswer, falseAsAnswer, DIFFICULTY, questionQuery);
         } else {
             //get values for property, i.e. the correct answers
             logger.info("Generating wrong answers...");
@@ -87,7 +87,7 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
             }
             if(wrongAnswer == null) return null;
             Triple t = new Triple(r.asNode(), property.asNode(), wrongAnswer.asNode());
-            return new SimpleQuestion(nlg.realiser.realiseSentence(nlg.getNLForTriple(t)), falseAsAnswer, trueAsAnswer, DIFFICULTY, questionQuery);
+            return new SimpleQuestion("Is the following statement correct:\n"+nlg.realiser.realiseSentence(nlg.getNLForTriple(t)), falseAsAnswer, trueAsAnswer, DIFFICULTY, questionQuery);
         }
     }
 
