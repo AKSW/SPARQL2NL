@@ -1,0 +1,16 @@
+http://dbpedia.org/ontology/capitalPosition
+http://dbpedia.org/ontology/mouthPosition
+http://dbpedia.org/ontology/orthologousGene
+http://dbpedia.org/ontology/sourceConfluencePosition
+http://dbpedia.org/ontology/leaderFunction
+http://dbpedia.org/ontology/sourcePosition
+http://dbpedia.org/ontology/restingPlacePosition
+http://dbpedia.org/ontology/lowestPosition
+http://dbpedia.org/ontology/managementPosition
+http://dbpedia.org/ontology/engine
+http://dbpedia.org/ontology/governmentPosition
+http://dbpedia.org/ontology/termPeriod
+http://dbpedia.org/ontology/personFunction
+http://dbpedia.org/ontology/highestPosition
+http://dbpedia.org/ontology/careerStation
+http://dbpedia.org/ontology/geneLocation

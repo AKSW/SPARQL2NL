@@ -42,7 +42,7 @@ public class Postprocessor {
     HashMap<String,String> equalities;
     boolean ask;
     // Debug
-    boolean TRACE = true;
+    boolean TRACE = false;
     
     
     public Postprocessor() {
