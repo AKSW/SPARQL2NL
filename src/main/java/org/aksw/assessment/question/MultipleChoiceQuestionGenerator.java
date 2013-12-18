@@ -17,11 +17,11 @@ import com.hp.hpl.jena.rdf.model.ResourceFactory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import org.aksw.assessment.question.Question.QuestionType;
 
 import org.aksw.assessment.question.answer.Answer;
 import org.aksw.assessment.question.answer.SimpleAnswer;
@@ -202,7 +202,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
             }
         }
         logger.info("...got " + wrongAnswers);
-        return new SimpleQuestion(nlg.getNLR(sparqlQuery).replaceAll("This query retrieves", "Please select"), generateAnswers(resourceValues), generateAnswers(wrongAnswers), DIFFICULTY, sparqlQuery);
+        return new SimpleQuestion(nlg.getNLR(sparqlQuery).replaceAll("This query retrieves", "Please select"), generateAnswers(resourceValues), generateAnswers(wrongAnswers), DIFFICULTY, sparqlQuery, QuestionType.MCQ);
     }
 
     public List<Answer> generateAnswers(Set<Resource> resources) {

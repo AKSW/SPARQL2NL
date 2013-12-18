@@ -18,4 +18,6 @@ public interface Question {
     List<Answer> getWrongAnswers();    
     int getDifficulty();
     Query getQuery();
+    QuestionType getType();
+    public enum QuestionType {JEOPARDY, MCQ, TRUEFALSE};
 }

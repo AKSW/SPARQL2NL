@@ -18,18 +18,24 @@ public class SimpleQuestion implements Question {
     List<Answer> wrongAnswers;    
     int difficulty;
     Query query;
-    
-    public SimpleQuestion(String text, List<Answer> correctAnswers, List<Answer> wrongAnswers, int difficulty, Query q)
+    QuestionType type;
+    public SimpleQuestion(String text, List<Answer> correctAnswers, List<Answer> wrongAnswers, int difficulty, Query q, QuestionType type)
     {
         this.text = text;
         this.correctAnswers = correctAnswers;
         this.wrongAnswers = wrongAnswers;
         this.difficulty = difficulty;
         this.query = q;
+        this.type = type;
     }
     
     public String getText() {
         return text;
+    }
+    
+    public QuestionType getType()
+    {
+        return type;
     }
 
     @Override

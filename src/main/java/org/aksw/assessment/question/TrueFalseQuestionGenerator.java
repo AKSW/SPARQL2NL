@@ -4,19 +4,17 @@
  */
 package org.aksw.assessment.question;
 
-import com.google.common.collect.Sets;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import java.util.*;
+import org.aksw.assessment.question.Question.QuestionType;
 import org.aksw.assessment.question.answer.Answer;
 import org.aksw.assessment.question.answer.SimpleAnswer;
-import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
@@ -70,7 +68,7 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
         if (Math.random() <= 0.5) {
             //true answer
             Triple t = new Triple(r.asNode(), property.asNode(), object.asNode());
-            return new SimpleQuestion("Is the following statement correct:\n"+nlg.realiser.realiseSentence(nlg.getNLForTriple(t)), trueAsAnswer, falseAsAnswer, DIFFICULTY, questionQuery);
+            return new SimpleQuestion("Is the following statement correct:\n"+nlg.realiser.realiseSentence(nlg.getNLForTriple(t)), trueAsAnswer, falseAsAnswer, DIFFICULTY, questionQuery, QuestionType.TRUEFALSE);
         } else {
             //get values for property, i.e. the correct answers
             logger.info("Generating wrong answers...");
@@ -87,7 +85,7 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
             }
             if(wrongAnswer == null) return null;
             Triple t = new Triple(r.asNode(), property.asNode(), wrongAnswer.asNode());
-            return new SimpleQuestion("Is the following statement correct:\n"+nlg.realiser.realiseSentence(nlg.getNLForTriple(t)), falseAsAnswer, trueAsAnswer, DIFFICULTY, questionQuery);
+            return new SimpleQuestion("Is the following statement correct:\n"+nlg.realiser.realiseSentence(nlg.getNLForTriple(t)), falseAsAnswer, trueAsAnswer, DIFFICULTY, questionQuery, QuestionType.TRUEFALSE);
         }
     }
 

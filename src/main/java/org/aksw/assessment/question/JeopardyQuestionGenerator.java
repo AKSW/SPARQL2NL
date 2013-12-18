@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
+import org.aksw.assessment.question.Question.QuestionType;
 import org.aksw.assessment.question.answer.Answer;
 import org.aksw.assessment.question.answer.SimpleAnswer;
 import org.aksw.sparql2nl.entitysummarizer.Verbalizer;
@@ -82,10 +84,14 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
                     wrongAnswers.add(new SimpleAnswer(nlg.realiser.realiseSentence(nlg.getNPPhrase(wrongAnswer.getURI(), false, false))));
                 }
             }
-            if (wrongAnswer == null) {
+            if (wrongAnswer == null || !summary.contains(".")) {
                 return null;
             }
-            return new SimpleQuestion("Which entity matches the following description:\n" + summary, wrongAnswers, correctAnswer, DIFFICULTY, QueryFactory.create(query));        
+            logger.info("Summary = "+summary);
+            summary = summary.substring(summary.indexOf(".")+2);
+            String className = nlg.realiser.realiseSentence(nlg.getNPPhrase(nc.getName(), false));
+            className = className.toLowerCase().replaceAll(Pattern.quote("."), "");
+            return new SimpleQuestion("Which "+className+" matches the following description:\n" + summary, wrongAnswers, correctAnswer, DIFFICULTY, QueryFactory.create(query), QuestionType.JEOPARDY);        
     }
     
       public static void main(String args[]) {
