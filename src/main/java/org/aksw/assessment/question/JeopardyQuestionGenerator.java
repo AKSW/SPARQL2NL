@@ -58,7 +58,9 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 //        Individual ind = new Individual("http://dbpedia.org/resource/David_Foster");
 //        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/MusicalArtist");
         List<NLGElement> text = v.verbalize(ind, nc, 0.38, DatasetBasedGraphGenerator.Cooccurrence.PROPERTIES, HardeningFactory.HardeningType.SMALLEST);
+        if(text==null) return null;
         String summary = v.realize(text);
+        if(summary == null) return null;
         summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
         summary = summary.replace(" , among others,", ", among others,");
         
@@ -84,11 +86,9 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
                     wrongAnswers.add(new SimpleAnswer(nlg.realiser.realiseSentence(nlg.getNPPhrase(wrongAnswer.getURI(), false, false))));
                 }
             }
-            if (wrongAnswer == null || !(summary.length() > summary.indexOf(".")+2)) {
+            if (wrongAnswer == null) {
                 return null;
             }
-            logger.info("Summary = "+summary);
-            summary = summary.substring(summary.indexOf(".")+2);
             String className = nlg.realiser.realiseSentence(nlg.getNPPhrase(nc.getName(), false));
             className = className.toLowerCase().replaceAll(Pattern.quote("."), "");
             return new SimpleQuestion("Which "+className+" matches the following description:\n" + summary, wrongAnswers, correctAnswer, DIFFICULTY, QueryFactory.create(query), QuestionType.JEOPARDY);        

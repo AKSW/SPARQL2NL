@@ -76,13 +76,13 @@ public class Verbalizer {
     Map<Resource, String> labels;
     NumericLiteralFilter litFilter;
     TypeAwareGenderDetector gender;
-    Map<Resource, Collection<Triple>> resource2Triples;
+    public Map<Resource, Collection<Triple>> resource2Triples;
     private QueryExecutionFactory qef;
     private String cacheDirectory = "cache/sparql";
     PredicateMergeRule pr;
     ObjectMergeRule or;
     SubjectMergeRule sr;
-    DatasetBasedGraphGenerator graphGenerator;
+    public DatasetBasedGraphGenerator graphGenerator;
     int maxShownValuesPerProperty = 5;
     boolean omitContentInBrackets = true;
 
@@ -194,6 +194,7 @@ public class Verbalizer {
     }
 
     public String realize(List<NLGElement> elts) {
+        if(elts.isEmpty()) return null;
         String realization = "";
         for (NLGElement elt : elts) {
             realization = realization + realiser.realiseSentence(elt) + " ";

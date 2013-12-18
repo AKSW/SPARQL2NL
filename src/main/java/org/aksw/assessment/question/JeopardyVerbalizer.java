@@ -4,16 +4,25 @@
  */
 package org.aksw.assessment.question;
 
+import com.google.common.collect.Lists;
+import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.rdf.model.Resource;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.hp.hpl.jena.rdf.model.ResourceFactory;
+import java.util.*;
 
 import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
 import org.aksw.sparql2nl.entitysummarizer.Verbalizer;
+import org.aksw.sparql2nl.entitysummarizer.clustering.BorderFlowX;
+import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
+import org.aksw.sparql2nl.entitysummarizer.clustering.WeightedGraph;
+import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory;
+import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector.Gender;
+import org.dllearner.core.owl.Individual;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.openrdf.model.vocabulary.RDF;
 
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
@@ -37,6 +46,35 @@ public class JeopardyVerbalizer extends Verbalizer {
            super(endpoint, cacheDirectory, wordnetDirectory);
     }
     
+     public Map<Individual, List<NLGElement>> verbalize(Set<Individual> individuals, NamedClass nc, double threshold, DatasetBasedGraphGenerator.Cooccurrence cooccurrence, HardeningFactory.HardeningType hType) {
+        resource2Triples = new HashMap<Resource, Collection<Triple>>();
+        //first get graph for nc
+        WeightedGraph wg = graphGenerator.generateGraph(nc, threshold, "http://dbpedia.org/ontology/", cooccurrence);
+
+        //then cluster the graph
+        BorderFlowX bf = new BorderFlowX(wg);
+        Set<Set<Node>> clusters = bf.cluster();
+        //then harden the results
+        List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
+
+        Map<Individual, List<NLGElement>> verbalizations = new HashMap<Individual, List<NLGElement>>();
+
+        for (Individual ind : individuals) {
+            //finally generateSentencesFromClusters
+            List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.getName()), nc, true);
+//            Triple t = Triple.create(ResourceFactory.createResource(ind.getName()).asNode(), ResourceFactory.createProperty(RDF.TYPE.toString()).asNode(),
+//                    ResourceFactory.createResource(nc.getName()).asNode());
+//            result = Lists.reverse(result);
+//            result.add(generateSimplePhraseFromTriple(t));
+//            result = Lists.reverse(result);            
+            verbalizations.put(ind, result);
+//
+//            resource2Triples.get(ResourceFactory.createResource(ind.getName())).add(t);
+        }
+
+        return verbalizations;
+    }
+     
     @Override
     public List<NPPhraseSpec> generateSubjects(Resource resource, NamedClass nc, Gender g) {
         List<NPPhraseSpec> result = new ArrayList<>();
