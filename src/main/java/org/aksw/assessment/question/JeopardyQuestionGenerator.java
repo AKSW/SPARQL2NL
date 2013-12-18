@@ -84,7 +84,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
                     wrongAnswers.add(new SimpleAnswer(nlg.realiser.realiseSentence(nlg.getNPPhrase(wrongAnswer.getURI(), false, false))));
                 }
             }
-            if (wrongAnswer == null || !summary.contains(".")) {
+            if (wrongAnswer == null || !(summary.length() > summary.indexOf(".")+2)) {
                 return null;
             }
             logger.info("Summary = "+summary);
