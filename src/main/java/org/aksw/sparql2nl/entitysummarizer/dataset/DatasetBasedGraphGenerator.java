@@ -28,6 +28,7 @@ import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
+import org.dllearner.utilities.MapUtils;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -37,13 +38,18 @@ import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 
+import edu.stanford.nlp.pipeline.CoreMapAttributeAggregator.MostFreqAggregator;
+
 import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
+import org.apache.log4j.Logger;
 
 /**
  * @author Lorenz Buehmann
  *
  */
 public class DatasetBasedGraphGenerator {
+	
+	private static final Logger logger = Logger.getLogger(DatasetBasedGraphGenerator.class.getName());
 
     private SparqlEndpoint endpoint;
     private QueryExecutionFactory qef;
@@ -283,25 +289,28 @@ public class DatasetBasedGraphGenerator {
     }
 
     private SortedSet<ObjectProperty> getMostProminentProperties(NamedClass cls, double threshold, String namespace) {
+    	logger.info("Computing most prominent properties for class " + cls + " ...");
         SortedSet<ObjectProperty> properties = new TreeSet<ObjectProperty>();
 
         //get total number of instances for the class
         int instanceCount = getInstanceCount(cls);
+        logger.info("Number of instances in class: " + instanceCount);
 
         //get all properties+frequency that are used by instances of the class
         Map<ObjectProperty, Integer> propertiesWithFrequency = getPropertiesWithFrequency(cls, namespace);
 
         //get all properties with a relative frequency above the threshold
-        for (Entry<ObjectProperty, Integer> entry : propertiesWithFrequency.entrySet()) {
+        for (Entry<ObjectProperty, Integer> entry : MapUtils.sortByValues(propertiesWithFrequency)) {
             ObjectProperty property = entry.getKey();
             Integer frequency = entry.getValue();
+           
             double score = frequency / (double) instanceCount;
-
+            logger.info(property + ": " + frequency + " -> " + score);
             if (score >= threshold) {
                 properties.add(property);
             }
         }
-
+        logger.info("...got " + properties);
         return properties;
     }
 

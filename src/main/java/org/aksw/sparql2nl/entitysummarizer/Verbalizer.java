@@ -30,6 +30,7 @@ import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator.Cooccurrence;
 import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector.Gender;
+import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector;
 import org.aksw.sparql2nl.entitysummarizer.gender.LexiconBasedGenderDetector;
 import org.aksw.sparql2nl.entitysummarizer.gender.TypeAwareGenderDetector;
 import org.aksw.sparql2nl.entitysummarizer.rules.DateLiteralFilter;
@@ -217,12 +218,12 @@ public class Verbalizer {
             Resource resource, NamedClass namedClass, boolean replaceSubjects) {
         List<SPhraseSpec> buffer;
 
+        //compute the gender of the resource
+        Gender g = getGender(resource);
 
-        String label = realiser.realiseSentence(nlg.getNPPhrase(resource.getURI(), false, false));
-        String firstToken = label.split(" ")[0];
-        Gender g = gender.getGender(resource.getURI(), firstToken);
-
+        //get a list of possible subject replacements
         List<NPPhraseSpec> subjects = generateSubjects(resource, namedClass, g);
+        
         List<NLGElement> result = new ArrayList<NLGElement>();
         Collection<Triple> allTriples = new ArrayList<Triple>();
         DateLiteralFilter dateFilter = new DateLiteralFilter();
@@ -464,6 +465,13 @@ public class Verbalizer {
         }
         return result;
     }
+    
+    public GenderDetector.Gender getGender(Resource resource){
+    	String label = realiser.realiseSentence(nlg.getNPPhrase(resource.getURI(), false, false));
+        String firstToken = label.split(" ")[0];
+        Gender g = gender.getGender(resource.getURI(), firstToken);
+        return g;
+    }
 
     public static void main(String args[]) {
         SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
@@ -511,7 +519,7 @@ public class Verbalizer {
      * @param subjects
      * @return Phrase with replaced subject
      */
-    private NLGElement replaceSubject(NLGElement phrase, List<NPPhraseSpec> subjects, Gender g) {
+    protected NLGElement replaceSubject(NLGElement phrase, List<NPPhraseSpec> subjects, Gender g) {
         SPhraseSpec sphrase;
         if (phrase instanceof SPhraseSpec) {
             sphrase = (SPhraseSpec) phrase;

@@ -55,7 +55,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
         Individual ind = new Individual(r.getURI());
 //        Individual ind = new Individual("http://dbpedia.org/resource/David_Foster");
 //        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/MusicalArtist");
-        List<NLGElement> text = v.verbalize(ind, nc, 0.4, DatasetBasedGraphGenerator.Cooccurrence.PROPERTIES, HardeningFactory.HardeningType.SMALLEST);
+        List<NLGElement> text = v.verbalize(ind, nc, 0.38, DatasetBasedGraphGenerator.Cooccurrence.PROPERTIES, HardeningFactory.HardeningType.SMALLEST);
         String summary = v.realize(text);
         summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
         summary = summary.replace(" , among others,", ", among others,");
@@ -70,7 +70,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
         
             //get values for property, i.e. the correct answers
             logger.info("Generating wrong answers...");
-            query = "select distinct ?x where {?x ?p ?o. <"+r.getURI()+"> ?q ?o.} LIMIT 10";
+            query = "select distinct ?x where {?x a <"+nc.getURI()+">} LIMIT 10";
             Query sparqlQuery = QueryFactory.create(query);
             ResultSet rs = executeSelectQuery(query, endpoint);
             Resource wrongAnswer = null;

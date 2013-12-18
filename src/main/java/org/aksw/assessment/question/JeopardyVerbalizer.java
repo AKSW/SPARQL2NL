@@ -5,14 +5,21 @@
 package org.aksw.assessment.question;
 
 import com.hp.hpl.jena.rdf.model.Resource;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
 import org.aksw.sparql2nl.entitysummarizer.Verbalizer;
 import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector.Gender;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+
+import simplenlg.features.Feature;
+import simplenlg.framework.CoordinatedPhraseElement;
+import simplenlg.framework.NLGElement;
 import simplenlg.phrasespec.NPPhraseSpec;
+import simplenlg.phrasespec.SPhraseSpec;
 
 /**
  * Extension of Avatar for verbalizing jeopardy questions.
@@ -44,6 +51,57 @@ public class JeopardyVerbalizer extends Verbalizer {
             result.add(nlg.nlgFactory.createNounPhrase("it"));
         }
         return result;
+    }
+    
+    @Override
+    protected NLGElement replaceSubject(NLGElement phrase, List<NPPhraseSpec> subjects, Gender g) {
+        SPhraseSpec sphrase;
+        if (phrase instanceof SPhraseSpec) {
+            sphrase = (SPhraseSpec) phrase;
+        } else if (phrase instanceof CoordinatedPhraseElement) {
+            sphrase = (SPhraseSpec) ((CoordinatedPhraseElement) phrase).getChildren().get(0);
+        } else {
+            return phrase;
+        }
+        int index = (int) Math.floor(Math.random() * subjects.size());
+//        index = 2;
+        if (((NPPhraseSpec) sphrase.getSubject()).getPreModifiers().size() > 0) //possessive subject
+        {
+
+            NPPhraseSpec subject = nlg.nlgFactory.createNounPhrase(((NPPhraseSpec) sphrase.getSubject()).getHead());
+            NPPhraseSpec modifier;
+            if (index < subjects.size() - 1) {
+                modifier = nlg.nlgFactory.createNounPhrase(subjects.get(index));
+                modifier.setFeature(Feature.POSSESSIVE, true);
+                subject.setPreModifier(modifier);
+                modifier.setFeature(Feature.POSSESSIVE, true);
+            } else {
+                if (g.equals(Gender.MALE)) {
+                    subject.setPreModifier("his");
+                } else if (g.equals(Gender.FEMALE)) {
+                    subject.setPreModifier("her");
+                } else {
+                    subject.setPreModifier("its");
+                }
+            }
+            if (sphrase.getSubject().isPlural()) {
+
+//                subject.getSpecifier().setPlural(false);
+                subject.setPlural(true);
+            }
+            sphrase.setSubject(subject);
+
+        } else {
+// does not fully work due to bug in SimpleNLG code      
+            if (g.equals(Gender.MALE)) {
+                sphrase.setSubject("He");
+            } else if (g.equals(Gender.FEMALE)) {
+                sphrase.setSubject("She");
+            } else {
+                sphrase.setSubject("It");
+            }
+        }
+        return phrase;
     }
     
 }

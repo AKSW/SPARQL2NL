@@ -114,7 +114,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
             }
             query = query.substring(0, query.lastIndexOf("UNION"));
         }
-
+        query += "LIMIT 100";
         List<Resource> result = new ArrayList<>();
         ResultSet rs = executeSelectQuery(query, endpoint);
         QuerySolution qs;
