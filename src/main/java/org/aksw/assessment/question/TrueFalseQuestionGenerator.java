@@ -11,7 +11,9 @@ import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
+
 import java.util.*;
+
 import org.aksw.assessment.question.Question.QuestionType;
 import org.aksw.assessment.question.answer.Answer;
 import org.aksw.assessment.question.answer.SimpleAnswer;
@@ -44,7 +46,7 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
             qs = rs.next();
             property = qs.getResource("p");
             object = qs.getResource("o");
-            if (!blackList.contains(property)) {
+            if (!GeneralPropertyBlackList.contains(property) && !DBpediaPropertyBlackList.contains(property)) {
                 if (Math.random() >= 0.5) {
                     result = true;
                 }
@@ -94,7 +96,6 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
         Set<Resource> res = new HashSet<Resource>();
         res.add(r);
         TrueFalseQuestionGenerator sqg = new TrueFalseQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), res);
-        System.out.println(sqg.blackList);
         Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
         for (Question q : questions) {
             if (q != null) {

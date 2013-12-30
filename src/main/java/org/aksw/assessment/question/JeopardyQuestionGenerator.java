@@ -99,7 +99,6 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
         Set<Resource> res = new HashSet<Resource>();
         res.add(r);
         JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), res);
-        System.out.println(sqg.blackList);
         Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
         for (Question q : questions) {
             if (q != null) {
