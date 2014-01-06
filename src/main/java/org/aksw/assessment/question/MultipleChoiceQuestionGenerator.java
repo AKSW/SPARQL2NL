@@ -6,13 +6,16 @@ package org.aksw.assessment.question;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
 import org.aksw.assessment.question.Question.QuestionType;
@@ -25,7 +28,9 @@ import org.aksw.jena_sparql_api.cache.extra.CacheEx;
 import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
+import org.aksw.sparql2nl.naturallanguagegeneration.LiteralConverter;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
+import org.aksw.sparql2nl.naturallanguagegeneration.URIConverter;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
@@ -37,6 +42,7 @@ import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Literal;
+import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
 
@@ -51,8 +57,23 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
     SparqlEndpoint endpoint;
     Set<Resource> types;
     SimpleNLGwithPostprocessing nlg;
+    LiteralConverter literalConverter;
     
+    int maxNrOfAnswersPerQuestion = 5;
     private QueryExecutionFactory qef;
+    
+    final Comparator resourceComparator = new Comparator<RDFNode>() {
+
+		@Override
+		public int compare(RDFNode o1, RDFNode o2) {
+			if(o1.isLiteral() && o2.isLiteral()){
+				return o1.asLiteral().getLexicalForm().compareTo(o2.asLiteral().getLexicalForm());
+			} else if(o1.isResource() && o2.isResource()){
+				return o1.asResource().getURI().compareTo(o2.asResource().getURI());
+			}
+			return -1;
+		}
+	};
 
     public MultipleChoiceQuestionGenerator(SparqlEndpoint ep, Set<Resource> restrictions) {
         this(ep, null, restrictions);
@@ -62,6 +83,8 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         endpoint = ep;
         types = restrictions;
         nlg = new SimpleNLGwithPostprocessing(endpoint);
+        
+        literalConverter = new LiteralConverter(new URIConverter(endpoint, cacheDirectory));
         
         qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
         if(cacheDirectory != null){
@@ -79,7 +102,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
     }
 
     @Override
-    public Set<Question> getQuestions(Map<Triple, Double> informativenessMap, int difficulty, int number) {
+    public Set<Question> getQuestions(Map<Triple, Double> informativenessMap, int difficulty, int numberOfQuestions) {
         Set<Question> questions = new HashSet<>();
         
         //1. we generate of possible resources
@@ -90,8 +113,8 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         Iterator<Resource> iterator = resources.iterator();
         Resource res;
         Question q;
-        while(questions.size() < number && iterator.hasNext()){
-        	res = iterator.next();System.out.println(getMostSpecificTypes(res));
+        while(questions.size() < numberOfQuestions && iterator.hasNext()){
+        	res = iterator.next();
         	q = generateQuestion(res);
             if (q != null) {
                 questions.add(q);
@@ -192,9 +215,12 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 
     public Question generateQuestion(Resource r) {
         logger.info("Generating question for resource " + r + "...");
-        //get properties
+        
+        //first of all, we check if there exists any meaningful information about the given resource, 
+        //i.e. whether there are interesting triples
+        //this is done by getting all properties for the given resource and filter out the black listed ones
         logger.info("Getting property candidates...");
-        String query = "select distinct ?p where {<" + r.getURI() + "> ?p ?o. FILTER(isURI(?o))}";
+        String query = "select distinct ?p where {<" + r.getURI() + "> ?p ?o. }";//FILTER(isURI(?o))
         Set<Resource> result = new HashSet<Resource>();
         ResultSet rs = executeSelectQuery(query, endpoint);
         QuerySolution qs;
@@ -221,44 +247,64 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         logger.info("Generating correct answers...");
         query = "select distinct ?o where {<" + r.getURI() + "> <" + property.getURI() + "> ?o}";
         Query sparqlQuery = QueryFactory.create(query);
-        Set<Resource> resourceValues = new HashSet<Resource>();
-        Set<Resource> wrongAnswers = new HashSet<Resource>();
-        Set<Literal> literalValues = new HashSet<Literal>();
+        Set<RDFNode> correctAnswers = new TreeSet<RDFNode>(resourceComparator);
         rs = executeSelectQuery(query, endpoint);
         while (rs.hasNext()) {
             qs = rs.next();
             if (qs.get("o").isLiteral()) {
-                literalValues.add(qs.get("o").asLiteral());
+                correctAnswers.add(qs.get("o").asLiteral());
             } else {
-                resourceValues.add(qs.get("o").asResource());
+                correctAnswers.add(qs.get("o").asResource());
             }
         }
-        logger.info("...got " + resourceValues);
+        logger.info("...got " + correctAnswers);
+        
+        //we pick up at least 1 and at most n correct answers randomly
+        rnd = new Random(123);
+        List<RDFNode> correctAnswerList = new ArrayList<RDFNode>(correctAnswers);
+        Collections.shuffle(correctAnswerList, rnd);
+        int maxNumberOfCorrectAnswers = rnd.nextInt((maxNrOfAnswersPerQuestion - 1) + 1) + 1;
+        correctAnswerList = correctAnswerList.subList(0, Math.min(correctAnswerList.size(), maxNumberOfCorrectAnswers));
 
         //generate alternative answers, i.e. the wrong answers
-        if (!literalValues.isEmpty()) {
-        }
-        //generate alternative answers
         logger.info("Generating wrong answers...");
-        if (!resourceValues.isEmpty()) {
-            Resource res = resourceValues.iterator().next();
-            query = "select distinct ?o where {?x <"+property.getURI()+"> ?o. FILTER(isURI(?o))} LIMIT 10";
+        Set<RDFNode> wrongAnswers = new TreeSet<RDFNode>(resourceComparator);
+        //get similar of nature but wrong answers by using resources in object position using the same property as for the correct answers
+        //TODO: some ranking for the wrong answers could be done in the same way as for the subjects
+        if (!correctAnswers.isEmpty()) {
+            query = "select distinct ?o where {?x <"+property.getURI()+"> ?o. } LIMIT 10";
             rs = executeSelectQuery(query, endpoint);
             while (rs.hasNext()) {
                 qs = rs.next();
-                if (!resourceValues.contains(qs.get("o").asResource())) {
-                    wrongAnswers.add(qs.get("o").asResource());
+                if (!correctAnswers.contains(qs.get("o"))) {
+                    wrongAnswers.add(qs.get("o"));
                 }
             }
         }
+        //we pick up (n-numberOfCorrectAnswers) wrong answers randomly
+        rnd = new Random(123);
+        List<RDFNode> wrongAnswerList = new ArrayList<RDFNode>(wrongAnswers);
+        Collections.shuffle(wrongAnswerList, rnd);
+        wrongAnswerList = wrongAnswerList.subList(0, Math.min(wrongAnswerList.size(), maxNrOfAnswersPerQuestion-correctAnswerList.size()));
         logger.info("...got " + wrongAnswers);
-        return new SimpleQuestion(nlg.getNLR(sparqlQuery).replaceAll("This query retrieves", "Please select"), generateAnswers(resourceValues), generateAnswers(wrongAnswers), DIFFICULTY, sparqlQuery, QuestionType.MCQ);
+        return new SimpleQuestion(
+        		nlg.getNLR(sparqlQuery).replaceAll("This query retrieves", "Please select"), 
+        		generateAnswers(correctAnswerList), 
+        		generateAnswers(wrongAnswerList), 
+        		DIFFICULTY, 
+        		sparqlQuery, 
+        		QuestionType.MCQ);
     }
-
-    public List<Answer> generateAnswers(Set<Resource> resources) {
+    
+    public List<Answer> generateAnswers(Collection<RDFNode> resources) {
         List<Answer> answers = new ArrayList<Answer>();
-        for (Resource r : resources) {
-            answers.add(new SimpleAnswer(nlg.realiser.realiseSentence(nlg.getNPPhrase(r.getURI(), false, false))));
+        for (RDFNode r : resources) {
+        	if(r.isURIResource()){
+        		answers.add(new SimpleAnswer(nlg.realiser.realiseSentence(nlg.getNPPhrase(r.asResource().getURI(), false, false))));
+        	} else if(r.isLiteral()){
+        		answers.add(new SimpleAnswer(literalConverter.convert(r.asLiteral())));
+        	}
+            
         }
         return answers;
     }
@@ -268,7 +314,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         Set<Resource> res = new HashSet<Resource>();
         res.add(r);
         MultipleChoiceQuestionGenerator sqg = new MultipleChoiceQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache", res);
-        Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
+        Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 20);
         for (Question q : questions) {
             if (q != null) {
                 System.out.println(">>" + q.getText());

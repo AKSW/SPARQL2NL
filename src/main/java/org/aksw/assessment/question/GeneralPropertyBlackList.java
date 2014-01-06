@@ -20,11 +20,16 @@ public class GeneralPropertyBlackList {
 		"http://www.w3.org/ns/prov#was", 
 	    "http://www.w3.org/2002/07/owl#sameAs", 
 	    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", 
+	    "http://www.w3.org/2000/01/rdf-schema#label",
+	    "http://www.w3.org/2000/01/rdf-schema#comment",
 	    "http://www.w3.org/ns/prov#wasDerivedFrom", 
 	    "http://xmlns.com/foaf/0.1/isPrimaryTopicOf", 
 	    "http://xmlns.com/foaf/0.1/depiction", 
 	    "http://xmlns.com/foaf/0.1/homepage", 
-	    "http://purl.org/dc/terms/subject"
+	    "http://purl.org/dc/terms/subject",
+	    "http://xmlns.com/foaf/0.1/givenName",
+	    "http://xmlns.com/foaf/0.1/name",
+	    "http://xmlns.com/foaf/0.1/surname"
 	    );
 	
 	public static boolean contains(Resource resource){
