@@ -4,6 +4,16 @@
  */
 package org.aksw.assessment.question;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.aksw.assessment.question.answer.Answer;
+import org.aksw.assessment.question.answer.SimpleAnswer;
+import org.apache.log4j.Logger;
+import org.dllearner.kb.sparql.SparqlEndpoint;
+
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
@@ -11,14 +21,6 @@ import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
-
-import java.util.*;
-
-import org.aksw.assessment.question.Question.QuestionType;
-import org.aksw.assessment.question.answer.Answer;
-import org.aksw.assessment.question.answer.SimpleAnswer;
-import org.apache.log4j.Logger;
-import org.dllearner.kb.sparql.SparqlEndpoint;
 
 /**
  *
@@ -28,8 +30,8 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
 
     private static final Logger logger = Logger.getLogger(MultipleChoiceQuestionGenerator.class.getName());
 
-    public TrueFalseQuestionGenerator(SparqlEndpoint ep, Set<Resource> restrictions) {
-        super(ep, restrictions);
+    public TrueFalseQuestionGenerator(SparqlEndpoint ep, String cacheDirectory, Set<Resource> restrictions) {
+        super(ep, cacheDirectory, restrictions);
     }
 
     @Override
@@ -95,7 +97,7 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
         Resource r = ResourceFactory.createResource("http://dbpedia.org/ontology/Country");
         Set<Resource> res = new HashSet<Resource>();
         res.add(r);
-        TrueFalseQuestionGenerator sqg = new TrueFalseQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), res);
+        TrueFalseQuestionGenerator sqg = new TrueFalseQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache", res);
         Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
         for (Question q : questions) {
             if (q != null) {

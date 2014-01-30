@@ -18,23 +18,24 @@ import java.net.URLDecoder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import org.aksw.sparql2nl.queryprocessing.TriplePatternExtractor;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.ExtractionDBCache;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.kb.sparql.SparqlQuery;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.Multimap;
+import com.google.common.io.Files;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.Syntax;
-import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 
 /**
  *
@@ -43,7 +44,7 @@ import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 public class DBpediaDumpProcessor implements DumpProcessor {
 
     public static String BEGIN = "query=";
-    private static SparqlEndpoint ENDPOINT = SparqlEndpoint.getEndpointDBpediaLiveAKSW();
+    private static SparqlEndpoint ENDPOINT = SparqlEndpoint.getEndpointDBpedia();
     private static final Logger logger = Logger.getLogger(DBpediaDumpProcessor.class);
     private ExtractionDBCache cache = new ExtractionDBCache("cache");
 
@@ -55,8 +56,8 @@ public class DBpediaDumpProcessor implements DumpProcessor {
 		InputStream is = null;
 		try {
 			String ending = file.substring(file.lastIndexOf('.') + 1);
-			os = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(new File(
-					file.substring(0, file.lastIndexOf('.')) + "-valid." + ending), true)));
+			os = new BufferedOutputStream(new FileOutputStream(new File(
+					file.substring(0, file.lastIndexOf('.')) + "-valid." + ending), true));
 			is = new FileInputStream(new File(file));
 			if (file.endsWith(".gz")) {
 				is = new GZIPInputStream(is);
@@ -64,12 +65,118 @@ public class DBpediaDumpProcessor implements DumpProcessor {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 			String line = null;
 			LogEntry entry = null;
+			int i = 0;
 			while ((line = reader.readLine()) != null) {
 				entry = processDumpLine(line);
 				if (entry != null) {
 					line += "\n";
 					os.write(line.getBytes());
-					os.flush();
+					os.flush();i++;
+				}
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				is.close();
+				os.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	public void filterOutNonConjunctiveQueries(String file) {
+		OutputStream os = null;
+		InputStream is = null;
+		try {TriplePatternExtractor triplePatternExtractor = new TriplePatternExtractor();
+			String ending = file.substring(file.lastIndexOf('.') + 1);
+			os = new BufferedOutputStream(new FileOutputStream(new File(
+					file.substring(0, file.lastIndexOf('.')) + "-conjunctive." + ending), true));
+			is = new FileInputStream(new File(file));
+			if (file.endsWith(".gz")) {
+				is = new GZIPInputStream(is);
+			}
+			BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+			String line = null;
+			LogEntry entry = null;
+			int i = 0;
+			while ((line = reader.readLine()) != null) {
+				entry = processDumpLine(line);
+				if(entry != null){
+					Query query = entry.getSparqlQuery();
+					
+					String q = query.toString().toLowerCase();
+					
+					if (	query.isSelectType()
+							&& !q.contains("optional")
+							&& !q.contains("union")
+							&& !q.contains("group by")
+							&& !q.contains("offset")
+							&& !q.contains("count")
+							&& !q.contains("bif:contains")
+							&& !q.contains("filter")
+							&& !query.isQueryResultStar()
+							&& query.getProjectVars().size() == 1
+							
+							) {
+//							System.out.println(q);
+							if(triplePatternExtractor.extractIngoingTriplePatterns(query, query.getProjectVars().get(0)).isEmpty()
+								&& triplePatternExtractor.extractTriplePattern(query).size() >= 2){
+								line += "\n";
+								os.write(line.getBytes());
+								os.flush();
+								i++;
+							}
+					}
+				}
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				is.close();
+				os.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	public void filterOutMultipleProjectionVars(String file) {
+		OutputStream os = null;
+		InputStream is = null;
+		try { TriplePatternExtractor triplePatternExtractor = new TriplePatternExtractor();
+			String ending = file.substring(file.lastIndexOf('.') + 1);
+			os = new BufferedOutputStream(new FileOutputStream(new File(
+					file.substring(0, file.lastIndexOf('.')) + "-singleProjectionVar." + ending), true));
+			is = new FileInputStream(new File(file));
+			if (file.endsWith(".gz")) {
+				is = new GZIPInputStream(is);
+			}
+			BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+			String line = null;
+			LogEntry entry = null;
+			int i = 0;
+			while ((line = reader.readLine()) != null) {
+				entry = processDumpLine(line);
+				Query q = entry.getSparqlQuery();
+				
+				if (!q.isQueryResultStar()
+						
+						&& q.getProjectVars().size() == 1
+						&& triplePatternExtractor.extractIngoingTriplePatterns(q, q.getProjectVars().get(0)).isEmpty()
+						&& !q.toString().contains("bif:contains")
+						&& !q.toString().toLowerCase().contains("filter")
+						&& triplePatternExtractor.extractTriplePattern(q).size() >=3
+						) {System.out.println(q);
+					line += "\n";
+					os.write(line.getBytes());
+					os.flush();i++;
 				}
 			}
 		} catch (FileNotFoundException e) {
@@ -91,9 +198,9 @@ public class DBpediaDumpProcessor implements DumpProcessor {
 		InputStream is = null;
 		try {
 			String ending = file.substring(file.lastIndexOf('.') + 1);
-			os = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(new File(file.substring(0,
+			os = new BufferedOutputStream(new FileOutputStream(new File(file.substring(0,
 					file.lastIndexOf('.'))
-					+ "-select." + ending), true)));
+					+ "-select." + ending), true));
 			is = new FileInputStream(new File(file));
 			if (file.endsWith(".gz")) {
 				is = new GZIPInputStream(is);
@@ -126,11 +233,11 @@ public class DBpediaDumpProcessor implements DumpProcessor {
 	public void filterOutEmptyQueries(String file) {
 		OutputStream os = null;
 		InputStream is = null;
-		try {
+		try {TriplePatternExtractor triplePatternExtractor = new TriplePatternExtractor();
 			String ending = file.substring(file.lastIndexOf('.') + 1);
-			os = new BufferedOutputStream(new GZIPOutputStream(new FileOutputStream(new File(file.substring(0,
+			os = new BufferedOutputStream(new FileOutputStream(new File(file.substring(0,
 					file.lastIndexOf('.'))
-					+ "-nonempty." + ending), true)));
+					+ "-nonempty." + ending), true));
 			is = new FileInputStream(new File(file));
 			if (file.endsWith(".gz")) {
 				is = new GZIPInputStream(is);
@@ -138,17 +245,23 @@ public class DBpediaDumpProcessor implements DumpProcessor {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(is));
 			String line = null;
 			LogEntry entry = null;
+			StringBuilder queries = new StringBuilder();
 			while ((line = reader.readLine()) != null) {
 				entry = processDumpLine(line);
 				if (entry != null) {
 					int r = checkForResults(entry.query);
-					if (r >= 1) {
+					if (r >= 3) {
+						Query q = QueryFactory.create(entry.query, Syntax.syntaxARQ);
+						if(triplePatternExtractor.extractTriplePattern(q).size() >= 2){
+							queries.append(q.toString() + "\n++++++++++++++++++++++++++++\n");
+						}
 						line += "\n";
 						os.write(line.getBytes());
 						os.flush();
 					} 
 				}
 			}
+			Files.write(queries.toString(), new File("dbpedia-log-queries.txt"), Charsets.UTF_8);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -318,7 +431,7 @@ public class DBpediaDumpProcessor implements DumpProcessor {
 //        System.out.println(line);
         String query = line.substring(line.indexOf(BEGIN) + BEGIN.length());
         DateFormat df = new SimpleDateFormat("dd/MMM/yyyy hh:mm:ss", Locale.ENGLISH);
-
+        
         try {
             query = query.substring(0, query.indexOf(" ") - 1);
             query = URLDecoder.decode(query, "UTF-8");
@@ -348,14 +461,14 @@ public class DBpediaDumpProcessor implements DumpProcessor {
     private int checkForResults(String query) {
         try {
         	Query q = QueryFactory.create(query, Syntax.syntaxARQ);
-        	q.setLimit(1);
-            ResultSet results = SparqlQuery.convertJSONtoResultSet(cache.executeSelectQuery(ENDPOINT, query));
-            if (results.hasNext()) {
-                return 1;//results.getRowNumber();
-            } //no results
-            else {
-                return 0;
-            }
+        	q.setLimit(Query.NOLIMIT);
+            ResultSet rs = SparqlQuery.convertJSONtoResultSet(cache.executeSelectQuery(ENDPOINT, query));
+            int cnt = 0;
+            while (rs.hasNext()) {
+            	rs.next();
+            	cnt++;
+            } 
+            return cnt;
         } catch (Exception e) {e.printStackTrace();
             logger.error("Query parse error for " + query);
         }
@@ -365,38 +478,13 @@ public class DBpediaDumpProcessor implements DumpProcessor {
 
     public static void main(String args[]) {
         DBpediaDumpProcessor dp = new DBpediaDumpProcessor();
-//        dp.filterOutInvalidQueries("resources/dbpediaLog/dbpedia.log.gz");
-//        dp.filterOutNonSelectQueries("resources/dbpediaLog/dbpedia.log-valid.gz");
-//        dp.filterOutEmptyQueries("resources/dbpediaLog/dbpedia.log-valid-select.gz");
-//        dp.filterOutIPAddressApproximatedNoise("resources/dbpediaLog/dbpedia.log-valid-select.gz");
-        dp.filterOutByUserAgents("resources/dbpediaLog/dbpedia.log-valid-select.gz");
-//        List<LogEntry> entries = dp.processDump("resources/dbpediaLog/access.log-20120805.gz", false);
-//        System.out.println("#Entries: " + entries.size());
-//        
-//        //group by IP address
-//        Multimap<String, LogEntry> ip2Entries = LogEntryGrouping.groupByIPAddress(entries);
-//        System.out.println("#IP addresses: " + ip2Entries.keySet().size());
-//        
-//		for (Entry<String, Collection<LogEntry>> entry : ip2Entries.asMap().entrySet()) {
-//			String ip = entry.getKey();
-//			Collection<LogEntry> entriesForIP = entry.getValue();
-//			System.out.println(ip + ": " + entriesForIP.size());
-//			//print top n 
-//			int n = 5;
-//			for (LogEntry e : new ArrayList<LogEntry>(entriesForIP).subList(0, Math.min(entriesForIP.size(), n))) {
-//				System.out.println(e.getSparqlQuery());
-//			}
-//		}
-//        
-//        List<String> filteredResults = new ArrayList<String>();
-//        DateFormat df = new SimpleDateFormat("dd/mm/yyyy hh:mm:ss", Locale.ENGLISH);
-//
-//        for (LogEntry e : entries) {
-//            if (dp.checkForResults(e.getQuery()) >= 0) {
-//                filteredResults.add(df.format(e.date) + "" + e.getQuery());
-//            }
-//        }
-//        System.out.println(filteredResults);
+        File folder = new File("/home/me/work/DBpediaQueryLog/");
+        for (File file : folder.listFiles()) {
+        	if(!file.getAbsolutePath().contains("conjunctive") && !file.getAbsolutePath().contains("nonempty"))continue;
+        	System.out.println("Processing " + file);
+//        	dp.filterOutNonConjunctiveQueries(file.getAbsolutePath());
+        	dp.filterOutEmptyQueries(file.getAbsolutePath());
+		}
     }
 
     public List<LogEntry> processDump(String file) {

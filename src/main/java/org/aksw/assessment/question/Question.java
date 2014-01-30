@@ -19,5 +19,4 @@ public interface Question {
     int getDifficulty();
     Query getQuery();
     QuestionType getType();
-    public enum QuestionType {JEOPARDY, MCQ, TRUEFALSE};
 }

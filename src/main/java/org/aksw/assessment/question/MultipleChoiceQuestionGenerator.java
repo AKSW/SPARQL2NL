@@ -18,7 +18,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
-import org.aksw.assessment.question.Question.QuestionType;
 import org.aksw.assessment.question.answer.Answer;
 import org.aksw.assessment.question.answer.SimpleAnswer;
 import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
@@ -41,7 +40,6 @@ import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
@@ -293,7 +291,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         		generateAnswers(wrongAnswerList), 
         		DIFFICULTY, 
         		sparqlQuery, 
-        		QuestionType.MCQ);
+        		QuestionType.MC);
     }
     
     public List<Answer> generateAnswers(Collection<RDFNode> resources) {

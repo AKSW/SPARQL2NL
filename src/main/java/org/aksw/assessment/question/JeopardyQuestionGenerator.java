@@ -4,19 +4,12 @@
  */
 package org.aksw.assessment.question;
 
-import com.google.common.collect.Sets;
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.query.QuerySolution;
-import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.aksw.assessment.question.Question.QuestionType;
+
 import org.aksw.assessment.question.answer.Answer;
 import org.aksw.assessment.question.answer.SimpleAnswer;
 import org.aksw.sparql2nl.entitysummarizer.Verbalizer;
@@ -27,7 +20,16 @@ import org.apache.log4j.Logger;
 import org.dllearner.core.owl.Individual;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+
 import simplenlg.framework.NLGElement;
+
+import com.google.common.collect.Sets;
+import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.ResourceFactory;
 
 /**
  *
@@ -39,12 +41,12 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     Verbalizer v;
     NamedClass nc;
     public final int maxShownValuesPerProperty = 3; 
-    public JeopardyQuestionGenerator(SparqlEndpoint ep, Set<Resource> restrictions) {
-        super(ep, restrictions);
+    public JeopardyQuestionGenerator(SparqlEndpoint ep, String cacheDirectory, Set<Resource> restrictions) {
+        super(ep, cacheDirectory, restrictions);
         if (SimpleNLGwithPostprocessing.isWindows()) {
-            v = new JeopardyVerbalizer(endpoint, "cache/sparql", "resources/wordnetWindows/");
+            v = new JeopardyVerbalizer(endpoint, cacheDirectory, "resources/wordnetWindows/");
         } else {
-            v = new JeopardyVerbalizer(endpoint, "cache/sparql", "resources/wordnet/dict");
+            v = new JeopardyVerbalizer(endpoint, cacheDirectory, "resources/wordnet/dict");
         }
         v.setPersonTypes(Sets.newHashSet("http://dbpedia.org/ontology/Person"));
         nc = new NamedClass(restrictions.iterator().next().getURI());
@@ -98,7 +100,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
         Resource r = ResourceFactory.createResource("http://dbpedia.org/ontology/Person");
         Set<Resource> res = new HashSet<Resource>();
         res.add(r);
-        JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), res);
+        JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache", res);
         Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
         for (Question q : questions) {
             if (q != null) {

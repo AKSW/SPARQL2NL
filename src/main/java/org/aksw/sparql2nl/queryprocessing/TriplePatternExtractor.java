@@ -12,6 +12,7 @@ import org.apache.commons.collections15.ListUtils;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.sparql.core.TriplePath;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.syntax.Element;
@@ -216,7 +217,9 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 			if(inOptionalClause){
 				candidates.add(tp.asTriple());
 			} else {
-				triplePattern.add(tp.asTriple());
+				if(tp.isTriple()){
+					triplePattern.add(tp.asTriple());
+				}
 			}
 		}
 	}
@@ -245,5 +248,14 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 
 	public int getFilterCount() {
 		return filterCount;
+	}
+	
+	public static void main(String[] args) throws Exception {
+		Query q = QueryFactory.create(
+				"prefix  dbp:  <http://dbpedia.org/resource/> "
+				+ "prefix  dbp2: <http://dbpedia.org/ontology/> "
+				+ "select  ?thumbnail where  { dbp:total !dbp2:thumbnail ?thumbnail }");
+		TriplePatternExtractor triplePatternExtractor = new TriplePatternExtractor();
+		triplePatternExtractor.extractIngoingTriplePatterns(q, q.getProjectVars().get(0));
 	}
 }
