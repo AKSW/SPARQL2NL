@@ -162,6 +162,10 @@
 					<groupId>com.hp.hpl.jena</groupId>
 					<artifactId>jena</artifactId>
 				</exclusion>
+				<exclusion>
+					<artifactId>stanford-corenlp</artifactId>
+					<groupId>edu.stanford.nlp</groupId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 
