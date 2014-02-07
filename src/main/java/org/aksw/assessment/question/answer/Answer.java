@@ -10,4 +10,5 @@ package org.aksw.assessment.question.answer;
  */
 public interface Answer {
     String getText();
+    String getHint();
 }

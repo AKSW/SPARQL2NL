@@ -4,6 +4,7 @@
  */
 package org.aksw.sparql2nl.entitysummarizer.clustering;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,7 +16,7 @@ import java.util.Set;
  *
  * @author ngonga
  */
-public class WeightedGraph {
+public class WeightedGraph implements Serializable{
 
     Map<Node, Double> nodes;
     Map<String, Set<Node>> nodeIndex;

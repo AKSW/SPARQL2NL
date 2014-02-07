@@ -7,13 +7,18 @@ package org.aksw.assessment.question;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.aksw.assessment.question.answer.Answer;
 import org.aksw.assessment.question.answer.SimpleAnswer;
 import org.apache.log4j.Logger;
+import org.dllearner.core.owl.NamedClass;
+import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
@@ -28,20 +33,28 @@ import com.hp.hpl.jena.rdf.model.ResourceFactory;
  */
 public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator {
 
-    private static final Logger logger = Logger.getLogger(MultipleChoiceQuestionGenerator.class.getName());
+    /**
+	 * @param ep
+	 * @param cacheDirectory
+	 * @param namespace
+	 * @param restrictions
+	 */
+	public TrueFalseQuestionGenerator(SparqlEndpoint ep, String cacheDirectory, String namespace,
+			Map<NamedClass, Set<ObjectProperty>> restrictions) {
+		super(ep, cacheDirectory, namespace, restrictions);
+		
+	}
 
-    public TrueFalseQuestionGenerator(SparqlEndpoint ep, String cacheDirectory, Set<Resource> restrictions) {
-        super(ep, cacheDirectory, restrictions);
-    }
+	private static final Logger logger = Logger.getLogger(MultipleChoiceQuestionGenerator.class.getName());
 
     @Override
-    public Question generateQuestion(Resource r) {
+    public Question generateQuestion(Resource r, NamedClass type) {
         logger.info("Generating question for resource " + r + "...");
         //get properties
         logger.info("Getting statement for resource");
         String query = "select ?p ?o where {<" + r.getURI() + "> ?p ?o. FILTER(isURI(?o))}";
         boolean result = false;
-        ResultSet rs = executeSelectQuery(query, endpoint);
+        ResultSet rs = executeSelectQuery(query);
         QuerySolution qs;
         Resource property = null, object = null;
         while (rs.hasNext() && !result) {
@@ -78,7 +91,7 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
             logger.info("Generating wrong answers...");
             query = "select distinct ?o where {?x <" + property.getURI() + "> ?o. FILTER(isURI(?o))}";
             Query sparqlQuery = QueryFactory.create(query);
-            rs = executeSelectQuery(query, endpoint);
+            rs = executeSelectQuery(query);
             Resource wrongAnswer = null;
             while (rs.hasNext()) {
                 qs = rs.next();
@@ -94,10 +107,10 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
     }
 
     public static void main(String args[]) {
-        Resource r = ResourceFactory.createResource("http://dbpedia.org/ontology/Country");
-        Set<Resource> res = new HashSet<Resource>();
-        res.add(r);
-        TrueFalseQuestionGenerator sqg = new TrueFalseQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache", res);
+    	Map<NamedClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
+        restrictions.put(new NamedClass("http://dbpedia.org/ontology/Writer"), Sets.newHashSet(new ObjectProperty("http://dbpedia.org/ontology/birthPlace")));
+        
+        TrueFalseQuestionGenerator sqg = new TrueFalseQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache", "http://dbpedia.org/ontology/", restrictions);
         Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
         for (Question q : questions) {
             if (q != null) {

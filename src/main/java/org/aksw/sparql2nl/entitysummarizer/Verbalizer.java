@@ -27,6 +27,7 @@ import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
 import org.aksw.sparql2nl.entitysummarizer.clustering.WeightedGraph;
 import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory;
 import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory.HardeningType;
+import org.aksw.sparql2nl.entitysummarizer.dataset.CachedDatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator.Cooccurrence;
 import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector.Gender;
@@ -39,6 +40,7 @@ import org.aksw.sparql2nl.entitysummarizer.rules.ObjectMergeRule;
 import org.aksw.sparql2nl.entitysummarizer.rules.PredicateMergeRule;
 import org.aksw.sparql2nl.entitysummarizer.rules.SubjectMergeRule;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
+import org.apache.log4j.Logger;
 import org.dllearner.core.owl.Individual;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
@@ -68,6 +70,8 @@ import com.hp.hpl.jena.rdf.model.ResourceFactory;
  * @author ngonga
  */
 public class Verbalizer {
+	
+	private static final Logger logger = Logger.getLogger(Verbalizer.class.getName());
 
     public SimpleNLGwithPostprocessing nlg;
     SparqlEndpoint endpoint;
@@ -104,7 +108,7 @@ public class Verbalizer {
             qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
         }
 
-        graphGenerator = new DatasetBasedGraphGenerator(endpoint, cache);
+        graphGenerator = new CachedDatasetBasedGraphGenerator(endpoint, cache);
     }
 
     public Verbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
@@ -134,7 +138,7 @@ public class Verbalizer {
         }
         gender = new TypeAwareGenderDetector(endpoint, cacheBackend, new LexiconBasedGenderDetector());
 
-        graphGenerator = new DatasetBasedGraphGenerator(endpoint, cacheDirectory);
+        graphGenerator = new CachedDatasetBasedGraphGenerator(endpoint, cacheDirectory);
     }
 
     /**
@@ -162,10 +166,15 @@ public class Verbalizer {
      * @param p
      * @return A set of triples
      */
-    public Set<Triple> getTriples(Resource r, Property p) {
+    public Set<Triple> getTriples(Resource r, Property p, boolean outgoing) {
         Set<Triple> result = new HashSet<Triple>();
         try {
-            String q = "SELECT ?o where { <" + r.getURI() + "> <" + p.getURI() + "> ?o.}";// FILTER langMatches( lang(?p), " + language + " )}";
+        	String q;
+        	if(outgoing){
+        		q = "SELECT ?o where { <" + r.getURI() + "> <" + p.getURI() + "> ?o.}";
+        	} else {
+        		q = "SELECT ?o where { ?o <" + p.getURI() + "> <" + r.getURI() + ">.}";
+        	}
             QueryExecution qe = qef.createQueryExecution(q);
             ResultSet results = qe.execSelect();
             if (results.hasNext()) {
@@ -184,7 +193,7 @@ public class Verbalizer {
     /**
      * Generates the string representation of a verbalization
      *
-     * @param properties List of property clusters to be used for varbalization
+     * @param properties List of property clusters to be used for verbalization
      * @param resource Resource to summarize
      * @return Textual representation
      */
@@ -234,7 +243,7 @@ public class Verbalizer {
             Set<Triple> triples = new HashSet<Triple>();
             buffer = new ArrayList<SPhraseSpec>();
             for (Node property : propertySet) {
-                triples = getTriples(resource, ResourceFactory.createProperty(property.label));
+                triples = getTriples(resource, ResourceFactory.createProperty(property.label), property.outgoing);
                 litFilter.filter(triples);
                 dateFilter.filter(triples);
                 //restrict the number of shown values for the same property
@@ -244,7 +253,7 @@ public class Verbalizer {
                     subsetShown = true;
                 }
                 //all share the same property, thus they can be merged
-                buffer.addAll(or.apply(getPhraseSpecsFromTriples(triples), subsetShown));
+                buffer.addAll(or.apply(getPhraseSpecsFromTriples(triples, property.outgoing), subsetShown));
                 allTriples.addAll(triples);
             }
             result.addAll(sr.apply(or.apply(buffer), g));
@@ -320,8 +329,8 @@ public class Verbalizer {
      * @param triples A set of triples
      * @return A set of sentences representing these triples
      */
-    public List<NLGElement> generateSentencesFromTriples(Set<Triple> triples, Gender g) {
-        return applyMergeRules(getPhraseSpecsFromTriples(triples), g);
+    public List<NLGElement> generateSentencesFromTriples(Set<Triple> triples, boolean outgoing, Gender g) {
+        return applyMergeRules(getPhraseSpecsFromTriples(triples, outgoing), g);
     }
 
     /**
@@ -330,10 +339,12 @@ public class Verbalizer {
      * @param triples A set of triples
      * @return A set of sentences representing these triples
      */
-    public List<SPhraseSpec> getPhraseSpecsFromTriples(Set<Triple> triples) {
+    public List<SPhraseSpec> getPhraseSpecsFromTriples(Set<Triple> triples, boolean outgoing) {
         List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
+        SPhraseSpec phrase;
         for (Triple t : triples) {
-            phrases.add(generateSimplePhraseFromTriple(t));
+            phrase = generateSimplePhraseFromTriple(t, outgoing);
+			phrases.add(phrase);
         }
         return phrases;
     }
@@ -342,7 +353,7 @@ public class Verbalizer {
      * Generates a set of sentences by merging the sentences in the list as well
      * as possible
      *
-     * @param triples List of triles
+     * @param triples List of triples
      * @return List of sentences
      */
     public List<NLGElement> applyMergeRules(List<SPhraseSpec> triples, Gender g) {
@@ -380,6 +391,16 @@ public class Verbalizer {
     public SPhraseSpec generateSimplePhraseFromTriple(Triple triple) {
         return nlg.getNLForTriple(triple);
     }
+    
+    /**
+     * Generates a simple phrase for a triple
+     *
+     * @param triple A triple
+     * @return A simple phrase
+     */
+    public SPhraseSpec generateSimplePhraseFromTriple(Triple triple, boolean outgoing) {
+        return nlg.getNLForTriple(triple, outgoing);
+    }
 
     public List<NLGElement> verbalize(Individual ind, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
         return verbalize(Sets.newHashSet(ind), nc, threshold, cooccurrence, hType).get(ind);
@@ -395,7 +416,7 @@ public class Verbalizer {
         Set<Set<Node>> clusters = bf.cluster();
         //then harden the results
         List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
-        System.out.println("Cluster = " + sortedPropertyClusters);
+        logger.debug("Cluster = " + sortedPropertyClusters);
 
         Map<Individual, List<NLGElement>> verbalizations = new HashMap<Individual, List<NLGElement>>();
 

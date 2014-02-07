@@ -987,8 +987,12 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
         return null;
     }
-
+    
     public SPhraseSpec getNLForTriple(Triple t) {
+    	return getNLForTriple(t, true);
+    }
+
+    public SPhraseSpec getNLForTriple(Triple t, boolean outgoing) {
         SPhraseSpec p = nlgFactory.createClause();
         //process predicate
         //start with variables
@@ -1102,6 +1106,12 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
                 p.setVerb("be");
                 p.setObject(object);
+                if(!outgoing){
+                	subject.setFeature(Feature.POSSESSIVE, false);
+                	p.setSubject(subject);
+                	p.setVerbPhrase(nlgFactory.createVerbPhrase("be " + predicateAsString + " of"));
+                	p.setObject(object);
+                }
 //                FileOutputStream fos = null;
 //                try {
 //                	String out = realiser.realise(p).toString() + "\n";

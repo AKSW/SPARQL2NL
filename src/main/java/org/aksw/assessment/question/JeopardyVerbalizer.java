@@ -4,12 +4,12 @@
  */
 package org.aksw.assessment.question;
 
-import com.google.common.collect.Lists;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.rdf.model.Resource;
-
-import com.hp.hpl.jena.rdf.model.ResourceFactory;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
 import org.aksw.sparql2nl.entitysummarizer.Verbalizer;
@@ -22,13 +22,16 @@ import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector.Gender;
 import org.dllearner.core.owl.Individual;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
-import org.openrdf.model.vocabulary.RDF;
 
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.NLGElement;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
+
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.ResourceFactory;
 
 /**
  * Extension of Avatar for verbalizing jeopardy questions.
