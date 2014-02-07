@@ -104,9 +104,10 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
     }
     
     public MultipleChoiceQuestionGenerator(SparqlEndpoint ep, String cacheDirectory, String namespace, Map<NamedClass, Set<ObjectProperty>> restrictions) {
-        endpoint = ep;
+    	this.endpoint = ep;
 		this.namespace = namespace;
 		this.restrictions = restrictions;
+		
         nlg = new SimpleNLGwithPostprocessing(endpoint);
         
         literalConverter = new LiteralConverter(new URIConverter(endpoint, cacheDirectory));
@@ -127,11 +128,10 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         
         reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint), cacheDirectory);
         
-        if (SimpleNLGwithPostprocessing.isWindows()) {
-        	verbalizer = new JeopardyVerbalizer(endpoint, cacheDirectory, "resources/wordnetWindows/");
-        } else {
-        	verbalizer = new JeopardyVerbalizer(endpoint, cacheDirectory, "resources/wordnet/dict");
-        }
+        String wordNetDir = SimpleNLGwithPostprocessing.isWindows() ? "windows" : "linux";
+        wordNetDir = this.getClass().getClassLoader().getResource(wordNetDir).getPath();
+        
+        verbalizer = new JeopardyVerbalizer(endpoint, cacheDirectory, wordNetDir);
         verbalizer.setPersonTypes(Sets.newHashSet("http://dbpedia.org/ontology/Person"));
         verbalizer.setMaxShownValuesPerProperty(maxShownValuesPerProperty);
         verbalizer.setOmitContentInBrackets(true);
