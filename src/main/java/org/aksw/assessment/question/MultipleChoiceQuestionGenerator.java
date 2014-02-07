@@ -128,8 +128,8 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         
         reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint), cacheDirectory);
         
-        String wordNetDir = SimpleNLGwithPostprocessing.isWindows() ? "windows" : "linux";
-        wordNetDir = this.getClass().getClassLoader().getResource("wordnet/" + wordNetDir).getPath();
+        String wordNetDir = "wordnet/" + (SimpleNLGwithPostprocessing.isWindows() ? "windows" : "linux") + "/dict";
+        wordNetDir = this.getClass().getClassLoader().getResource(wordNetDir).getPath();
         
         verbalizer = new JeopardyVerbalizer(endpoint, cacheDirectory, wordNetDir);
         verbalizer.setPersonTypes(Sets.newHashSet("http://dbpedia.org/ontology/Person"));
