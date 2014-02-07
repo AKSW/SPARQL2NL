@@ -12,10 +12,12 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
+import javax.servlet.ServletContext;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 import org.aksw.assessment.question.JeopardyQuestionGenerator;
@@ -31,9 +33,6 @@ import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.ResourceFactory;
 
 /**
  * @author Lorenz Buehmann
@@ -49,9 +48,12 @@ public class RESTService {
 	String cacheDirectory = "cache";
 	
 	@GET
+	@Context
 	@Produces(MediaType.APPLICATION_JSON)
-	public RESTQuestions getQuestionsJSON(@QueryParam("domain") String domain, @QueryParam("type") List<String> questionTypes, @QueryParam("limit") int maxNrOfQuestions) {
+	public RESTQuestions getQuestionsJSON(@Context ServletContext context, @QueryParam("domain") String domain, @QueryParam("type") List<String> questionTypes, @QueryParam("limit") int maxNrOfQuestions) {
 		logger.info("REST Request:\nDomain:" + domain + "\nQuestionTypes:" + questionTypes + "\n#Questions:" + maxNrOfQuestions);
+		
+		cacheDirectory = context.getRealPath(cacheDirectory);
 		
 		Map<QuestionType, QuestionGenerator> generators = Maps.newLinkedHashMap();
 		
