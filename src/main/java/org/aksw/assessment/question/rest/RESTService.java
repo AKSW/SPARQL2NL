@@ -25,6 +25,7 @@ import org.aksw.assessment.question.QuestionGenerator;
 import org.aksw.assessment.question.QuestionType;
 import org.aksw.assessment.question.TrueFalseQuestionGenerator;
 import org.aksw.assessment.question.answer.Answer;
+import org.apache.log4j.Logger;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
@@ -41,6 +42,8 @@ import com.hp.hpl.jena.rdf.model.ResourceFactory;
 @Path("/questions")
 public class RESTService {
 	
+	private static final Logger logger = Logger.getLogger(RESTService.class.getName());
+	
 	SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
 	String namespace = "http://dbpedia.org/ontology/";
 	String cacheDirectory = "cache";
@@ -48,6 +51,8 @@ public class RESTService {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	public RESTQuestions getQuestionsJSON(@QueryParam("domain") String domain, @QueryParam("type") List<String> questionTypes, @QueryParam("limit") int maxNrOfQuestions) {
+		logger.info("REST Request:\nDomain:" + domain + "\nQuestionTypes:" + questionTypes + "\n#Questions:" + maxNrOfQuestions);
+		
 		Map<QuestionType, QuestionGenerator> generators = Maps.newLinkedHashMap();
 		
 		Map<NamedClass, Set<ObjectProperty>> domains = new HashMap<NamedClass, Set<ObjectProperty>>();
