@@ -20,6 +20,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
+import org.aksw.assessment.question.DBpediaPropertyBlackList;
 import org.aksw.assessment.question.JeopardyQuestionGenerator;
 import org.aksw.assessment.question.MultipleChoiceQuestionGenerator;
 import org.aksw.assessment.question.Question;
@@ -31,6 +32,7 @@ import org.apache.log4j.Logger;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.dllearner.reasoning.SPARQLReasoner;
 
 import com.google.common.collect.Maps;
 
@@ -38,7 +40,7 @@ import com.google.common.collect.Maps;
  * @author Lorenz Buehmann
  *
  */
-@Path("/questions")
+@Path("/assess")
 public class RESTService {
 	
 	private static final Logger logger = Logger.getLogger(RESTService.class.getName());
@@ -49,9 +51,10 @@ public class RESTService {
 	
 	@GET
 	@Context
+	@Path("/questions")
 	@Produces(MediaType.APPLICATION_JSON)
 	public RESTQuestions getQuestionsJSON(@Context ServletContext context, @QueryParam("domain") String domain, @QueryParam("type") List<String> questionTypes, @QueryParam("limit") int maxNrOfQuestions) {
-		logger.info("REST Request:\nDomain:" + domain + "\nQuestionTypes:" + questionTypes + "\n#Questions:" + maxNrOfQuestions);
+		logger.info("REST Request - Get questions\nDomain:" + domain + "\nQuestionTypes:" + questionTypes + "\n#Questions:" + maxNrOfQuestions);
 		
 		cacheDirectory = context.getRealPath(cacheDirectory);
 		
@@ -116,6 +119,42 @@ public class RESTService {
 		
 		return result;
  
+	}
+	
+	@GET
+	@Context
+	@Path("/properties")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<String> getApplicableProperties(@Context ServletContext context, @QueryParam("class") String classURI) {
+		logger.info("REST Request - Get all properties for class " + classURI);
+		
+		SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, context.getRealPath(cacheDirectory));
+		List<String> properties = new ArrayList<String>();
+		for (ObjectProperty p : reasoner.getObjectProperties(new NamedClass(classURI))) {
+			if(!DBpediaPropertyBlackList.contains(p.getName())){
+				properties.add(p.getName());
+			}
+		}
+		
+		return properties;
+	}
+	
+	@GET
+	@Context
+	@Path("/classes")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<String> getClasses(@Context ServletContext context) {
+		logger.info("REST Request - Get all classes");
+		
+		SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, context.getRealPath(cacheDirectory));
+		List<String> classes = new ArrayList<String>();
+		for (NamedClass cls : reasoner.getOWLClasses()) {
+			if(!DBpediaPropertyBlackList.contains(cls.getName())){
+				classes.add(cls.getName());
+			}
+		}
+		
+		return classes;
 	}
 	
 	private int[] getRandomNumbers(int total, int groups){

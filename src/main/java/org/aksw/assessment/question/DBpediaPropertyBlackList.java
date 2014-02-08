@@ -22,6 +22,8 @@ public class DBpediaPropertyBlackList {
 	    "http://dbpedia.org/ontology/wikiPageDisambiguates",
 	    "http://dbpedia.org/ontology/wikiPageRevisionID",
 	    "http://dbpedia.org/ontology/wikiPageID",
+	    "http://dbpedia.org/ontology/wikiPageOutLinkCount",
+	    "http://dbpedia.org/ontology/wikiPageInLinkCount",
 	    "http://dbpedia.org/ontology/thumbnail",
 	    "http://dbpedia.org/ontology/abstract",
 	    "http://dbpedia.org/ontology/termPeriod",
