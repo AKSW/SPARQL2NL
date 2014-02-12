@@ -149,7 +149,7 @@ public class RESTService {
 		
 		SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, context.getRealPath(cacheDirectory));
 		List<String> classes = new ArrayList<String>();
-		for (NamedClass cls : reasoner.getOWLClasses()) {
+		for (NamedClass cls : reasoner.getNonEmptyOWLClasses()) {
 			if(!DBpediaPropertyBlackList.contains(cls.getName())){
 				classes.add(cls.getName());
 			}
