@@ -50,6 +50,9 @@ public class RESTService {
 	String namespace = "http://dbpedia.org/ontology/";
 	String cacheDirectory = "cache";
 	
+	Map<SparqlEndpoint, List<String>> classesCache = new HashMap<>();
+	Map<String, List<String>> propertiesCache = new HashMap<>();
+	
 	@GET
 	@Context
 	@Path("/questions")
@@ -129,13 +132,19 @@ public class RESTService {
 	public List<String> getApplicableProperties(@Context ServletContext context, @QueryParam("class") String classURI) {
 		logger.info("REST Request - Get all properties for class " + classURI);
 		
-		SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, context.getRealPath(cacheDirectory));
-		List<String> properties = new ArrayList<String>();
-		for (ObjectProperty p : reasoner.getObjectProperties(new NamedClass(classURI))) {
-			if(!DBpediaPropertyBlackList.contains(p.getName())){
-				properties.add(p.getName());
+		List<String> properties = propertiesCache.get(classURI);
+		if(properties == null){
+			SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, context.getRealPath(cacheDirectory));
+			properties = new ArrayList<String>();
+			for (ObjectProperty p : reasoner.getObjectProperties(new NamedClass(classURI))) {
+				if(!DBpediaPropertyBlackList.contains(p.getName())){
+					properties.add(p.getName());
+				}
 			}
+			Collections.sort(properties); 
+			propertiesCache.put(classURI, properties);
 		}
+		
 		
 		return properties;
 	}
@@ -147,14 +156,18 @@ public class RESTService {
 	public List<String> getClasses(@Context ServletContext context) {
 		logger.info("REST Request - Get all classes");
 		
-		SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, context.getRealPath(cacheDirectory));
-		List<String> classes = new ArrayList<String>();
-		for (NamedClass cls : reasoner.getNonEmptyOWLClasses()) {
-			if(!DBpediaPropertyBlackList.contains(cls.getName())){
-				classes.add(cls.getName());
+		List<String> classes = classesCache.get(endpoint);
+		if(classes == null){
+			SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, cacheDirectory);
+			classes = new ArrayList<String>();
+			for (NamedClass cls : reasoner.getNonEmptyOWLClasses()) {
+				if (!DBpediaPropertyBlackList.contains(cls.getName())) {
+					classes.add(cls.getName());
+				}
 			}
+			Collections.sort(classes); 
+			classesCache.put(endpoint, classes);
 		}
-		Collections.sort(classes);
 		
 		return classes;
 	}
@@ -169,5 +182,11 @@ public class RESTService {
 		}
 		numbers[groups-1] = total;
 		return numbers;
+	}
+	
+	public static void main(String[] args) throws Exception {
+		RESTService restService = new RESTService();
+		System.out.println(restService.getClasses(null));
+		System.out.println(restService.getClasses(null));
 	}
 }
