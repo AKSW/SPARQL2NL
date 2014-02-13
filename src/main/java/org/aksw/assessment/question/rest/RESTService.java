@@ -211,6 +211,7 @@ public class RESTService {
 					entities.put(cls, properties);
 				}
 			}
+			applicableEntitesCache.put(endpoint, entities);
 		}
 		return entities;
 	}
