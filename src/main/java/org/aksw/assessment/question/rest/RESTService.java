@@ -47,16 +47,13 @@ public class RESTService {
 	
 	private static final Logger logger = Logger.getLogger(RESTService.class.getName());
 	
-	SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
+	static SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
 	String namespace = "http://dbpedia.org/ontology/";
 	String cacheDirectory = "cache";
 	
-	Map<SparqlEndpoint, List<String>> classesCache = new HashMap<>();
-	Map<String, List<String>> propertiesCache = new HashMap<>();
-	Map<SparqlEndpoint, Map<String, List<String>>> applicableEntitesCache = new HashMap<>();
-	
-	public RESTService(@Context ServletContext context) {
-	}
+	static Map<SparqlEndpoint, List<String>> classesCache = new HashMap<>();
+	static Map<String, List<String>> propertiesCache = new HashMap<>();
+	static Map<SparqlEndpoint, Map<String, List<String>>> applicableEntitesCache = new HashMap<>();
 	
 	/**
 	 * Precompute all applicable classes and for each class its applicable properties.
@@ -152,6 +149,7 @@ public class RESTService {
 		logger.info("REST Request - Get all properties for class " + classURI);
 		
 		List<String> properties = propertiesCache.get(classURI);
+		
 		if(properties == null){
 			SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, context.getRealPath(cacheDirectory));
 			properties = new ArrayList<String>();
@@ -176,6 +174,7 @@ public class RESTService {
 		logger.info("REST Request - Get all classes");
 		
 		List<String> classes = classesCache.get(endpoint);
+		
 		if(classes == null){
 			SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, cacheDirectory);
 			classes = new ArrayList<String>();
@@ -229,7 +228,7 @@ public class RESTService {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		RESTService restService = new RESTService(null);
+		RESTService restService = new RESTService();
 		System.out.println(restService.getClasses(null));
 		System.out.println(restService.getClasses(null));
 	}
