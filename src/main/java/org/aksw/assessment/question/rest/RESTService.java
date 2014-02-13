@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -52,6 +53,24 @@ public class RESTService {
 	
 	Map<SparqlEndpoint, List<String>> classesCache = new HashMap<>();
 	Map<String, List<String>> propertiesCache = new HashMap<>();
+	Map<SparqlEndpoint, Map<String, List<String>>> applicableEntitesCache = new HashMap<>();
+	
+	public RESTService(@Context ServletContext context) {
+	}
+	
+	/**
+	 * Precompute all applicable classes and for each class its applicable properties.
+	 * @param context
+	 */
+	private void precomputeApplicableEntities(ServletContext context){
+		//get the classes
+		List<String> classes = getClasses(context);
+		//for each class get the properties
+		for (String cls : classes) {
+			List<String> properties = getApplicableProperties(context, cls);
+			
+		}
+	}
 	
 	@GET
 	@Context
@@ -172,6 +191,30 @@ public class RESTService {
 		return classes;
 	}
 	
+	@GET
+	@Context
+	@Path("/entities")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Map<String, List<String>> getEntities(@Context ServletContext context) {
+		logger.info("REST Request - Get all applicable entities");
+
+		Map<String, List<String>> entities = applicableEntitesCache.get(endpoint);
+
+		if(entities == null){
+			entities = new LinkedHashMap<>();
+			// get the classes
+			List<String> classes = getClasses(context);
+			// for each class get the properties
+			for (String cls : classes) {
+				List<String> properties = getApplicableProperties(context, cls);
+				if (!properties.isEmpty()) {
+					entities.put(cls, properties);
+				}
+			}
+		}
+		return entities;
+	}
+	
 	private int[] getRandomNumbers(int total, int groups){
 		Random rnd = new Random(123);
 		int[] numbers = new int[groups];
@@ -185,7 +228,7 @@ public class RESTService {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		RESTService restService = new RESTService();
+		RESTService restService = new RESTService(null);
 		System.out.println(restService.getClasses(null));
 		System.out.println(restService.getClasses(null));
 	}
