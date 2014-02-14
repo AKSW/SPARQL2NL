@@ -15,7 +15,9 @@ import java.util.Random;
 import java.util.Set;
 
 import javax.servlet.ServletContext;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
@@ -31,6 +33,9 @@ import org.aksw.assessment.question.QuestionType;
 import org.aksw.assessment.question.TrueFalseQuestionGenerator;
 import org.aksw.assessment.question.answer.Answer;
 import org.apache.log4j.Logger;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
@@ -71,7 +76,7 @@ public class RESTService {
 	
 	@GET
 	@Context
-	@Path("/questions")
+	@Path("/questionsold")
 	@Produces(MediaType.APPLICATION_JSON)
 	public RESTQuestions getQuestionsJSON(@Context ServletContext context, @QueryParam("domain") String domain, @QueryParam("type") List<String> questionTypes, @QueryParam("limit") int maxNrOfQuestions) {
 		logger.info("REST Request - Get questions\nDomain:" + domain + "\nQuestionTypes:" + questionTypes + "\n#Questions:" + maxNrOfQuestions);
@@ -106,6 +111,94 @@ public class RESTService {
 			//randomly set the max number of questions
 			int max = randomNumbers[i++];
 			
+			Set<Question> questions = generator.getQuestions(null, 1, max);
+			
+			for (Question question : questions) {
+				RESTQuestion q = new RESTQuestion();
+				q.setQuestion(question.getText());
+				q.setQuestionType(questionType.getName());
+				List<RESTAnswer> correctAnswers = new ArrayList<>();
+				for (Answer answer : question.getCorrectAnswers()) {
+					RESTAnswer a = new RESTAnswer();
+					a.setAnswer(answer.getText());
+					if(questionType == QuestionType.MC){
+						a.setAnswerHint(answer.getHint());
+					}
+					correctAnswers.add(a);
+				}
+				q.setCorrectAnswers(correctAnswers);
+				List<RESTAnswer> wrongAnswers = new ArrayList<>();
+				for (Answer answer : question.getWrongAnswers()) {
+					RESTAnswer a = new RESTAnswer();
+					a.setAnswer(answer.getText());
+					a.setAnswerHint("NO HINT");
+					wrongAnswers.add(a);
+				}
+				q.setWrongAnswers(wrongAnswers);
+				restQuestions.add(q);
+			}
+		}
+		
+		RESTQuestions result = new RESTQuestions();
+		result.setQuestions(restQuestions);
+		
+		return result;
+ 
+	}
+	
+	@POST
+	@Context
+	@Path("/questions")
+	@Produces(MediaType.APPLICATION_JSON)
+	@Consumes(MediaType.APPLICATION_JSON)
+	public RESTQuestions getQuestionsJSON2(@Context ServletContext context, JSONArray domain, @QueryParam("type") List<String> questionTypes, @QueryParam("limit") int maxNrOfQuestions) {
+		logger.info("REST Request - Get questions\nQuestionTypes:" + questionTypes + "\n#Questions:" + maxNrOfQuestions);
+		
+		cacheDirectory = context.getRealPath(cacheDirectory);
+		
+		Map<QuestionType, QuestionGenerator> generators = Maps.newLinkedHashMap();
+		
+		//extract the domain from the JSON array
+		Map<NamedClass, Set<ObjectProperty>> domains = new HashMap<NamedClass, Set<ObjectProperty>>();
+		try {
+			for(int i = 0; i < domain.length(); i++){
+				JSONObject entry = domain.getJSONObject(i);
+				NamedClass cls = new NamedClass("http://dbpedia.org/ontology/" + entry.getString("className"));
+				JSONArray propertiesArray = entry.getJSONArray("properties");
+				Set<ObjectProperty> properties = new HashSet<>();
+				for (int j = 0; j < propertiesArray.length(); j++) {
+					properties.add(new ObjectProperty("http://dbpedia.org/ontology/" + propertiesArray.getString(j)));
+				}
+				domains.put(cls, properties);
+			}
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		logger.info("Domain:" + domains);
+		
+		//set up the question generators
+		for (String type : questionTypes) {
+			if(type.equals(QuestionType.MC.getName())){
+				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(endpoint, cacheDirectory, namespace, domains));
+			} else if(type.equals(QuestionType.JEOPARDY.getName())){
+				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(endpoint, cacheDirectory, namespace, domains));
+			} else if(type.equals(QuestionType.TRUEFALSE.getName())){
+				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(endpoint, cacheDirectory, namespace, domains));
+			}
+		}
+		List<RESTQuestion> restQuestions = new ArrayList<>();
+		
+		//get random numbers for max. computed questions per type
+		int[] randomNumbers = getRandomNumbers(maxNrOfQuestions, questionTypes.size());
+		
+		int i = 0;
+		for (Entry<QuestionType, QuestionGenerator> entry : generators.entrySet()) {
+			QuestionType questionType = entry.getKey();
+			QuestionGenerator generator = entry.getValue();
+		
+			//randomly set the max number of questions
+			int max = randomNumbers[i++];
+			logger.info("Get " + max + " questions of type " + questionType.getName() + "...");
 			Set<Question> questions = generator.getQuestions(null, 1, max);
 			
 			for (Question question : questions) {

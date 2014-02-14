@@ -226,11 +226,11 @@
 			<artifactId>servlet-api</artifactId>
 			<version>2.5</version>
 		</dependency>
-		<dependency>
+		<!-- dependency>
 	<groupId>org.apache.tomcat</groupId>
 	<artifactId>tomcat-catalina</artifactId>
 	<version>7.0.50</version>
-</dependency>
+</dependency-->
 	</dependencies>
 	<build>
 		<plugins>
