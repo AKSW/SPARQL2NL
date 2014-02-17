@@ -175,6 +175,7 @@ public class Verbalizer {
         	} else {
         		q = "SELECT ?o where { ?o <" + p.getURI() + "> <" + r.getURI() + ">.}";
         	}
+        	q += " LIMIT " + maxShownValuesPerProperty;
             QueryExecution qe = qef.createQueryExecution(q);
             ResultSet results = qe.execSelect();
             if (results.hasNext()) {

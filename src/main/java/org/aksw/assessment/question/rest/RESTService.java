@@ -320,9 +320,4 @@ public class RESTService {
 		return numbers;
 	}
 	
-	public static void main(String[] args) throws Exception {
-		RESTService restService = new RESTService();
-		System.out.println(restService.getClasses(null));
-		System.out.println(restService.getClasses(null));
-	}
 }

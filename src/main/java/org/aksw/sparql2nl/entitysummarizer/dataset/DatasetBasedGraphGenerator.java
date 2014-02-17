@@ -151,17 +151,19 @@ public class DatasetBasedGraphGenerator {
         //add properties that have as domain the class
 //        outgoingProperties.addAll(reasoner.getObjectPropertiesWithDomain(cls));
         
+        Set<ObjectProperty> allRelevantProperties = Sets.union(outgoingProperties, incomingProperties);
+        
         //compute the frequency for each pair of properties
         Map<Set<ObjectProperty>, Double> cooccurrences;
         if (c.equals(Cooccurrence.TRIPLESTORE)) {
             cooccurrences = getCooccurrences(cls, outgoingProperties, incomingProperties);
         } else {
-            cooccurrences = getPropertySimilarities(cls, Sets.union(outgoingProperties, incomingProperties));
+            cooccurrences = getPropertySimilarities(cls, allRelevantProperties);
         }
 
         //create the weighted graph
         WeightedGraph wg = new WeightedGraph();
-        LoadingCache<ObjectProperty, Node> property2Node = CacheBuilder.newBuilder().maximumSize(Sets.union(outgoingProperties, incomingProperties).size()).build(
+        LoadingCache<ObjectProperty, Node> property2Node = CacheBuilder.newBuilder().maximumSize(allRelevantProperties.size()).build(
                 new CacheLoader<ObjectProperty, Node>() {
 
                     public Node load(ObjectProperty property) {
@@ -191,6 +193,9 @@ public class DatasetBasedGraphGenerator {
             } catch (ExecutionException e) {
                 e.printStackTrace();
             }
+        }
+        if(allRelevantProperties.size() == 1){
+        	wg.addNode(new Node(allRelevantProperties.iterator().next().getName()), 1d);
         }
         return wg;
     }

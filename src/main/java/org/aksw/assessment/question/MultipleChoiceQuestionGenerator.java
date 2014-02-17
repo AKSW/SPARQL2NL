@@ -252,9 +252,12 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         Question q;
         while(questions.size() < numberOfQuestions && iterator.hasNext()){
         	entry = iterator.next();
+        	logger.info("Generating question based on " + entry.getKey() + "...");
         	q = generateQuestion(entry.getKey(), entry.getValue());
             if (q != null) {
                 questions.add(q);
+            } else {
+            	logger.warn("Could not generate question.");
             }
         }
         
@@ -378,10 +381,15 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
     public static void main(String args[]) {
         Map<NamedClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
         restrictions.put(
-        		new NamedClass("http://dbpedia.org/ontology/Person"), 
-        		Sets.newHashSet(new ObjectProperty("http://dbpedia.org/ontology/birthPlace"), new ObjectProperty("http://dbpedia.org/ontology/birthDate")));
-        MultipleChoiceQuestionGenerator sqg = new MultipleChoiceQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache", "http://dbpedia.org/ontology/", restrictions);
-        Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 20);
+        		new NamedClass("http://dbpedia.org/ontology/Aircraft"), 
+//        		Sets.newHashSet(new ObjectProperty("http://dbpedia.org/ontology/birthPlace"), new ObjectProperty("http://dbpedia.org/ontology/birthDate")));
+        new HashSet<ObjectProperty>());
+        		MultipleChoiceQuestionGenerator sqg = new MultipleChoiceQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache", "http://dbpedia.org/ontology/", restrictions);
+        		long start = System.currentTimeMillis();
+        		Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 20);
+        		long end = System.currentTimeMillis();
+        		System.out.println("Operation took " + (end - start) + "ms");
+        		
         for (Question q : questions) {
             if (q != null) {
                 System.out.println(">>" + q.getText());

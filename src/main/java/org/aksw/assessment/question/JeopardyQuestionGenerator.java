@@ -19,17 +19,20 @@ import java.util.regex.Pattern;
 
 import org.aksw.assessment.question.answer.Answer;
 import org.aksw.assessment.question.answer.SimpleAnswer;
+import org.aksw.assessment.question.rest.RESTService;
 import org.apache.log4j.Logger;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.ResourceFactory;
 
 /**
  *
@@ -51,6 +54,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
         
         //generate the question in forms of a summary describing the resource
         String summary = getEntitySummary(r.getURI());
+        
         if(summary == null){
         	return null;
         }
@@ -143,11 +147,27 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 		return wrongAnswers;
     }
     
+    /**
+     * Convert a JENA API triple into a triple pattern string.
+     * @param subjectVar
+     * @param t
+     * @return
+     */
     private String asTriplePattern(String subjectVar, Triple t){
-    	return "?" + subjectVar + " <" + 
-    t.getPredicate() + "> " + 
-    			(t.getObject().isURI() ? "<" + t.getObject() + ">" : 
-    				("\"" + t.getObject().getLiteralLexicalForm() + "\"" + "^^<" + t.getObject().getLiteralDatatypeURI() + ">")) + ".";
+    	String s = "?" + subjectVar;
+    	s += " <" + t.getPredicate() + "> ";
+    	if(t.getObject().isURI()){
+    		s += "<" + t.getObject() + ">";
+    	} else {
+    		s += "\"" + t.getObject().getLiteralLexicalForm().replace("\"", "\\\"") + "\"";
+    		if(t.getObject().getLiteralDatatypeURI() != null){
+    			s += "^^<" + t.getObject().getLiteralDatatypeURI() + ">";
+    		} else if(t.getObject().getLiteralLanguage() != null){
+    			s += "@" + t.getObject().getLiteralLanguage();
+    		}
+    	}
+    	s += ".";
+    	return s;
     }
     
     /**
@@ -181,18 +201,37 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     }
 
 	public static void main(String args[]) {
-		Map<NamedClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
-	    restrictions.put(new NamedClass("http://dbpedia.org/ontology/Writer"), new HashSet<ObjectProperty>());
-        JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache", "http://dbpedia.org/ontology/", restrictions);
-        Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
-        for (Question q : questions) {
-            if (q != null) {
-                System.out.println(">>" + q.getText());
-                List<Answer> correctAnswers = q.getCorrectAnswers();
-                System.out.println(correctAnswers);
-                List<Answer> wrongAnswers = q.getWrongAnswers();
-                System.out.println(wrongAnswers);
-            }
-        }
+//		Map<NamedClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
+//		restrictions.put(new NamedClass("http://dbpedia.org/ontology/Writer"), new HashSet<ObjectProperty>());
+//        JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache", "http://dbpedia.org/ontology/", restrictions);
+//        Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
+//        for (Question q : questions) {
+//            if (q != null) {
+//                System.out.println(">>" + q.getText());
+//                List<Answer> correctAnswers = q.getCorrectAnswers();
+//                System.out.println(correctAnswers);
+//                List<Answer> wrongAnswers = q.getWrongAnswers();
+//                System.out.println(wrongAnswers);
+//            }
+//        }
+		RESTService rest = new RESTService();
+		List<String> classes = rest.getClasses(null);
+		classes = Lists.newArrayList("http://dbpedia.org/ontology/Case");
+		for(String cls : classes){
+			try {
+				Map<NamedClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
+				restrictions.put(new NamedClass(cls), new HashSet<ObjectProperty>());
+				JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache2", "http://dbpedia.org/ontology/", restrictions);
+				Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 3);
+				if(questions.size() == 0){
+					System.err.println("EMTPY: " + cls);
+					System.exit(0);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.exit(0);
+			}
+		}
+	    
     }
 }
