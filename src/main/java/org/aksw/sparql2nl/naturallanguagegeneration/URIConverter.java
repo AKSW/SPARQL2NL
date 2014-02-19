@@ -21,7 +21,7 @@ import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
-import org.apache.commons.collections.map.LRUMap;
+import org.apache.commons.collections4.map.LRUMap;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.semanticweb.owlapi.model.IRI;
@@ -42,13 +42,12 @@ import com.hp.hpl.jena.vocabulary.XSD;
 
 public class URIConverter {
 	
-	
 	private static final Logger logger = Logger.getLogger(URIConverter.class.getName());
 	
 	private SimpleIRIShortFormProvider sfp = new SimpleIRIShortFormProvider();
 	private SparqlEndpoint endpoint;
 	private Model model;
-	private LRUMap uri2LabelCache = new LRUMap(50);
+	private LRUMap<String, String> uri2LabelCache = new LRUMap<String, String>(200);
 	
 	private static QueryExecutionFactory qef;
 	private String cacheDirectory = "cache/sparql";
@@ -130,7 +129,7 @@ public class URIConverter {
 	}
 	
 	public String convert(String uri){
-		return convert(uri, true);
+		return convert(uri, false);
 	}
 	
 	public String convert(String uri, boolean dereferenceURI){
@@ -140,14 +139,18 @@ public class URIConverter {
             return "label";
         }
 		
-		String label = (String) uri2LabelCache.get(uri);
+		String label = uri2LabelCache.get(uri);
 		if(label == null){
 	        try {
 	        	//firstly, try to get the label from the endpoint
 	            label = getLabel(uri);
 	            //secondly, try to dereference the URI and search for the label in the returned triples
 	            if(dereferenceURI && label == null && !uri.startsWith(XSD.getURI())){
-	            	label = dereferenceURI(uri);
+	            	try {
+						label = dereferenceURI(uri);
+					} catch (Exception e) {
+						logger.error("Dereferencing " + uri + "failed.");
+					}
 	            }
 	            //fallback: use the short form of the URI
 	            if(label == null){

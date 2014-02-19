@@ -24,6 +24,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
+import org.aksw.assessment.question.BlackList;
 import org.aksw.assessment.question.DBpediaPropertyBlackList;
 import org.aksw.assessment.question.JeopardyQuestionGenerator;
 import org.aksw.assessment.question.MultipleChoiceQuestionGenerator;
@@ -42,6 +43,7 @@ import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 /**
  * @author Lorenz Buehmann
@@ -55,6 +57,8 @@ public class RESTService {
 	static SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
 	String namespace = "http://dbpedia.org/ontology/";
 	String cacheDirectory = "cache";
+	Set<String> personTypes = Sets.newHashSet("http://dbpedia.org/ontology/Person");
+	BlackList blackList = new DBpediaPropertyBlackList();
 	
 	static Map<SparqlEndpoint, List<String>> classesCache = new HashMap<>();
 	static Map<String, List<String>> propertiesCache = new HashMap<>();
@@ -91,11 +95,11 @@ public class RESTService {
 		//set up the question generators
 		for (String type : questionTypes) {
 			if(type.equals(QuestionType.MC.getName())){
-				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(endpoint, cacheDirectory, namespace, domains));
+				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(endpoint, cacheDirectory, namespace, domains, personTypes, blackList));
 			} else if(type.equals(QuestionType.JEOPARDY.getName())){
-				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(endpoint, cacheDirectory, namespace, domains));
+				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(endpoint, cacheDirectory, namespace, domains, personTypes, blackList));
 			} else if(type.equals(QuestionType.TRUEFALSE.getName())){
-				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(endpoint, cacheDirectory, namespace, domains));
+				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(endpoint, cacheDirectory, namespace, domains, personTypes, blackList));
 			}
 		}
 		List<RESTQuestion> restQuestions = new ArrayList<>();
@@ -179,11 +183,11 @@ public class RESTService {
 		//set up the question generators
 		for (String type : questionTypes) {
 			if(type.equals(QuestionType.MC.getName())){
-				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(endpoint, cacheDirectory, namespace, domains));
+				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(endpoint, cacheDirectory, namespace, domains, personTypes, blackList));
 			} else if(type.equals(QuestionType.JEOPARDY.getName())){
-				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(endpoint, cacheDirectory, namespace, domains));
+				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(endpoint, cacheDirectory, namespace, domains, personTypes, blackList));
 			} else if(type.equals(QuestionType.TRUEFALSE.getName())){
-				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(endpoint, cacheDirectory, namespace, domains));
+				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(endpoint, cacheDirectory, namespace, domains, personTypes, blackList));
 			}
 		}
 		List<RESTQuestion> restQuestions = new ArrayList<>();
@@ -247,7 +251,7 @@ public class RESTService {
 			SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, context.getRealPath(cacheDirectory));
 			properties = new ArrayList<String>();
 			for (ObjectProperty p : reasoner.getObjectProperties(new NamedClass(classURI))) {
-				if(!DBpediaPropertyBlackList.contains(p.getName())){
+				if(!blackList.contains(p.getName())){
 					properties.add(p.getName());
 				}
 			}
@@ -272,7 +276,7 @@ public class RESTService {
 			SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, cacheDirectory);
 			classes = new ArrayList<String>();
 			for (NamedClass cls : reasoner.getNonEmptyOWLClasses()) {
-				if (!DBpediaPropertyBlackList.contains(cls.getName())) {
+				if (!blackList.contains(cls.getName())) {
 					classes.add(cls.getName());
 				}
 			}

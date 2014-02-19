@@ -14,7 +14,7 @@ import com.hp.hpl.jena.rdf.model.Resource;
  * @author Lorenz Buehmann
  *
  */
-public class DBpediaPropertyBlackList {
+public class DBpediaPropertyBlackList implements BlackList{
 
 	public static Set<String> blacklist = Sets.newHashSet(
 	    "http://dbpedia.org/ontology/wikiPageRedirects", 
@@ -42,11 +42,11 @@ public class DBpediaPropertyBlackList {
 	
 	final static boolean onlyOntologyNamespace = true;
 	
-	public static boolean contains(Resource resource){
+	public boolean contains(Resource resource){
 		return contains(resource.getURI());
 	}
 	
-	public static boolean contains(String uri){
+	public boolean contains(String uri){
 		if(onlyOntologyNamespace && !uri.startsWith("http://dbpedia.org/ontology/")){
 			return true;
 		}

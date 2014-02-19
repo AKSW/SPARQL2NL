@@ -40,8 +40,8 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
 	 * @param restrictions
 	 */
 	public TrueFalseQuestionGenerator(SparqlEndpoint ep, String cacheDirectory, String namespace,
-			Map<NamedClass, Set<ObjectProperty>> restrictions) {
-		super(ep, cacheDirectory, namespace, restrictions);
+			Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
+		super(ep, cacheDirectory, namespace, restrictions, personTypes, blackList);
 		
 	}
 
@@ -61,10 +61,12 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
             qs = rs.next();
             property = qs.getResource("p");
             object = qs.getResource("o");
-            if (!GeneralPropertyBlackList.contains(property) && !DBpediaPropertyBlackList.contains(property)) {
-                if (Math.random() >= 0.5) {
-                    result = true;
-                }
+            if (!GeneralPropertyBlackList.contains(property)){
+            	if(blackList != null && !blackList.contains(property)) {
+	                if (Math.random() >= 0.5) {
+	                    result = true;
+	                }
+            	}
             }
         }
         logger.info("...got result " + result);
@@ -110,7 +112,13 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
     	Map<NamedClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
         restrictions.put(new NamedClass("http://dbpedia.org/ontology/Writer"), Sets.newHashSet(new ObjectProperty("http://dbpedia.org/ontology/birthPlace")));
         
-        TrueFalseQuestionGenerator sqg = new TrueFalseQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache", "http://dbpedia.org/ontology/", restrictions);
+        TrueFalseQuestionGenerator sqg = new TrueFalseQuestionGenerator(
+        		SparqlEndpoint.getEndpointDBpedia(), 
+        		"cache", 
+        		"http://dbpedia.org/ontology/", 
+        		restrictions, 
+        		Sets.newHashSet("http://dbpedia.org/ontology/Person"),
+        		new DBpediaPropertyBlackList());
         Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
         for (Question q : questions) {
             if (q != null) {

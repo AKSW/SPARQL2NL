@@ -4,6 +4,7 @@
  */
 package org.aksw.assessment.question;
 
+import java.net.URL;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -83,6 +84,8 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
     private Cooccurrence cooccurrenceType = Cooccurrence.PROPERTIES;
     private HardeningType hardeningType = HardeningFactory.HardeningType.SMALLEST;
     
+    protected BlackList blackList;
+    
 	final Comparator resourceComparator = new Comparator<RDFNode>() {
 
 		@Override
@@ -99,14 +102,15 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 	protected Map<NamedClass, Set<ObjectProperty>> restrictions;
 	protected Set<RDFNode> usedWrongAnswers;
     
-    public MultipleChoiceQuestionGenerator(SparqlEndpoint ep, Map<NamedClass, Set<ObjectProperty>> restrictions) {
-        this(ep, null, null, restrictions);
+    public MultipleChoiceQuestionGenerator(SparqlEndpoint ep, Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
+        this(ep, null, null, restrictions, personTypes, blackList);
     }
     
-    public MultipleChoiceQuestionGenerator(SparqlEndpoint ep, String cacheDirectory, String namespace, Map<NamedClass, Set<ObjectProperty>> restrictions) {
+    public MultipleChoiceQuestionGenerator(SparqlEndpoint ep, String cacheDirectory, String namespace, Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
     	this.endpoint = ep;
 		this.namespace = namespace;
 		this.restrictions = restrictions;
+		this.blackList = blackList;
 		
         nlg = new SimpleNLGwithPostprocessing(endpoint);
         
@@ -132,7 +136,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         wordNetDir = this.getClass().getClassLoader().getResource(wordNetDir).getPath();
         
         verbalizer = new JeopardyVerbalizer(endpoint, cacheDirectory, wordNetDir);
-        verbalizer.setPersonTypes(Sets.newHashSet("http://dbpedia.org/ontology/Person"));
+        verbalizer.setPersonTypes(personTypes);
         verbalizer.setMaxShownValuesPerProperty(maxShownValuesPerProperty);
         verbalizer.setOmitContentInBrackets(true);
     }
@@ -156,7 +160,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
             while (rs.hasNext()) {
                 qs = rs.next();
                 property = qs.getResource("p").getURI();
-                if (!GeneralPropertyBlackList.contains(property) && !DBpediaPropertyBlackList.contains(property)) {
+                if (!GeneralPropertyBlackList.contains(property)) {
                 	propertyCandidates.add(property);
                 }
             }
@@ -167,7 +171,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
             }
 
             //pick random property
-            Random rnd = new Random(123);
+            Random rnd = new Random();
             property = propertyCandidates.toArray(new String[]{})[rnd.nextInt(propertyCandidates.size())];
            
         } else {
@@ -378,13 +382,30 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 		return verbalizer.getSummaryTriples(new Individual(entityURI));
 	}
     
-    public static void main(String args[]) {
+    /**
+	 * @param blackList the blackList to set
+	 */
+	public void setBlackList(BlackList blackList) {
+		this.blackList = blackList;
+	}
+    
+    public static void main(String args[]) throws Exception{
         Map<NamedClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
         restrictions.put(
-        		new NamedClass("http://dbpedia.org/ontology/Aircraft"), 
+        		new NamedClass("http://www4.wiwiss.fu-berlin.de/diseasome/resource/diseasome/diseases"), 
 //        		Sets.newHashSet(new ObjectProperty("http://dbpedia.org/ontology/birthPlace"), new ObjectProperty("http://dbpedia.org/ontology/birthDate")));
         new HashSet<ObjectProperty>());
-        		MultipleChoiceQuestionGenerator sqg = new MultipleChoiceQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache", "http://dbpedia.org/ontology/", restrictions);
+        MultipleChoiceQuestionGenerator sqg = new MultipleChoiceQuestionGenerator(
+        		new SparqlEndpoint(new URL("http://vtentacle.techfak.uni-bielefeld.de:443/sparql"), "http://biomed.de/diseasome"), 
+        		"cache", 
+        		"http://www4.wiwiss.fu-berlin.de/diseasome/resource/diseasome/", 
+        		restrictions,
+        		new HashSet<String>(), null);
+//        		MultipleChoiceQuestionGenerator sqg = new MultipleChoiceQuestionGenerator(
+//        				SparqlEndpoint.getEndpointDBpedia(), 
+//        				"cache", "http://dbpedia.org/ontology/", 
+//        				restrictions,
+//        				Sets.newHashSet("http://dbpedia.org/ontology/Person"));
         		long start = System.currentTimeMillis();
         		Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 20);
         		long end = System.currentTimeMillis();

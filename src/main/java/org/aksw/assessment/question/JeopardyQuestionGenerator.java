@@ -27,12 +27,12 @@ import org.dllearner.kb.sparql.SparqlEndpoint;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.ResourceFactory;
 
 /**
  *
@@ -45,8 +45,8 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     private Map<NamedClass, List<Resource>> wrongAnswersByType = new HashMap<>();
 	private boolean preferPopularWrongAnswers = false;
     
-    public JeopardyQuestionGenerator(SparqlEndpoint ep, String cacheDirectory, String namespace, Map<NamedClass, Set<ObjectProperty>> restrictions) {
-        super(ep, cacheDirectory, namespace, restrictions);
+    public JeopardyQuestionGenerator(SparqlEndpoint ep, String cacheDirectory, String namespace, Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
+        super(ep, cacheDirectory, namespace, restrictions, personTypes, blackList);
     }
 
     @Override
@@ -216,16 +216,27 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 //        }
 		RESTService rest = new RESTService();
 		List<String> classes = rest.getClasses(null);
-		classes = Lists.newArrayList("http://dbpedia.org/ontology/Case");
+		classes = Lists.newArrayList("http://dbpedia.org/ontology/Play");
 		for(String cls : classes){
 			try {
 				Map<NamedClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
 				restrictions.put(new NamedClass(cls), new HashSet<ObjectProperty>());
-				JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache2", "http://dbpedia.org/ontology/", restrictions);
-				Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 3);
+				JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache2", 
+						"http://dbpedia.org/ontology/", 
+						restrictions,Sets.newHashSet("http://dbpedia.org/ontology/Person"), new DBpediaPropertyBlackList());
+				Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
 				if(questions.size() == 0){
 					System.err.println("EMTPY: " + cls);
 					System.exit(0);
+				}
+				for (Question q : questions) {
+					System.out.println(q.getText());
+					for (Answer a : q.getCorrectAnswers()) {
+						System.out.println(a.getText());
+					}
+					for (Answer a : q.getWrongAnswers()) {
+						System.out.println(a.getText());
+					}
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
