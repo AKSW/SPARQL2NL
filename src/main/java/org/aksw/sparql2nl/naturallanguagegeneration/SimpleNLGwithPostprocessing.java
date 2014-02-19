@@ -196,7 +196,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         post = new Postprocessor();
         post.id = 0;
 
-        uriConverter = new URIConverter(endpoint);
+        uriConverter = new URIConverter(model);
         literalConverter = new LiteralConverter(uriConverter);
         expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
 
