@@ -167,11 +167,11 @@ public class RESTService {
 		try {
 			for(int i = 0; i < domain.length(); i++){
 				JSONObject entry = domain.getJSONObject(i);
-				NamedClass cls = new NamedClass("http://dbpedia.org/ontology/" + entry.getString("className"));
+				NamedClass cls = new NamedClass(entry.getString("className"));
 				JSONArray propertiesArray = entry.getJSONArray("properties");
 				Set<ObjectProperty> properties = new HashSet<>();
 				for (int j = 0; j < propertiesArray.length(); j++) {
-					properties.add(new ObjectProperty("http://dbpedia.org/ontology/" + propertiesArray.getString(j)));
+					properties.add(new ObjectProperty(propertiesArray.getString(j)));
 				}
 				domains.put(cls, properties);
 			}
