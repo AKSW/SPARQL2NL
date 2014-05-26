@@ -33,6 +33,11 @@ import org.aksw.assessment.question.QuestionGenerator;
 import org.aksw.assessment.question.QuestionType;
 import org.aksw.assessment.question.TrueFalseQuestionGenerator;
 import org.aksw.assessment.question.answer.Answer;
+import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory;
+import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory.HardeningType;
+import org.aksw.sparql2nl.entitysummarizer.dataset.CachedDatasetBasedGraphGenerator;
+import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator;
+import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator.Cooccurrence;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -248,7 +253,7 @@ public class RESTService {
 		List<String> properties = propertiesCache.get(classURI);
 		
 		if(properties == null){
-			SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, context.getRealPath(cacheDirectory));
+			SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, context != null ? context.getRealPath(cacheDirectory) : cacheDirectory);
 			properties = new ArrayList<String>();
 			for (ObjectProperty p : reasoner.getObjectProperties(new NamedClass(classURI))) {
 				if(!blackList.contains(p.getName())){
@@ -312,6 +317,23 @@ public class RESTService {
 		return entities;
 	}
 	
+	public void precomputeGraphs(){
+		logger.info("Precomputing graphs...");
+		DatasetBasedGraphGenerator graphGenerator = new CachedDatasetBasedGraphGenerator(endpoint, "cache");
+		double propertyFrequencyThreshold = 0.2; 
+	    Cooccurrence cooccurrenceType = Cooccurrence.PROPERTIES;
+		
+		Map<String, List<String>> entities = getEntities(null);
+		for (String cls : entities.keySet()) {
+			try {
+				logger.info(cls);
+				graphGenerator.generateGraph(new NamedClass(cls), propertyFrequencyThreshold, "http://dbpedia.org/ontology/", cooccurrenceType);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	private int[] getRandomNumbers(int total, int groups){
 		Random rnd = new Random(123);
 		int[] numbers = new int[groups];
@@ -324,4 +346,7 @@ public class RESTService {
 		return numbers;
 	}
 	
+	public static void main(String[] args) throws Exception {
+		new RESTService().precomputeGraphs();
+	}
 }

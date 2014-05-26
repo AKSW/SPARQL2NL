@@ -138,7 +138,9 @@ public class URIConverter {
         } else if (uri.equals(RDFS.label.getURI())) {
             return "label";
         }
-		
+		if(uri.equals("http://dbpedia.org/ontology/phylum")){
+			return "phylum";
+		}
 		String label = uri2LabelCache.get(uri);
 		if(label == null){
 	        try {

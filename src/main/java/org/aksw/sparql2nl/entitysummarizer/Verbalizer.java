@@ -30,8 +30,8 @@ import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory
 import org.aksw.sparql2nl.entitysummarizer.dataset.CachedDatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator.Cooccurrence;
-import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector.Gender;
 import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector;
+import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector.Gender;
 import org.aksw.sparql2nl.entitysummarizer.gender.LexiconBasedGenderDetector;
 import org.aksw.sparql2nl.entitysummarizer.gender.TypeAwareGenderDetector;
 import org.aksw.sparql2nl.entitysummarizer.rules.DateLiteralFilter;
@@ -45,7 +45,6 @@ import org.dllearner.core.owl.Individual;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.utilities.MapUtils;
-import org.openrdf.model.vocabulary.RDF;
 
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
@@ -63,6 +62,7 @@ import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
+import com.hp.hpl.jena.vocabulary.RDF;
 
 /**
  * A verbalizer for triples without variables.
@@ -140,6 +140,13 @@ public class Verbalizer {
 
         graphGenerator = new CachedDatasetBasedGraphGenerator(endpoint, cacheDirectory);
     }
+    
+    /**
+     * @param personTypes the personTypes to set
+     */
+    public void setPropertiesBlacklist(Set<String> blacklist) {
+        graphGenerator.setPropertiesBlacklist(blacklist);
+    }
 
     /**
      * @param personTypes the personTypes to set
@@ -175,7 +182,7 @@ public class Verbalizer {
         	} else {
         		q = "SELECT ?o where { ?o <" + p.getURI() + "> <" + r.getURI() + ">.}";
         	}
-        	q += " LIMIT " + maxShownValuesPerProperty;
+        	q += " LIMIT " + maxShownValuesPerProperty+1;
             QueryExecution qe = qef.createQueryExecution(q);
             ResultSet results = qe.execSelect();
             if (results.hasNext()) {
@@ -425,7 +432,7 @@ public class Verbalizer {
             //finally generateSentencesFromClusters
             List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.getName()), nc, true);
 
-            Triple t = Triple.create(ResourceFactory.createResource(ind.getName()).asNode(), ResourceFactory.createProperty(RDF.TYPE.toString()).asNode(),
+            Triple t = Triple.create(ResourceFactory.createResource(ind.getName()).asNode(), ResourceFactory.createProperty(RDF.type.getURI()).asNode(),
                     ResourceFactory.createResource(nc.getName()).asNode());
             result = Lists.reverse(result);
             result.add(generateSimplePhraseFromTriple(t));
@@ -512,10 +519,11 @@ public class Verbalizer {
 //        Individual ind = new Individual("http://dbpedia.org/resource/John_Passmore");
 //        Individual ind = new Individual("http://dbpedia.org/resource/Ford_Zetec_engine");
 //        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AutomobileEngine");
-        Individual ind = new Individual("http://dbpedia.org/resource/Mariah_Carey");
-        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/MusicalArtist");
-        ind = new Individual("http://dbpedia.org/resource/King_Kong_(2005_film)");
-        nc = new NamedClass("http://dbpedia.org/ontology/Film");
+        Individual ind = new Individual("http://dbpedia.org/resource/John_Major");
+        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/OfficeHolder");
+//        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/MusicalArtist");
+//        ind = new Individual("http://dbpedia.org/resource/King_Kong_(2005_film)");
+//        nc = new NamedClass("http://dbpedia.org/ontology/Film");
 //        Individual ind = new Individual("http://dbpedia.org/resource/David_Foster");
 //        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/MusicalArtist");
         int maxShownValuesPerProperty = 3;

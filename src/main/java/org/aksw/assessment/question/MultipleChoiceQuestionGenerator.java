@@ -47,7 +47,6 @@ import org.dllearner.reasoning.SPARQLReasoner;
 import simplenlg.framework.NLGElement;
 
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;

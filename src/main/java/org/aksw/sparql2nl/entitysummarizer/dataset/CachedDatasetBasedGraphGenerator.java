@@ -10,12 +10,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Set;
 
 import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
 import org.aksw.sparql2nl.entitysummarizer.clustering.WeightedGraph;
 import org.apache.log4j.Logger;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.dllearner.reasoning.SPARQLReasoner;
 
 import com.google.common.base.Charsets;
 import com.google.common.hash.HashCode;
@@ -54,7 +56,7 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 		
 		graphsFolder.mkdirs();
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator#generateGraph(org.dllearner.core.owl.NamedClass, double, java.lang.String, org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator.Cooccurrence)
 	 */
@@ -101,6 +103,13 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 	 */
 	public void setUseCache(boolean useCache) {
 		this.useCache = useCache;
+	}
+	
+	public void precomputeGraphs(double threshold, String namespace, Cooccurrence c){
+		Set<NamedClass> classes = reasoner.getOWLClasses();
+		for (NamedClass cls : classes) {
+			generateGraph(cls, threshold, namespace, c);
+		}
 	}
 
 }

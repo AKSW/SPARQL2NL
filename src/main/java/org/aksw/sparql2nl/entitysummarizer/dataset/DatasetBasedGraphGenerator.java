@@ -64,7 +64,7 @@ public class DatasetBasedGraphGenerator {
 	private static final Logger logger = Logger.getLogger(DatasetBasedGraphGenerator.class.getName());
 
     private QueryExecutionFactory qef;
-    private SPARQLReasoner reasoner;
+    protected SPARQLReasoner reasoner;
     private Set<String> blacklist = Sets.newHashSet(
     		"http://dbpedia.org/ontology/wikiPageExternalLink", 
     		"http://dbpedia.org/ontology/abstract",
@@ -74,6 +74,8 @@ public class DatasetBasedGraphGenerator {
             "http://dbpedia.org/ontology/wikiPageRedirects",
             "http://dbpedia.org/ontology/wikiPageDisambiguates",
             "http://dbpedia.org/ontology/individualisedPnd");
+    
+    boolean useIncomingProperties = false;
 
     public DatasetBasedGraphGenerator(SparqlEndpoint endpoint) {
         this(endpoint, (String)null);
@@ -112,6 +114,13 @@ public class DatasetBasedGraphGenerator {
 
         reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint), cacheDirectory);
     }
+    
+    /**
+     * @param personTypes the personTypes to set
+     */
+    public void setPropertiesBlacklist(Set<String> blacklist) {
+        this.blacklist = blacklist;
+    }
 
     public Map<NamedClass, WeightedGraph> generateGraphs(double threshold) {
         return generateGraphs(threshold, null);
@@ -146,7 +155,10 @@ public class DatasetBasedGraphGenerator {
         final SortedSet<ObjectProperty> outgoingProperties = getMostProminentProperties(cls, threshold, namespace, Direction.OUTGOING);
         
         //get the incoming properties with a prominence score above threshold
-        SortedSet<ObjectProperty> incomingProperties = getMostProminentProperties(cls, threshold, namespace, Direction.INCOMING);
+        SortedSet<ObjectProperty> incomingProperties = new TreeSet<ObjectProperty>();
+        if(useIncomingProperties){
+        	incomingProperties = getMostProminentProperties(cls, threshold, namespace, Direction.INCOMING);
+        } 
         
         //add properties that have as domain the class
 //        outgoingProperties.addAll(reasoner.getObjectPropertiesWithDomain(cls));
