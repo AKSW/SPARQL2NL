@@ -45,11 +45,10 @@ public class URIConverter {
 	private static final Logger logger = Logger.getLogger(URIConverter.class.getName());
 	
 	private SimpleIRIShortFormProvider sfp = new SimpleIRIShortFormProvider();
-	private SparqlEndpoint endpoint;
 	private Model model;
 	private LRUMap<String, String> uri2LabelCache = new LRUMap<String, String>(200);
 	
-	private static QueryExecutionFactory qef;
+	private QueryExecutionFactory qef;
 	private String cacheDirectory = "cache/sparql";
 	
 	private File dereferencingCache;
@@ -62,7 +61,6 @@ public class URIConverter {
 			"http://xmlns.com/foaf/0.1/name");
 	
 	public URIConverter(SparqlEndpoint endpoint, String cacheDirectory) {
-		this.endpoint = endpoint;
 		this.cacheDirectory = cacheDirectory;
 		
 		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
@@ -82,8 +80,16 @@ public class URIConverter {
 		dereferencingCache.mkdir();
 	}
 	
+	public URIConverter(QueryExecutionFactory qef, String cacheDirectory) {
+		this.qef = qef;
+		this.cacheDirectory = cacheDirectory;
+		
+		
+		dereferencingCache = new File(cacheDirectory, "dereferenced");
+		dereferencingCache.mkdir();
+	}
+	
 	public URIConverter(SparqlEndpoint endpoint, CacheCoreEx cacheBackend, String cacheDirectory) {
-		this.endpoint = endpoint;
 		this.cacheDirectory = cacheDirectory;
 		
 		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
@@ -96,7 +102,6 @@ public class URIConverter {
 	}
 	
 	public URIConverter(SparqlEndpoint endpoint) {
-		this.endpoint = endpoint;
 		
 		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
 		if(cacheDirectory != null){
@@ -168,16 +173,13 @@ public class URIConverter {
 	            	label += "Value";
 	            }
 	            	
-	            
-	            if(label == null){
-	            	label = uri;
-	            }
-	            uri2LabelCache.put(uri, label);
-	            return label;
 	        } catch (Exception e) {
 	            e.printStackTrace();
 	        }
-	        return uri;
+	        if(label == null){
+            	label = uri;
+            }
+            uri2LabelCache.put(uri, label);
 		}
 		if(replaceUnderScores){
 			label = label.replace("_", " ");

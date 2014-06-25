@@ -14,6 +14,8 @@ import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.ResultSet;
 
 /**
+ * Computes the informativeness of a given triple by executing two SPARQL queries to get the number of incoming and outgoing links.
+ * Given a triple t we get informativeness = log(|incomingLinks(t_s)| + |outgoingLinks(t_o)|) 
  * @author Lorenz Buehmann
  *
  */

@@ -7,11 +7,13 @@ package org.aksw.assessment.question;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
+import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.sparql2nl.entitysummarizer.Verbalizer;
 import org.aksw.sparql2nl.entitysummarizer.clustering.BorderFlowX;
 import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
@@ -19,6 +21,7 @@ import org.aksw.sparql2nl.entitysummarizer.clustering.WeightedGraph;
 import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector.Gender;
+import org.apache.log4j.Logger;
 import org.dllearner.core.owl.Individual;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
@@ -38,20 +41,25 @@ import com.hp.hpl.jena.rdf.model.ResourceFactory;
  * @author ngonga
  */
 public class JeopardyVerbalizer extends Verbalizer {
+	
+	private static final Logger logger = Logger.getLogger(JeopardyVerbalizer.class.getName());
     
+	public JeopardyVerbalizer(SparqlEndpoint endpoint, CacheCoreEx cache, String cacheDirectory, String wordnetDirectory) {
+		super(endpoint, cache, cacheDirectory, wordnetDirectory);
+	}
+
+	public JeopardyVerbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
+		super(endpoint, cacheDirectory, wordnetDirectory);
+	}
     
-    public JeopardyVerbalizer(SparqlEndpoint endpoint, CacheCoreEx cache, String cacheDirectory, String wordnetDirectory) {
-        super(endpoint, cache, cacheDirectory, wordnetDirectory);
-    }
-    
-    public JeopardyVerbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory)
-    {
-           super(endpoint, cacheDirectory, wordnetDirectory);
-    }
+	public JeopardyVerbalizer(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory) {
+		super(qef, cacheDirectory, wordnetDirectory);
+	}
     
      public Map<Individual, List<NLGElement>> verbalize(Set<Individual> individuals, NamedClass nc, double threshold, DatasetBasedGraphGenerator.Cooccurrence cooccurrence, HardeningFactory.HardeningType hType) {
         resource2Triples = new HashMap<Resource, Collection<Triple>>();
-        //first get graph for nc
+        
+        //first get graph for class
         WeightedGraph wg = graphGenerator.generateGraph(nc, threshold, "http://dbpedia.org/ontology/", cooccurrence);
 
         //then cluster the graph
@@ -59,6 +67,10 @@ public class JeopardyVerbalizer extends Verbalizer {
         Set<Set<Node>> clusters = bf.cluster();
         //then harden the results
         List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
+        logger.info("Clusters:");
+        for (Set<Node> cluster : sortedPropertyClusters) {
+			logger.info(cluster);
+		}
 
         Map<Individual, List<NLGElement>> verbalizations = new HashMap<Individual, List<NLGElement>>();
 
@@ -77,6 +89,7 @@ public class JeopardyVerbalizer extends Verbalizer {
 
         return verbalizations;
     }
+     
      
     @Override
     public List<NPPhraseSpec> generateSubjects(Resource resource, NamedClass nc, Gender g) {

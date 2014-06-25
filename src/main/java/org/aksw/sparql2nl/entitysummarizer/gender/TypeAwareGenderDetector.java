@@ -40,6 +40,11 @@ public class TypeAwareGenderDetector implements GenderDetector{
         }
 	}
 	
+	public TypeAwareGenderDetector(QueryExecutionFactory qef, GenderDetector genderDetector) {
+		this.qef = qef;
+		this.genderDetector = genderDetector;
+	}
+	
 	public TypeAwareGenderDetector(SparqlEndpoint endpoint, GenderDetector genderDetector) {
 		this(endpoint, null, genderDetector);
 	}

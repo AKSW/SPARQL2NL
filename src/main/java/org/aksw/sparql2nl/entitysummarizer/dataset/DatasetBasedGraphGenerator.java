@@ -76,6 +76,8 @@ public class DatasetBasedGraphGenerator {
             "http://dbpedia.org/ontology/individualisedPnd");
     
     boolean useIncomingProperties = false;
+    
+    Map<NamedClass, Set<ObjectProperty>> class2OutgoingProperties;
 
     public DatasetBasedGraphGenerator(SparqlEndpoint endpoint) {
         this(endpoint, (String)null);
@@ -92,6 +94,19 @@ public class DatasetBasedGraphGenerator {
 //		qef = new QueryExecutionFactoryDelay(qef, 500);
 
         reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint), cacheBackend);
+        
+        class2OutgoingProperties = new HashMap<NamedClass, Set<ObjectProperty>>();
+    }
+    
+    public DatasetBasedGraphGenerator(QueryExecutionFactory qef) {
+        this.qef = qef;
+        
+//		qef = new QueryExecutionFactoryPaginated(qef, 10000);
+//		qef = new QueryExecutionFactoryDelay(qef, 500);
+
+        reasoner = new SPARQLReasoner(qef);
+        
+        class2OutgoingProperties = new HashMap<NamedClass, Set<ObjectProperty>>();
     }
     
     public DatasetBasedGraphGenerator(SparqlEndpoint endpoint, String cacheDirectory ) {
@@ -113,6 +128,8 @@ public class DatasetBasedGraphGenerator {
 //		qef = new QueryExecutionFactoryDelay(qef, 500);
 
         reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint), cacheDirectory);
+        
+        class2OutgoingProperties = new HashMap<NamedClass, Set<ObjectProperty>>();
     }
     
     /**
@@ -153,6 +170,7 @@ public class DatasetBasedGraphGenerator {
     public WeightedGraph generateGraph(NamedClass cls, double threshold, String namespace, Cooccurrence c) {
         //get the outgoing properties with a prominence score above threshold
         final SortedSet<ObjectProperty> outgoingProperties = getMostProminentProperties(cls, threshold, namespace, Direction.OUTGOING);
+        class2OutgoingProperties.put(cls, outgoingProperties);
         
         //get the incoming properties with a prominence score above threshold
         SortedSet<ObjectProperty> incomingProperties = new TreeSet<ObjectProperty>();
@@ -203,13 +221,17 @@ public class DatasetBasedGraphGenerator {
                     }
                 }
             } catch (ExecutionException e) {
-                e.printStackTrace();
+                logger.error(e, e);
             }
         }
         if(allRelevantProperties.size() == 1){
         	wg.addNode(new Node(allRelevantProperties.iterator().next().getName()), 1d);
         }
         return wg;
+    }
+    
+    public boolean isOutgoingProperty(NamedClass cls, ObjectProperty property){
+    	return class2OutgoingProperties.containsKey(cls) && class2OutgoingProperties.get(cls).contains(property);
     }
 
     private Map<Set<ObjectProperty>, Double> getCooccurrences(NamedClass cls, Set<ObjectProperty> properties) {
@@ -410,6 +432,13 @@ public class DatasetBasedGraphGenerator {
         }
         return supersets;
     }
+    
+    /**
+	 * @param useIncomingProperties the useIncomingProperties to set
+	 */
+	public void setUseIncomingProperties(boolean useIncomingProperties) {
+		this.useIncomingProperties = useIncomingProperties;
+	}
 
     public static void main(String[] args) throws Exception {
         Lexicon lexicon = Lexicon.getDefaultLexicon();
@@ -425,7 +454,9 @@ public class DatasetBasedGraphGenerator {
     	
         SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
         //endpoint.getDefaultGraphURIs().add("http://dbpedia.org/sparql");
-        WeightedGraph wg = new DatasetBasedGraphGenerator(endpoint, "cache").generateGraph(new NamedClass("http://dbpedia.org/ontology/AmericanFootballPlayer"), 0.5, "http://dbpedia.org/ontology/", Cooccurrence.PROPERTIES);
+        DatasetBasedGraphGenerator graphGenerator = new DatasetBasedGraphGenerator(endpoint, "cache3");
+        graphGenerator.setUseIncomingProperties(true);
+		WeightedGraph wg = graphGenerator.generateGraph(new NamedClass("http://dbpedia.org/ontology/Organisation"), 0.2, "http://dbpedia.org/ontology/", Cooccurrence.PROPERTIES);
 //		generateGraph(0.5, "http://dbpedia.org/ontology/");
     }
 }

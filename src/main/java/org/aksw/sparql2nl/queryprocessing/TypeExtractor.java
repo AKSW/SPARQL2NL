@@ -9,12 +9,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
+import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
+import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryExecutionFactory;
+import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
@@ -23,7 +26,6 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.sparql.core.TriplePath;
 import com.hp.hpl.jena.sparql.core.Var;
-import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.ExprAggregator;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggCountVar;
@@ -65,12 +67,22 @@ public class TypeExtractor extends ElementVisitorBase {
 	
 	private int unionDepth = 0;
 	
+	private QueryExecutionFactory qef;
+	
 	public TypeExtractor(SparqlEndpoint endpoint) {
 		this.endpoint = endpoint;
+		
+		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
 	}
 	
 	public TypeExtractor(Model model) {
 		this.model = model;
+		
+		qef = new QueryExecutionFactoryModel(model);
+	}
+	
+	public TypeExtractor(QueryExecutionFactory qef) {
+		this.qef = qef;
 	}
 
        
@@ -168,21 +180,16 @@ public class TypeExtractor extends ElementVisitorBase {
 	private Set<Resource> getPropertyTypes(String propertyURI){
 		Set<Resource> types = new HashSet<Resource>();
 		String query = String.format("SELECT ?type WHERE {<%s> a ?type}", propertyURI);
-		ResultSet rs;
-    	if(endpoint != null){
-    		QueryEngineHTTP qexec = new QueryEngineHTTP(endpoint.getURL().toString(), query);
-        	qexec.setDefaultGraphURIs(endpoint.getDefaultGraphURIs());
-        	rs = qexec.execSelect();
-    	} else {
-    		rs = QueryExecutionFactory.create(query, model).execSelect();
-    	}
-    	QuerySolution qs;
+		
+		QueryExecution qe = qef.createQueryExecution(query);
+		ResultSet rs = qe.execSelect();
     	while(rs.hasNext()){
-    		qs = rs.next();
+    		QuerySolution qs = rs.next();
     		if(!qs.getResource("type").isAnon()){
     			types.add(qs.getResource("type"));
     		}
     	}
+    	qe.close();
 		return types;
 	}
 	

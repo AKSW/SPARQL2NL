@@ -50,4 +50,12 @@ public class RESTQuestion {
 	public void setQuestionType(String questionType) {
 		this.questionType = questionType;
 	}
+	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "Question: " + question + "\nCorrect answers: " + correctAnswers + "\nWrong answers: " + wrongAnswers;
+	}
 }

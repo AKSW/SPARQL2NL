@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
+import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.sparql2nl.naturallanguagegeneration.PropertyProcessor.Type;
 import org.aksw.sparql2nl.nlp.relation.BoaPatternSelector;
 import org.aksw.sparql2nl.nlp.stemming.PlingStemmer;
@@ -93,6 +94,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     private Model model;
     private PropertyProcessor pp;
     private FunctionalityDetector functionalityDetector;
+	private QueryExecutionFactory qef;
 
     public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint) {
         this.endpoint = endpoint;
@@ -176,6 +178,26 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         post.id = 0;
 
         uriConverter = new URIConverter(endpoint, cacheDirectory);
+        literalConverter = new LiteralConverter(uriConverter);
+        expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
+
+        pp = new PropertyProcessor(wordnetDir);
+        functionalityDetector = new StatisticalFunctionalityDetector(
+                this.getClass().getClassLoader().getResourceAsStream("dbpedia_functional_axioms.owl"),
+                0.8);
+
+    }
+    
+    public SimpleNLGwithPostprocessing(QueryExecutionFactory qef, String cacheDirectory, String wordnetDir) {
+        this.qef = qef;
+		lexicon = Lexicon.getDefaultLexicon();
+        nlgFactory = new NLGFactory(lexicon);
+        realiser = new Realiser(lexicon);
+
+        post = new Postprocessor();
+        post.id = 0;
+
+        uriConverter = new URIConverter(qef, cacheDirectory);
         literalConverter = new LiteralConverter(uriConverter);
         expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
 
@@ -308,8 +330,10 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         TypeExtractor tEx;
         if (endpoint != null) {
             tEx = new TypeExtractor(endpoint);
-        } else {
+        } else if(model != null){
             tEx = new TypeExtractor(model);
+        } else {
+        	tEx = new TypeExtractor(qef);
         }
 
         Map<String, Set<String>> typeMap = tEx.extractTypes(query);

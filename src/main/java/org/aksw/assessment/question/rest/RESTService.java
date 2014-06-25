@@ -3,6 +3,9 @@
  */
 package org.aksw.assessment.question.rest;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -11,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import java.util.Random;
 import java.util.Set;
 
@@ -33,17 +37,30 @@ import org.aksw.assessment.question.QuestionGenerator;
 import org.aksw.assessment.question.QuestionType;
 import org.aksw.assessment.question.TrueFalseQuestionGenerator;
 import org.aksw.assessment.question.answer.Answer;
-import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory;
-import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory.HardeningType;
+import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
+import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
+import org.aksw.jena_sparql_api.cache.extra.CacheCoreH2;
+import org.aksw.jena_sparql_api.cache.extra.CacheEx;
+import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
+import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
+import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.entitysummarizer.dataset.CachedDatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator.Cooccurrence;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.ConfigurationFactory;
+import org.apache.commons.configuration.FileConfiguration;
+import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.apache.commons.configuration.INIConfiguration;
+import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.core.owl.ObjectProperty;
+import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
 
@@ -59,15 +76,28 @@ public class RESTService {
 	
 	private static final Logger logger = Logger.getLogger(RESTService.class.getName());
 	
-	static SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
-	String namespace = "http://dbpedia.org/ontology/";
-	String cacheDirectory = "cache";
-	Set<String> personTypes = Sets.newHashSet("http://dbpedia.org/ontology/Person");
-	BlackList blackList = new DBpediaPropertyBlackList();
+	static SparqlEndpoint endpoint;
+	static String namespace;
+	static String cacheDirectory = "cache";
+	static Set<String> personTypes = Sets.newHashSet("http://dbpedia.org/ontology/Person");
+	static BlackList blackList = new DBpediaPropertyBlackList();
 	
 	static Map<SparqlEndpoint, List<String>> classesCache = new HashMap<>();
 	static Map<String, List<String>> propertiesCache = new HashMap<>();
 	static Map<SparqlEndpoint, Map<String, List<String>>> applicableEntitesCache = new HashMap<>();
+
+	private static double propertyFrequencyThreshold;
+	private static Cooccurrence cooccurrenceType;
+
+	private static SPARQLReasoner reasoner;
+
+	private static QueryExecutionFactory qef;
+	
+	/**
+	 * 
+	 */
+	public RESTService() {
+	}
 	
 	/**
 	 * Precompute all applicable classes and for each class its applicable properties.
@@ -83,14 +113,61 @@ public class RESTService {
 		}
 	}
 	
+	public static void init(ServletContext context){
+		try {
+			logger.info("Loading config...");
+			HierarchicalINIConfiguration config = new HierarchicalINIConfiguration();
+			config.load(RESTService.class.getClassLoader().getResourceAsStream("assess_config.ini"));
+			
+			//endpoint settings
+			SubnodeConfiguration section = config.getSection("endpoint");
+			String url = section.getString("url");
+			String defaultGraph = section.getString("defaultGraph");
+			String namespace = section.getString("namespace");
+			RESTService.namespace = namespace;
+			RESTService.endpoint = new SparqlEndpoint(new URL(url), defaultGraph);
+			String cacheDirectory = section.getString("cacheDirectory", "cache");
+			if(cacheDirectory.startsWith("/")){
+				RESTService.cacheDirectory = cacheDirectory;
+			} else {
+				RESTService.cacheDirectory = context.getRealPath(cacheDirectory);
+			}
+			
+			//summarization setting
+			section = config.getSection("summarization");
+			RESTService.propertyFrequencyThreshold = section.getDouble("propertyFrequencyThreshold");
+			RESTService.cooccurrenceType = Cooccurrence.valueOf(section.getString("cooccurrenceType").toUpperCase());
+			
+			logger.info("Endpoint:" + endpoint);
+			logger.info("Namespace:" + namespace);
+			logger.info("Cache directory: " + RESTService.cacheDirectory);
+			
+			qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
+			try {
+				long timeToLive = TimeUnit.DAYS.toMillis(30);
+				CacheCoreEx cacheBackend = CacheCoreH2.create(RESTService.cacheDirectory, timeToLive, true);
+				CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
+				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
+				
+			} catch (ClassNotFoundException e) {
+				logger.error(e.getMessage(), e);
+			} catch (SQLException e) {
+				logger.error(e.getMessage(), e);
+			}
+			reasoner = new SPARQLReasoner(qef);
+		} catch (ConfigurationException e) {
+			logger.error("Could not load config file.", e);
+		} catch (MalformedURLException e) {
+			logger.error("Illegal endpoint URL.", e);
+		}
+	}
+	
 	@GET
 	@Context
 	@Path("/questionsold")
 	@Produces(MediaType.APPLICATION_JSON)
 	public RESTQuestions getQuestionsJSON(@Context ServletContext context, @QueryParam("domain") String domain, @QueryParam("type") List<String> questionTypes, @QueryParam("limit") int maxNrOfQuestions) {
 		logger.info("REST Request - Get questions\nDomain:" + domain + "\nQuestionTypes:" + questionTypes + "\n#Questions:" + maxNrOfQuestions);
-		
-		cacheDirectory = context.getRealPath(cacheDirectory);
 		
 		Map<QuestionType, QuestionGenerator> generators = Maps.newLinkedHashMap();
 		
@@ -100,11 +177,11 @@ public class RESTService {
 		//set up the question generators
 		for (String type : questionTypes) {
 			if(type.equals(QuestionType.MC.getName())){
-				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(endpoint, cacheDirectory, namespace, domains, personTypes, blackList));
+				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(endpoint, qef, cacheDirectory, namespace, domains, personTypes, blackList));
 			} else if(type.equals(QuestionType.JEOPARDY.getName())){
-				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(endpoint, cacheDirectory, namespace, domains, personTypes, blackList));
+				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(endpoint, qef, cacheDirectory, namespace, domains, personTypes, blackList));
 			} else if(type.equals(QuestionType.TRUEFALSE.getName())){
-				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(endpoint, cacheDirectory, namespace, domains, personTypes, blackList));
+				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(endpoint, qef, cacheDirectory, namespace, domains, personTypes, blackList));
 			}
 		}
 		List<RESTQuestion> restQuestions = new ArrayList<>();
@@ -150,7 +227,7 @@ public class RESTService {
 		
 		RESTQuestions result = new RESTQuestions();
 		result.setQuestions(restQuestions);
-		
+		logger.info("Done.");
 		return result;
  
 	}
@@ -162,8 +239,6 @@ public class RESTService {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public RESTQuestions getQuestionsJSON2(@Context ServletContext context, JSONArray domain, @QueryParam("type") List<String> questionTypes, @QueryParam("limit") int maxNrOfQuestions) {
 		logger.info("REST Request - Get questions\nQuestionTypes:" + questionTypes + "\n#Questions:" + maxNrOfQuestions);
-		
-		cacheDirectory = context.getRealPath(cacheDirectory);
 		
 		Map<QuestionType, QuestionGenerator> generators = Maps.newLinkedHashMap();
 		
@@ -186,15 +261,21 @@ public class RESTService {
 		logger.info("Domain:" + domains);
 		
 		//set up the question generators
+		long start = System.currentTimeMillis();
 		for (String type : questionTypes) {
-			if(type.equals(QuestionType.MC.getName())){
-				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(endpoint, cacheDirectory, namespace, domains, personTypes, blackList));
-			} else if(type.equals(QuestionType.JEOPARDY.getName())){
-				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(endpoint, cacheDirectory, namespace, domains, personTypes, blackList));
-			} else if(type.equals(QuestionType.TRUEFALSE.getName())){
-				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(endpoint, cacheDirectory, namespace, domains, personTypes, blackList));
+			if (type.equals(QuestionType.MC.getName())) {
+				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(endpoint, qef, cacheDirectory,
+						namespace, domains, personTypes, blackList));
+			} else if (type.equals(QuestionType.JEOPARDY.getName())) {
+				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(endpoint, qef, cacheDirectory,
+						namespace, domains, personTypes, blackList));
+			} else if (type.equals(QuestionType.TRUEFALSE.getName())) {
+				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(endpoint, qef, cacheDirectory,
+						namespace, domains, personTypes, blackList));
 			}
-		}
+		} 
+		long end = System.currentTimeMillis();
+		System.out.println("Operation took " + (end - start) + "ms");
 		List<RESTQuestion> restQuestions = new ArrayList<>();
 		
 		//get random numbers for max. computed questions per type
@@ -253,7 +334,6 @@ public class RESTService {
 		List<String> properties = propertiesCache.get(classURI);
 		
 		if(properties == null){
-			SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, context != null ? context.getRealPath(cacheDirectory) : cacheDirectory);
 			properties = new ArrayList<String>();
 			for (ObjectProperty p : reasoner.getObjectProperties(new NamedClass(classURI))) {
 				if(!blackList.contains(p.getName())){
@@ -264,7 +344,7 @@ public class RESTService {
 			propertiesCache.put(classURI, properties);
 		}
 		
-		
+		logger.info("Done.");
 		return properties;
 	}
 	
@@ -278,7 +358,6 @@ public class RESTService {
 		List<String> classes = classesCache.get(endpoint);
 		
 		if(classes == null){
-			SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, cacheDirectory);
 			classes = new ArrayList<String>();
 			for (NamedClass cls : reasoner.getNonEmptyOWLClasses()) {
 				if (!blackList.contains(cls.getName())) {
@@ -288,7 +367,7 @@ public class RESTService {
 			Collections.sort(classes); 
 			classesCache.put(endpoint, classes);
 		}
-		
+		logger.info("Done.");
 		return classes;
 	}
 	
@@ -314,22 +393,22 @@ public class RESTService {
 			}
 			applicableEntitesCache.put(endpoint, entities);
 		}
+		logger.info("Done.");
 		return entities;
 	}
 	
-	public void precomputeGraphs(){
+	public void precomputeGraphs(ServletContext context){
 		logger.info("Precomputing graphs...");
-		DatasetBasedGraphGenerator graphGenerator = new CachedDatasetBasedGraphGenerator(endpoint, "cache");
-		double propertyFrequencyThreshold = 0.2; 
-	    Cooccurrence cooccurrenceType = Cooccurrence.PROPERTIES;
+		
+		DatasetBasedGraphGenerator graphGenerator = new CachedDatasetBasedGraphGenerator(endpoint, cacheDirectory);
 		
 		Map<String, List<String>> entities = getEntities(null);
 		for (String cls : entities.keySet()) {
 			try {
 				logger.info(cls);
-				graphGenerator.generateGraph(new NamedClass(cls), propertyFrequencyThreshold, "http://dbpedia.org/ontology/", cooccurrenceType);
+				graphGenerator.generateGraph(new NamedClass(cls), propertyFrequencyThreshold, namespace, cooccurrenceType);
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.error(e, e);
 			}
 		}
 	}
@@ -344,9 +423,5 @@ public class RESTService {
 		}
 		numbers[groups-1] = total;
 		return numbers;
-	}
-	
-	public static void main(String[] args) throws Exception {
-		new RESTService().precomputeGraphs();
 	}
 }

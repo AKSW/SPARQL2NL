@@ -28,6 +28,7 @@ public class DBpediaPropertyBlackList implements BlackList{
 	    "http://dbpedia.org/ontology/abstract",
 	    "http://dbpedia.org/ontology/termPeriod",
 	    "http://dbpedia.org/ontology/individualisedPnd",
+	    "http://dbpedia.org/ontology/position",
 	    "http://dbpedia.org/property/hasPhotoCollection", 
 	    "http://dbpedia.org/property/link",
 	    "http://dbpedia.org/property/url",

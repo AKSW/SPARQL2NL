@@ -141,6 +141,22 @@ public class Verbalizer {
         graphGenerator = new CachedDatasetBasedGraphGenerator(endpoint, cacheDirectory);
     }
     
+    public Verbalizer(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory) {
+    	this.qef = qef;
+        nlg = new SimpleNLGwithPostprocessing(qef, cacheDirectory, wordnetDirectory);
+        labels = new HashMap<Resource, String>();
+        litFilter = new NumericLiteralFilter(qef, cacheDirectory);
+        realiser = nlg.realiser;
+
+        pr = new PredicateMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
+        or = new ObjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
+        sr = new SubjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
+
+        gender = new TypeAwareGenderDetector(qef, new LexiconBasedGenderDetector());
+
+        graphGenerator = new CachedDatasetBasedGraphGenerator(qef, cacheDirectory);
+    }
+    
     /**
      * @param personTypes the personTypes to set
      */
@@ -196,6 +212,16 @@ public class Verbalizer {
             e.printStackTrace();
         }
         return result;
+    }
+    
+    public Set<Node> getSummaryProperties(NamedClass cls, double threshold, String namespace, DatasetBasedGraphGenerator.Cooccurrence cooccurrence){
+   	 Set<Node> properties = new HashSet<Node>();
+   	 WeightedGraph wg = graphGenerator.generateGraph(cls, threshold, "http://dbpedia.org/ontology/", cooccurrence);
+   	 return wg.getNodes().keySet();
+//   	 for (Node property : wg.getNodes().keySet()) {
+//			properties.add(property.label);
+//   	 }
+//   	 return properties;
     }
 
     /**

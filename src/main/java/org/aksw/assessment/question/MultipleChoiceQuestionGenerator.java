@@ -36,6 +36,8 @@ import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator.Co
 import org.aksw.sparql2nl.naturallanguagegeneration.LiteralConverter;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.aksw.sparql2nl.naturallanguagegeneration.URIConverter;
+import org.aksw.sparqltools.util.SPARQLEndpointType;
+import org.aksw.sparqltools.util.SPARQLQueryUtils;
 import org.apache.log4j.Logger;
 import org.dllearner.core.owl.Individual;
 import org.dllearner.core.owl.NamedClass;
@@ -65,27 +67,26 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 	private static final Logger logger = Logger.getLogger(MultipleChoiceQuestionGenerator.class.getName());
     static int DIFFICULTY = 1;
     
-    private SparqlEndpoint endpoint;
-    
-    private String namespace;
     protected SimpleNLGwithPostprocessing nlg;
     
     private LiteralConverter literalConverter;
     protected int maxNrOfAnswersPerQuestion = 5;
     
+    private SparqlEndpoint endpoint;
     private QueryExecutionFactory qef;
     private SPARQLReasoner reasoner;
     
     //configuration of verbalizer
     protected Verbalizer verbalizer; 
     final int maxShownValuesPerProperty = 3;
-    private double propertyFrequencyThreshold = 0.2; 
-    private Cooccurrence cooccurrenceType = Cooccurrence.PROPERTIES;
-    private HardeningType hardeningType = HardeningFactory.HardeningType.SMALLEST;
+    protected double propertyFrequencyThreshold = 0.2; 
+    protected Cooccurrence cooccurrenceType = Cooccurrence.PROPERTIES;
+    protected HardeningType hardeningType = HardeningFactory.HardeningType.SMALLEST;
+    protected String namespace;
     
     protected BlackList blackList;
     
-	final Comparator resourceComparator = new Comparator<RDFNode>() {
+	final Comparator<RDFNode> resourceComparator = new Comparator<RDFNode>() {
 
 		@Override
 		public int compare(RDFNode o1, RDFNode o2) {
@@ -100,9 +101,33 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
     
 	protected Map<NamedClass, Set<ObjectProperty>> restrictions;
 	protected Set<RDFNode> usedWrongAnswers;
-    
+	
+	protected SPARQLEndpointType endpointType = SPARQLEndpointType.Virtuoso;
+	
     public MultipleChoiceQuestionGenerator(SparqlEndpoint ep, Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
         this(ep, null, null, restrictions, personTypes, blackList);
+    }
+    
+    public MultipleChoiceQuestionGenerator(SparqlEndpoint ep, QueryExecutionFactory qef, String cacheDirectory, String namespace, Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
+    	this.endpoint = ep;
+    	this.qef = qef;
+		this.namespace = namespace;
+		this.restrictions = restrictions;
+		this.blackList = blackList;
+		
+        literalConverter = new LiteralConverter(new URIConverter(qef, cacheDirectory));
+        
+        reasoner = new SPARQLReasoner(qef);
+        
+        String wordNetDir = "wordnet/" + (SimpleNLGwithPostprocessing.isWindows() ? "windows" : "linux") + "/dict";
+        wordNetDir = this.getClass().getClassLoader().getResource(wordNetDir).getPath();
+        
+        verbalizer = new JeopardyVerbalizer(endpoint, cacheDirectory, wordNetDir);
+        verbalizer.setPersonTypes(personTypes);
+        verbalizer.setMaxShownValuesPerProperty(maxShownValuesPerProperty);
+        verbalizer.setOmitContentInBrackets(true);
+        
+        nlg = verbalizer.nlg;
     }
     
     public MultipleChoiceQuestionGenerator(SparqlEndpoint ep, String cacheDirectory, String namespace, Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
@@ -111,8 +136,6 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 		this.restrictions = restrictions;
 		this.blackList = blackList;
 		
-        nlg = new SimpleNLGwithPostprocessing(endpoint);
-        
         literalConverter = new LiteralConverter(new URIConverter(endpoint, cacheDirectory));
         
         qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
@@ -138,6 +161,8 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         verbalizer.setPersonTypes(personTypes);
         verbalizer.setMaxShownValuesPerProperty(maxShownValuesPerProperty);
         verbalizer.setOmitContentInBrackets(true);
+        
+        nlg = verbalizer.nlg;
     }
 
     public Question generateQuestion(Resource r, NamedClass type) {
@@ -267,38 +292,61 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         return questions;
     }
     
+    /**
+	 * @param restrictions the restrictions to set
+	 */
+	public void setRestrictions(Map<NamedClass, Set<ObjectProperty>> restrictions) {
+		this.restrictions = restrictions;
+	}
+    
 	protected ResultSet executeSelectQuery(String query) {
-
+		logger.debug("Sending query \n" + query);
         QueryExecution qe = qef.createQueryExecution(query);
-        ResultSet rs;
+        ResultSet rs = null;
         try {
             rs = qe.execSelect();
         } catch (Exception e) {
-            System.err.println(query);
-            rs = null;
+            logger.error("Error when executing query\n" + query, e);
         }
         return rs;
     }
 
     protected List<Answer> generateAnswers(Collection<RDFNode> resources, boolean addHint) {
 		List<Answer> answers = new ArrayList<Answer>();
-		for (RDFNode r : resources) {
-			Answer answer = null;
-			if (r.isURIResource()) {
-				String summary = null;
-				if (addHint && r.isURIResource()) {
-//					summary = getEntitySummary(r.asResource().getURI());
-				}
-				answer = new SimpleAnswer(nlg.realiser.realiseSentence(nlg.getNPPhrase(r.asResource().getURI(), false,
-						false)), summary);
-
-			} else if (r.isLiteral()) {
-				answer = new SimpleAnswer(literalConverter.convert(r.asLiteral()));
+		for (RDFNode node : resources) {
+			String textualRepresentation = getTextualRepresentation(node);
+			//if answer is a resource we generate additionally a summary which can be used as hint 
+			String hint = null;
+			if (addHint && node.isURIResource()) {
+				hint = generateHint(node.asResource());
 			}
+			Answer answer = new SimpleAnswer(textualRepresentation, hint);
 			answers.add(answer);
 		}
 		return answers;
 	}
+    
+    protected String generateHint(Resource r){
+    	String hint = getEntitySummary(r.getURI());
+    	return hint;
+    }
+    
+    /**
+     * Generate textual representation of RDFNode object.
+     * @param node
+     * @return
+     */
+    protected String getTextualRepresentation(RDFNode node){
+    	String s;
+    	if (node.isURIResource()) {
+			s = nlg.realiser.realise(nlg.getNPPhrase(node.asResource().getURI(), false, false)).getRealisation();
+		} else if (node.isLiteral()) {
+			s = literalConverter.convert(node.asLiteral());
+		} else {
+			throw new IllegalArgumentException("Conversion of blank node " + node + " not supported yet!");
+		}
+    	return s;
+    }
     
     /**
      * Returns a textual summary for a given individual.
@@ -345,10 +393,14 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         
         Map<Resource, NamedClass> result = Maps.newLinkedHashMap();
         for (NamedClass type : types) {
-        	String query = "SELECT distinct ?x (COUNT(?s) AS ?cnt) WHERE {?s ?p ?x. ";
-        	query += "?x a <" + type.getURI() + ">.";
-            query += "} ORDER BY DESC(?cnt) LIMIT 500";
-            ResultSet rs = executeSelectQuery(query);
+        	StringBuilder query = new StringBuilder();
+        	query.append("SELECT DISTINCT ?x WHERE{");
+        	query.append("?x a <" + type.getURI() + ">.");
+        	SPARQLQueryUtils.addRankingConstraints(endpointType, query, "x");
+        	query.append("}");
+        	SPARQLQueryUtils.addRankingOrder(endpointType, query, "x");
+            query.append(" LIMIT 500");
+            ResultSet rs = executeSelectQuery(query.toString());
             QuerySolution qs;
             while (rs.hasNext()) {
                 qs = rs.next();

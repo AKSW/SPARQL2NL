@@ -14,4 +14,5 @@ import java.util.Set;
  */
 public interface QuestionGenerator {
     Set<Question> getQuestions(Map<Triple, Double> informativenessMap, int difficulty, int number);
+    
 }

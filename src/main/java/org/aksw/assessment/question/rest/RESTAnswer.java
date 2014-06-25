@@ -38,5 +38,12 @@ public class RESTAnswer {
 		this.answerHint = answerHint;
 	}
 	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return answer;
+	}
 	
 }

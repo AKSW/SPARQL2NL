@@ -11,6 +11,7 @@
 	<properties>
 		<compiler.version>1.7</compiler.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<assess.warFile.name>assess</assess.warFile.name>
 	</properties>
 
 	<repositories>
@@ -232,10 +233,15 @@
 			<artifactId>servlet-api</artifactId>
 			<version>2.5</version>
 		</dependency>
-		<dependency>
-	<groupId>org.apache.tomcat</groupId>
-	<artifactId>tomcat-catalina</artifactId>
-	<version>7.0.50</version>
+<!-- 		<dependency> -->
+<!-- 	<groupId>org.apache.tomcat</groupId> -->
+<!-- 	<artifactId>tomcat-catalina</artifactId> -->
+<!-- 	<version>7.0.50</version> -->
+<!-- </dependency> -->
+<dependency>
+<groupId>org.aksw</groupId>
+	<artifactId>sparqltools</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
 </dependency>
 	</dependencies>
 	<build>
@@ -243,7 +249,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.0.2</version>
+				<version>3.1</version>
 				<configuration>
 					<!--We use 1.6 -->
 					<source>${compiler.version}</source>
@@ -271,6 +277,7 @@
 				<configuration>
 					<ignorePackaging>true</ignorePackaging>
 					<server>local</server>
+					<warFile>${project.build.directory}/${assess.warFile.name}.war</warFile>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -281,8 +288,25 @@
 					<ignorePackaging>true</ignorePackaging>
 					<server>local</server>
 					<url>http://localhost:8080/manager/text</url>
+					<warFile>${project.build.directory}/${assess.warFile.name}.war</warFile>
 				</configuration>
 			</plugin>
+			<plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-war-plugin</artifactId>
+	<version>2.4</version>
+	<configuration>
+		<warName>${assess.warFile.name}</warName>
+	</configuration>
+	<executions>
+	<execution>
+	<phase>package</phase>
+	<goals>
+	<goal>war</goal>
+	</goals>
+	</execution>
+	</executions>
+</plugin>
 		</plugins>
 	</build>
 </project>

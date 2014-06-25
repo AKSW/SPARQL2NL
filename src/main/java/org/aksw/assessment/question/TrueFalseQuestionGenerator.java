@@ -12,6 +12,7 @@ import java.util.Set;
 
 import org.aksw.assessment.question.answer.Answer;
 import org.aksw.assessment.question.answer.SimpleAnswer;
+import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.apache.log4j.Logger;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.core.owl.ObjectProperty;
@@ -32,20 +33,20 @@ import com.hp.hpl.jena.rdf.model.ResourceFactory;
  * @author ngonga
  */
 public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator {
+	
+	private static final Logger logger = Logger.getLogger(MultipleChoiceQuestionGenerator.class.getName());
 
-    /**
-	 * @param ep
-	 * @param cacheDirectory
-	 * @param namespace
-	 * @param restrictions
-	 */
 	public TrueFalseQuestionGenerator(SparqlEndpoint ep, String cacheDirectory, String namespace,
 			Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
 		super(ep, cacheDirectory, namespace, restrictions, personTypes, blackList);
 		
 	}
-
-	private static final Logger logger = Logger.getLogger(MultipleChoiceQuestionGenerator.class.getName());
+	
+	public TrueFalseQuestionGenerator(SparqlEndpoint ep, QueryExecutionFactory qef, String cacheDirectory, String namespace,
+			Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
+		super(ep, qef, cacheDirectory, namespace, restrictions, personTypes, blackList);
+		
+	}
 
     @Override
     public Question generateQuestion(Resource r, NamedClass type) {

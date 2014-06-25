@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.aksw.commons.util.Pair;
 import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
+import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.sparql2nl.naturallanguagegeneration.URIConverter;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
@@ -26,18 +27,18 @@ import com.hp.hpl.jena.graph.impl.LiteralLabel;
  */
 public class NumericLiteralFilter {
 	
-	private SparqlEndpoint endpoint;
 	private URIConverter conv;
-
 	
 	public NumericLiteralFilter(SparqlEndpoint endpoint, CacheCoreEx cache, String cacheDirectory) {
-		this.endpoint = endpoint;
 		conv = new URIConverter(endpoint, cache, cacheDirectory);
 	}
 	
 	public NumericLiteralFilter(SparqlEndpoint endpoint, String cacheDirectory) {
-		this.endpoint = endpoint;
 		conv = new URIConverter(endpoint, cacheDirectory);
+	}
+	
+	public NumericLiteralFilter(QueryExecutionFactory qef, String cacheDirectory) {
+		conv = new URIConverter(qef, cacheDirectory);
 	}
 	
 	

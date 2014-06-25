@@ -14,6 +14,9 @@ import java.util.Set;
  *
  */
 public class LexiconBasedGenderDetector implements GenderDetector {
+	
+	private String maleNamesPath = "gender/male.txt";
+	private String femaleNamesPath = "gender/female.txt";
 
     private Set<String> male;
     private Set<String> female;
@@ -50,7 +53,7 @@ public class LexiconBasedGenderDetector implements GenderDetector {
             male = new HashSet<String>();
             female = new HashSet<String>();
             
-            InputStream is = this.getClass().getClassLoader().getResourceAsStream("male.txt");
+            InputStream is = this.getClass().getClassLoader().getResourceAsStream(maleNamesPath);
             BufferedReader br = new BufferedReader(new InputStreamReader(is));
             String l;
             while((l = br.readLine()) != null){
@@ -61,7 +64,7 @@ public class LexiconBasedGenderDetector implements GenderDetector {
             }
             br.close();
             
-            is = this.getClass().getClassLoader().getResourceAsStream("female.txt");
+            is = this.getClass().getClassLoader().getResourceAsStream(femaleNamesPath);
             br = new BufferedReader(new InputStreamReader(is));
             while((l = br.readLine()) != null){
             	l = l.trim();
@@ -72,9 +75,23 @@ public class LexiconBasedGenderDetector implements GenderDetector {
             br.close();
             
         } catch (Exception e) {
-            
+            e.printStackTrace();
         }
     }
+    
+    /**
+	 * @param maleNamesPath the maleNamesPath to set
+	 */
+	public void setMaleNamesPath(String maleNamesPath) {
+		this.maleNamesPath = maleNamesPath;
+	}
+	
+	/**
+	 * @param femaleNamesPath the femaleNamesPath to set
+	 */
+	public void setFemaleNamesPath(String femaleNamesPath) {
+		this.femaleNamesPath = femaleNamesPath;
+	}
 
     public static void main(String[] args) throws Exception {
         LexiconBasedGenderDetector genderDetector = new LexiconBasedGenderDetector();
