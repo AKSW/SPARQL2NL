@@ -45,9 +45,9 @@ public class ASSESS_RESTServiceTest {
 	public void testGetQuestionsJSON2() throws JSONException {
 		JSONArray domain = new JSONArray();
 		JSONObject entry = new JSONObject();
-		entry.put("className", "http://dbpedia.org/ontology/SoccerClub");
+		entry.put("className", "http://dbpedia.org/ontology/Airport");
 		JSONArray properties = new JSONArray();
-		properties.put("http://dbpedia.org/ontology/manager");
+		properties.put("http://dbpedia.org/ontology/owner");
 		entry.put("properties", properties);
 		domain.put(entry);
 		List<String> questionTypes = Lists.newArrayList(QuestionType.MC.getName(), QuestionType.JEOPARDY.getName());

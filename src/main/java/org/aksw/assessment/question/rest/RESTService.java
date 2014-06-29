@@ -14,9 +14,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletContext;
 import javax.ws.rs.Consumes;
@@ -47,12 +52,8 @@ import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.entitysummarizer.dataset.CachedDatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator.Cooccurrence;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.ConfigurationFactory;
-import org.apache.commons.configuration.FileConfiguration;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
-import org.apache.commons.configuration.INIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
@@ -60,12 +61,12 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.core.owl.ObjectProperty;
-import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.MoreExecutors;
 
 /**
  * @author Lorenz Buehmann
@@ -187,7 +188,7 @@ public class RESTService {
 		List<RESTQuestion> restQuestions = new ArrayList<>();
 		
 		//get random numbers for max. computed questions per type
-		int[] randomNumbers = getRandomNumbers(maxNrOfQuestions, questionTypes.size());
+		List<Integer> randomNumbers = getRandomNumbers(maxNrOfQuestions, questionTypes.size());
 		
 		int i = 0;
 		for (Entry<QuestionType, QuestionGenerator> entry : generators.entrySet()) {
@@ -195,7 +196,7 @@ public class RESTService {
 			QuestionGenerator generator = entry.getValue();
 		
 			//randomly set the max number of questions
-			int max = randomNumbers[i++];
+			int max = randomNumbers.get(i);
 			
 			Set<Question> questions = generator.getQuestions(null, 1, max);
 			
@@ -276,52 +277,34 @@ public class RESTService {
 		} 
 		long end = System.currentTimeMillis();
 		System.out.println("Operation took " + (end - start) + "ms");
-		List<RESTQuestion> restQuestions = new ArrayList<>();
+		final List<RESTQuestion> restQuestions = Collections.synchronizedList(new ArrayList<RESTQuestion>(maxNrOfQuestions));
 		
 		//get random numbers for max. computed questions per type
-		int[] randomNumbers = getRandomNumbers(maxNrOfQuestions, questionTypes.size());
+		final List<Integer> partitionSizes = getRandomNumbers(maxNrOfQuestions, questionTypes.size());
 		
+		ExecutorService tp = Executors.newFixedThreadPool(generators.entrySet().size());
+		//submit a task for each question type
+        List<Future<List<RESTQuestion>>> list = new ArrayList<Future<List<RESTQuestion>>>();
 		int i = 0;
-		for (Entry<QuestionType, QuestionGenerator> entry : generators.entrySet()) {
+		for (final Entry<QuestionType, QuestionGenerator> entry : generators.entrySet()) {
 			QuestionType questionType = entry.getKey();
-			QuestionGenerator generator = entry.getValue();
-		
-			//randomly set the max number of questions
-			int max = randomNumbers[i++];
-			logger.info("Get " + max + " questions of type " + questionType.getName() + "...");
-			Set<Question> questions = generator.getQuestions(null, 1, max);
-			
-			for (Question question : questions) {
-				RESTQuestion q = new RESTQuestion();
-				q.setQuestion(question.getText());
-				q.setQuestionType(questionType.getName());
-				List<RESTAnswer> correctAnswers = new ArrayList<>();
-				for (Answer answer : question.getCorrectAnswers()) {
-					RESTAnswer a = new RESTAnswer();
-					a.setAnswer(answer.getText());
-					if(questionType == QuestionType.MC){
-						a.setAnswerHint(answer.getHint());
-					}
-					correctAnswers.add(a);
-				}
-				q.setCorrectAnswers(correctAnswers);
-				List<RESTAnswer> wrongAnswers = new ArrayList<>();
-				for (Answer answer : question.getWrongAnswers()) {
-					RESTAnswer a = new RESTAnswer();
-					a.setAnswer(answer.getText());
-					a.setAnswerHint("NO HINT");
-					wrongAnswers.add(a);
-				}
-				q.setWrongAnswers(wrongAnswers);
-				restQuestions.add(q);
-			}
+			QuestionGenerator questionGenerator = entry.getValue();
+			list.add(tp.submit(new QuestionGenerationTask(questionType, questionGenerator, partitionSizes.get(i++))));
 		}
+		for(Future<List<RESTQuestion>> fut : list){
+			try {
+				List<RESTQuestion> partialRestQuestions = fut.get();
+				restQuestions.addAll(partialRestQuestions);
+			} catch (InterruptedException | ExecutionException e) {
+				e.printStackTrace();
+			}
+        }
+		tp.shutdown();
 		
 		RESTQuestions result = new RESTQuestions();
 		result.setQuestions(restQuestions);
 		
 		return result;
- 
 	}
 	
 	@GET
@@ -413,15 +396,66 @@ public class RESTService {
 		}
 	}
 	
-	private int[] getRandomNumbers(int total, int groups){
+	private List<Integer> getRandomNumbers(int total, int groups){
 		Random rnd = new Random(123);
-		int[] numbers = new int[groups];
+		List<Integer> partitionSizes = new ArrayList<Integer>(groups);
 		for (int i = 0; i < groups - 1; i++) {
 			int number = rnd.nextInt(total-(groups - i)) + 1;
 			total -= number;
-			numbers[i] = number;
+			partitionSizes.add(number);
 		}
-		numbers[groups-1] = total;
-		return numbers;
+		partitionSizes.add(groups-1, total);
+		return partitionSizes;
+	}
+	
+	class QuestionGenerationTask implements Callable<List<RESTQuestion>>{
+		
+		private QuestionType questionType;
+		private QuestionGenerator questionGenerator;
+		private int maxNrOfQuestions;
+
+		public QuestionGenerationTask(QuestionType questionType, QuestionGenerator questionGenerator, int maxNrOfQuestions) {
+			this.questionType = questionType;
+			this.questionGenerator = questionGenerator;
+			this.maxNrOfQuestions = maxNrOfQuestions;
+		}
+
+		/* (non-Javadoc)
+		 * @see java.util.concurrent.Callable#call()
+		 */
+		@Override
+		public List<RESTQuestion> call() throws Exception {
+			logger.info("Get " + maxNrOfQuestions + " questions of type " + questionType.getName() + "...");
+			Set<Question> questions = questionGenerator.getQuestions(null, 1, maxNrOfQuestions);
+			
+			//convert to REST format
+			List<RESTQuestion> restQuestions = new ArrayList<RESTQuestion>(questions.size());
+			for (Question question : questions) {
+				RESTQuestion q = new RESTQuestion();
+				q.setQuestion(question.getText());
+				q.setQuestionType(questionType.getName());
+				List<RESTAnswer> correctAnswers = new ArrayList<>();
+				for (Answer answer : question.getCorrectAnswers()) {
+					RESTAnswer a = new RESTAnswer();
+					a.setAnswer(answer.getText());
+					if(questionType == QuestionType.MC){
+						a.setAnswerHint(answer.getHint());
+					}
+					correctAnswers.add(a);
+				}
+				q.setCorrectAnswers(correctAnswers);
+				List<RESTAnswer> wrongAnswers = new ArrayList<>();
+				for (Answer answer : question.getWrongAnswers()) {
+					RESTAnswer a = new RESTAnswer();
+					a.setAnswer(answer.getText());
+					a.setAnswerHint("NO HINT");
+					wrongAnswers.add(a);
+				}
+				q.setWrongAnswers(wrongAnswers);
+				restQuestions.add(q);
+			}
+			return restQuestions;
+		}
+		
 	}
 }

@@ -10,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -57,18 +58,30 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 	 * @param endpoint
 	 * @param cacheDirectory
 	 */
-	public CachedDatasetBasedGraphGenerator(SparqlEndpoint endpoint, String cacheDirectory) {
+	public CachedDatasetBasedGraphGenerator(SparqlEndpoint endpoint, File cacheDirectory) {
 		super(endpoint, cacheDirectory);
 		
-		graphsFolder = new File(cacheDirectory + "/" + graphsFolder.getName());
+		graphsFolder = new File(cacheDirectory, graphsFolder.getName());
+		graphsFolder.mkdirs();
+	}
+	
+	/**
+	 * @param endpoint
+	 * @param cacheDirectory
+	 */
+	public CachedDatasetBasedGraphGenerator(SparqlEndpoint endpoint, String cacheDirectory) {
+		this(endpoint, new File(cacheDirectory));
+	}
+	
+	public CachedDatasetBasedGraphGenerator(QueryExecutionFactory qef, File cacheDirectory) {
+		super(qef);
+		
+		graphsFolder = new File(cacheDirectory, graphsFolder.getName());
 		graphsFolder.mkdirs();
 	}
 	
 	public CachedDatasetBasedGraphGenerator(QueryExecutionFactory qef, String cacheDirectory) {
-		super(qef);
-		
-		graphsFolder = new File(cacheDirectory + "/" + graphsFolder.getName());
-		graphsFolder.mkdirs();
+		this(qef, new File(cacheDirectory));
 	}
 	
 	/**
@@ -99,7 +112,7 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 		HashCode hc = hf.newHasher()
 		       .putString(configuration.cls.getName(), Charsets.UTF_8)
 		       .putDouble(configuration.threshold)
-		       .putString(configuration.c.name())
+		       .putString(configuration.c.name(), Charsets.UTF_8)
 		       .hash();
 		String filename = hc.toString() + ".graph";
 		File file = new File(graphsFolder, filename);

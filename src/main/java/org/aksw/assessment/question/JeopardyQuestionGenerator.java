@@ -29,6 +29,9 @@ import org.dllearner.core.owl.NamedClass;
 import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
+import simplenlg.framework.NLGElement;
+import simplenlg.phrasespec.NPPhraseSpec;
+
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -50,7 +53,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
    
     private Map<NamedClass, List<Resource>> wrongAnswersByType = new HashMap<>();
     
-	private boolean preferPopularWrongAnswers = false;
+	private boolean preferPopularWrongAnswers = true;
 
 	private boolean optimizedAnswerGeneration = true;
 
@@ -80,7 +83,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 				StringBuilder query = new StringBuilder();
 	        	query.append("SELECT DISTINCT ?x WHERE{");
 	        	query.append("?x a <" + type.getURI() + ">.");
-	        	//add triple pattern for each property in summary graphall triple patterns
+	        	//add triple pattern for each property in summary graph
 	        	int i = 0;
 				for (org.aksw.sparql2nl.entitysummarizer.clustering.Node propertyNode : summaryProperties) {
 					query.append((propertyNode.outgoing ? ("?x <" + propertyNode.label + "> ?o" + i++) :  ("?o" + i++ + " <" + propertyNode.label + "> ?x")) + ".");
@@ -123,7 +126,9 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
         //generate the wrong answers
 		List<Answer> wrongAnswers = generateWrongAnswers(r, type);
 
-		String className = nlg.realiser.realiseSentence(nlg.getNPPhrase(type.getName(), false));
+		NLGElement npPhrase = nlg.getNPPhrase(type.getName(), false);
+		npPhrase = nlg.realiser.realise(npPhrase);
+		String className = npPhrase.getRealisation();
 		className = className.toLowerCase().replaceAll(Pattern.quote("."), "");
 
 		return new SimpleQuestion("Which " + className + " matches the following description:\n" + summary,
@@ -233,20 +238,23 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     }
     
     private String asSPARQLQuery(List<Triple> triples, NamedClass type){
-    	String query = "SELECT DISTINCT ?s WHERE {";
+    	StringBuilder query = new StringBuilder();
+    	query.append("SELECT DISTINCT ?s WHERE{");
+    	//we should keep the type as constraint to get more similar wrong answers
+    	query.append("?s a <" + type + ">.");
 		for (Triple triple : triples) {
 			//add triple pattern
-			query += asTriplePattern("s", triple, type);
-			if(preferPopularWrongAnswers ){
-				query += "?o ?p ?s.";
-			}
+			query.append(asTriplePattern("s", triple, type));
 		}
-		query += "}";
 		if(preferPopularWrongAnswers){
-			query += " GROUP BY ?s ORDER BY DESC(COUNT(?o))";
+			SPARQLQueryUtils.addRankingConstraints(endpointType, query, "s");
 		}
-		query += " LIMIT " + (maxNrOfAnswersPerQuestion-1);
-		return query;
+		query.append("}");
+		if(preferPopularWrongAnswers){
+	    	SPARQLQueryUtils.addRankingOrder(endpointType, query, "s");
+		}
+		query.append(" LIMIT " + (maxNrOfAnswersPerQuestion-1));
+		return query.toString();
     }
     
     /**
@@ -258,27 +266,36 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     private String asFilterInSPARQLQuery(Collection<Triple> triples, NamedClass type){
     	Iterator<Triple> iterator = triples.iterator();
     	Triple firstTriple = iterator.next();
-    	String query = "SELECT DISTINCT ?s WHERE{";
+    	StringBuilder query = new StringBuilder();
+    	query.append("SELECT DISTINCT ?s WHERE{");
+    	//we should keep the type as constraint to get more similar wrong answers
+    	query.append("?s a <" + type + ">.");
     	if(triples.size() == 1){
-    		query += asTriplePattern("s", firstTriple, type);
+    		query.append(asTriplePattern("s", firstTriple, type));
     	} else {
     		ObjectProperty property = new ObjectProperty(firstTriple.getPredicate().getURI());
     		boolean outgoingProperty = verbalizer.graphGenerator.isOutgoingProperty(type, property);
     		String subject = outgoingProperty ? "?s" : "?o";
         	String predicate = asTriplePatternComponent(firstTriple.getPredicate());
         	String object = outgoingProperty ? "?o" : "?s";
-        	query += subject + " " + predicate + " " + object + ".";
+        	query.append(subject + " " + predicate + " " + object + ".");
     		String filter = "FILTER (?o IN (";
     		filter += asTriplePatternComponent(firstTriple.getObject());
     		while(iterator.hasNext()){
     			filter += "," + asTriplePatternComponent(iterator.next().getObject());
     		}
     		filter += "))";
-    		query += filter;
+    		query.append(filter);
     	}
-    	query += "}";
-    	query += " LIMIT " + triples.size() * maxNrOfAnswersPerQuestion;
-    	return query;
+    	if(preferPopularWrongAnswers){
+			SPARQLQueryUtils.addRankingConstraints(endpointType, query, "s");
+		}
+		query.append("}");
+		if(preferPopularWrongAnswers){
+	    	SPARQLQueryUtils.addRankingOrder(endpointType, query, "s");
+		}
+		query.append(" LIMIT " + (triples.size() * maxNrOfAnswersPerQuestion));
+    	return query.toString();
     }
     
     /**

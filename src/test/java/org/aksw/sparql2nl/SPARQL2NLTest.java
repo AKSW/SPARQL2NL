@@ -4,22 +4,29 @@
  */
 package org.aksw.sparql2nl;
 
+import static org.junit.Assert.*;
+
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.Syntax;
+
 import java.net.URL;
+
 import org.aksw.sparql2nl.naturallanguagegeneration.Postprocessor;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLG;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.junit.Test;
+
 import simplenlg.framework.DocumentElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
+import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
 
 public class SPARQL2NLTest {
-
+	
     public static void main(String[] args) {
        
         String query2 = "PREFIX res: <http://dbpedia.org/resource/> "

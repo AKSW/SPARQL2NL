@@ -36,6 +36,9 @@ import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
+import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
+import com.google.common.io.Files;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.graph.impl.LiteralLabel;
@@ -689,13 +692,16 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             String label = uriConverter.convert(className);
             if (label != null) {
                 label = PlingStemmer.stem(label);
-                object = nlgFactory.createNounPhrase(nlgFactory.createInflectedWord(label, LexicalCategory.NOUN));
+                NLGElement word = nlgFactory.createWord(label, LexicalCategory.NOUN);
+                object = nlgFactory.createNounPhrase(word);
             } else {
                 object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
             }
 
         }
         object.setPlural(plural);
+        //remove the possessive feature which is set automatically to TRUE if the word was found in the lexicon
+        object.setFeature(Feature.POSSESSIVE, false);
 
         return object;
     }
@@ -1487,10 +1493,21 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         query = "SELECT DISTINCT  ?person ?height WHERE  { "
                 + "?person <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person>."
                 + "OPTIONAL{?person <http://dbpedia.org/ontology/height> ?height.}}";
+        query = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> PREFIX dbo: <http://dbpedia.org/ontology/> "
+        		 + "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> "
+        		+ "SELECT DISTINCT ?uri ?string WHERE{"
+        		+ "	?uri rdf:type dbo:Country  ."
+        		+ "        ?uri dbo:officialLanguage ?language ."
+        		+ "FILTER(?language > \"1912-04\"^^xsd:gYearMonth)"
+        		+ "	OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') }"
+        		+ "}"
+        		+ "GROUP BY ?uri ?string HAVING (COUNT(?language) > 2)";
         try {
-            SparqlEndpoint ep = new SparqlEndpoint(new URL("http://dbpedia.org/sparql"));
+            SparqlEndpoint ep = SparqlEndpoint.getEndpointDBpedia();
+//            ep = new SparqlEndpoint(new URL("http://linkedbrainz.org/sparql"), "http://musicbrainz.org/20140320");
 //            ep = new SparqlEndpoint(new URL("http://[2001:638:902:2010:0:168:35:138]/sparql"));
             SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(ep);
+            query = Joiner.on("\n").join(Files.readLines(new File("src/main/resources/sparql_query.txt"), Charsets.UTF_8));
             Query sparqlQuery = QueryFactory.create(query, Syntax.syntaxARQ);
             System.out.println(sparqlQuery);
 //            Query sparqlQuery = QueryFactory.create(argentina1, Syntax.syntaxARQ);

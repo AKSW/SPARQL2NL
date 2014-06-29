@@ -10,7 +10,7 @@ import org.dllearner.core.owl.Property;
 
 /**
  * This class basically represents a summarization of a class by containing a set of properties which
- * are most frequently used in specific a knowledge base.
+ * are most frequently used in a specific knowledge base.
  * @author Lorenz Buehmann
  *
  */

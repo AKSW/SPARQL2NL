@@ -1,5 +1,6 @@
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
+import java.util.Set;
 import java.util.Stack;
 
 import simplenlg.features.Feature;
@@ -11,6 +12,8 @@ import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
+import com.google.common.collect.Sets;
+import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.impl.LiteralLabel;
 import com.hp.hpl.jena.sparql.expr.E_Bound;
@@ -59,6 +62,17 @@ public class FilterExpressionConverter implements ExprVisitor{
 	private boolean simplifyLanguageFilterConstructs = true;
 	private boolean inRegex = false;
 	
+	private final String dateOnText = "be on";
+	private final String dateAfterText = "be after";
+	private final String dateAfterOrOnText = "be after or on";
+	private final String dateBeforeText = "be before";
+	private final String dateBeforeOrOnText = "be before or on";
+	private final String periodOnText = "be in";
+	private final String periodAfterText = "be after";
+	private final String periodAfterOrOnText = "be after or in";
+	private final String periodBeforeText = "be before";
+	private final String periodBeforeOrOnText = "be before or in";
+	
 	public FilterExpressionConverter(URIConverter uriConverter, LiteralConverter literalConverter) {
 		this.uriConverter = uriConverter;
 		this.literalConverter = literalConverter;
@@ -66,6 +80,10 @@ public class FilterExpressionConverter implements ExprVisitor{
 		Lexicon lexicon = Lexicon.getDefaultLexicon();
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
+	}
+	
+	public FilterExpressionConverter(URIConverter uriConverter) {
+		this(uriConverter, new LiteralConverter(uriConverter));
 	}
 	
 	public NLGElement convert(Expr expr){
@@ -164,44 +182,34 @@ public class FilterExpressionConverter implements ExprVisitor{
             String verb = null;
             boolean plural = false;
             if (func instanceof E_GreaterThan) {
-                if (inverted) {
-                    verb = "be less than";
-                } else {
-                	verb = "be greater than";
-                	if(right.isConstant()){
-//                		System.out.println(right.getConstant().getNode());
-//                		System.out.println(right.getConstant().getNode().getLiteralDatatype());
-                		if(right.getConstant().getNode().getLiteralDatatype().getURI().equals(XSDDatatype.XSDdate.getURI())){
-                			verb = "be later than";
-                		}
-                	}
-                }
+                verb = convertLessOrGreater(right, inverted);
             } else if (func instanceof E_GreaterThanOrEqual) {
-                if (inverted) {
-                    verb = "be less than or equal to";
-                } else {
-                    verb = "be greater than or equal to";
-                }
+            	verb = convertLessOrGreaterEquals(right, inverted);
             } else if (func instanceof E_LessThan) {
-                if (inverted) {
-                    verb = "be greater than";
-                } else {
-                    verb = "be less than";
-                }
+            	verb = convertLessOrGreater(right, !inverted);
             } else if (func instanceof E_LessThanOrEqual) {
-                if (inverted) {
-                    verb = "be greater than or equal to";
-                } else {
-                    verb = "be less than or equal to";
-                }
+            	verb = convertLessOrGreaterEquals(right, !inverted);
             } else if(func instanceof E_Equals){
             	if(left instanceof E_Lang && simplifyLanguageFilterConstructs){
             		rightElement = nlgFactory.createNounPhrase(getLanguageForAbbreviation(realiser.realise(rightElement).getRealisation()));
                         verb = "be in";
                         plural = true;
             	} else {
-                        if (realiser.realise(rightElement).toString().startsWith("?")) verb = "be the same as";
-                        else verb = "be equal to";
+                        if (realiser.realise(rightElement).toString().startsWith("?")){
+                        	verb = "be the same as";
+                        }
+                        else {
+                        	verb = "be equal to";
+                        	if(right.isConstant()){
+                        		if(isDateLiteral(right.getConstant().getNode().getLiteral())){
+                        			if(isDatePeriodLiteral(right.getConstant().getNode().getLiteralDatatype())){
+                        				verb = periodOnText;
+                        			} else {
+                        				verb = dateOnText;
+                        			}
+                        		}
+                        	}
+                        }
             	}
             } else if (func instanceof E_NotEquals) {
             	if(left instanceof E_Lang && simplifyLanguageFilterConstructs){
@@ -223,6 +231,54 @@ public class FilterExpressionConverter implements ExprVisitor{
         }
         
        
+	}
+	
+	private String convertLessOrGreater(Expr right, boolean less){
+		String verb;
+		if (less) {
+            verb = "be less than";
+            if(right.isConstant()){
+        		if(isDateLiteral(right.getConstant().getNode().getLiteral())){
+        			verb = dateBeforeText;
+        		}
+        	}
+        } else {
+        	verb = "be greater than";
+        	if(right.isConstant()){
+        		if(isDateLiteral(right.getConstant().getNode().getLiteral())){
+        			verb = dateAfterText;
+        		}
+        	}
+        }
+		return verb;
+	}
+	
+	private String convertLessOrGreaterEquals(Expr right, boolean less){
+		String verb;
+		if (less) {
+            verb = "be less than or equal to";
+            if(right.isConstant()){
+        		if(isDateLiteral(right.getConstant().getNode().getLiteral())){
+        			if(isDatePeriodLiteral(right.getConstant().getNode().getLiteralDatatype())){
+        				verb = periodBeforeOrOnText;
+        			} else {
+        				verb = dateBeforeOrOnText;
+        			}
+        		}
+        	}
+        } else {
+            verb = "be greater than or equal to";
+            if(right.isConstant()){
+        		if(isDateLiteral(right.getConstant().getNode().getLiteral())){
+        			if(isDatePeriodLiteral(right.getConstant().getNode().getLiteralDatatype())){
+        				verb = periodAfterOrOnText;
+        			} else {
+        				verb = dateAfterOrOnText;
+        			}
+        		}
+        	}
+        }
+		return verb;
 	}
 
 	@Override
@@ -326,6 +382,34 @@ public class FilterExpressionConverter implements ExprVisitor{
 	public void finishVisit() {
 		// TODO Auto-generated method stub
 		
+	}
+	
+	private boolean isDateLiteral(LiteralLabel literal){
+		RDFDatatype datatype = literal.getDatatype();
+		Set<RDFDatatype> dateDatatypes = Sets.newHashSet();
+		dateDatatypes.addAll(Sets.newHashSet(
+				XSDDatatype.XSDdate, 
+				XSDDatatype.XSDdateTime, 
+				XSDDatatype.XSDgYear, 
+				XSDDatatype.XSDgYearMonth,
+				XSDDatatype.XSDgMonth,
+				XSDDatatype.XSDgMonthDay));
+		if(datatype != null){
+			return dateDatatypes.contains(datatype);
+		}
+		return false;
+	}
+	
+	private boolean isDatePeriodLiteral(RDFDatatype datatype){
+		Set<RDFDatatype> periodDatatypes = Sets.newHashSet();
+		periodDatatypes.addAll(Sets.newHashSet(
+				XSDDatatype.XSDgYear, 
+				XSDDatatype.XSDgYearMonth,
+				XSDDatatype.XSDgMonth));
+		if(datatype != null){
+			return periodDatatypes.contains(datatype);
+		}
+		return false;
 	}
 	
 	private String getLanguageForAbbreviation(String abbreviation){

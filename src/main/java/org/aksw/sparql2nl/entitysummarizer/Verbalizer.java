@@ -30,8 +30,8 @@ import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory
 import org.aksw.sparql2nl.entitysummarizer.dataset.CachedDatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator.Cooccurrence;
+import org.aksw.sparql2nl.entitysummarizer.gender.Gender;
 import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector;
-import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector.Gender;
 import org.aksw.sparql2nl.entitysummarizer.gender.LexiconBasedGenderDetector;
 import org.aksw.sparql2nl.entitysummarizer.gender.TypeAwareGenderDetector;
 import org.aksw.sparql2nl.entitysummarizer.rules.DateLiteralFilter;
@@ -158,7 +158,7 @@ public class Verbalizer {
     }
     
     /**
-     * @param personTypes the personTypes to set
+     * @param blacklist a blacklist of properties that are omitted when building the summary
      */
     public void setPropertiesBlacklist(Set<String> blacklist) {
         graphGenerator.setPropertiesBlacklist(blacklist);
@@ -183,10 +183,12 @@ public class Verbalizer {
     }
 
     /**
-     * Gets all triples for resource r and property p
+     * Gets all triples for resource r and property p.
+     * If outgoing is true it returns all triples with <r,p,o>, else <s,p,r>
      *
-     * @param r
-     * @param p
+     * @param r the resource 
+     * @param p the property 
+     * @param outgoing whether to get outgoing or ingoing triples
      * @return A set of triples
      */
     public Set<Triple> getTriples(Resource r, Property p, boolean outgoing) {
@@ -310,7 +312,7 @@ public class Verbalizer {
 
     private Set<Triple> getSubsetToShow(Set<Triple> triples) {
         Set<Triple> triplesToShow = new HashSet<>(maxShownValuesPerProperty);
-        for (Triple triple : orderByObjectPopularity(triples)) {
+        for (Triple triple : sortByObjectPopularity(triples)) {
             if (triplesToShow.size() < maxShownValuesPerProperty) {
                 triplesToShow.add(triple);
             }
@@ -319,7 +321,12 @@ public class Verbalizer {
         return triplesToShow;
     }
 
-    private List<Triple> orderByObjectPopularity(Set<Triple> triples) {
+    /**
+     * Sorts the given triples by the popularity of the triple objects.
+     * @param triples the triples
+     * @return a list of sorted triples
+     */
+    private List<Triple> sortByObjectPopularity(Set<Triple> triples) {
         List<Triple> orderedTriples = new ArrayList<>();
 
         //if one of the objects is a literal we do not sort 
@@ -349,12 +356,22 @@ public class Verbalizer {
         return orderedTriples;
     }
 
+    /**
+     * Returns the triples of the summary for the given resource.
+     * @param resource the resource of the summary
+     * @return a set of triples
+     */
     public Collection<Triple> getSummaryTriples(Resource resource) {
         return resource2Triples.get(resource);
     }
 
+    /**
+     * Returns the triples of the summary for the given individual.
+     * @param individual the individual of the summary
+     * @return a set of triples
+     */
     public Collection<Triple> getSummaryTriples(Individual individual) {
-        return resource2Triples.get(ResourceFactory.createResource(individual.getName()));
+        return getSummaryTriples(ResourceFactory.createResource(individual.getName()));
     }
 
     /**
@@ -506,15 +523,25 @@ public class Verbalizer {
         return entity2Summaries;
     }
 
-    public List<NPPhraseSpec> generateSubjects(Resource resource, NamedClass nc, Gender g) {
+    /**
+     * Returns a list of synonymous expressions as subject for the given resource.
+     * @param resource the resource
+     * @param resourceType the type of the resource
+     * @param resourceGender the gender of the resource
+     * @return list of synonymous expressions
+     */
+    public List<NPPhraseSpec> generateSubjects(Resource resource, NamedClass resourceType, Gender resourceGender) {
         List<NPPhraseSpec> result = new ArrayList<NPPhraseSpec>();
+        //the textual representation of the resource itself
         result.add(nlg.getNPPhrase(resource.getURI(), false, false));
-        NPPhraseSpec np = nlg.getNPPhrase(nc.getName(), false);
+        //the class, e.g. 'this book'
+        NPPhraseSpec np = nlg.getNPPhrase(resourceType.getName(), false);
         np.addPreModifier("This");
         result.add(np);
-        if (g.equals(Gender.MALE)) {
+        //the pronoun depending on the gender of the resource
+        if (resourceGender.equals(Gender.MALE)) {
             result.add(nlg.nlgFactory.createNounPhrase("he"));
-        } else if (g.equals(Gender.FEMALE)) {
+        } else if (resourceGender.equals(Gender.FEMALE)) {
             result.add(nlg.nlgFactory.createNounPhrase("she"));
         } else {
             result.add(nlg.nlgFactory.createNounPhrase("it"));
@@ -522,9 +549,17 @@ public class Verbalizer {
         return result;
     }
     
-    public GenderDetector.Gender getGender(Resource resource){
+    /**
+     * Returns the gender of the given resource.
+     * @param resource
+     * @return the gender
+     */
+    public Gender getGender(Resource resource){
+    	//get a textual representation of the resource
     	String label = realiser.realiseSentence(nlg.getNPPhrase(resource.getURI(), false, false));
+    	//we take the first token because we assume this is the first name
         String firstToken = label.split(" ")[0];
+        //lookup the gender
         Gender g = gender.getGender(resource.getURI(), firstToken);
         return g;
     }

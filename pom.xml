@@ -7,6 +7,63 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>SPARQL2NL</name>
 	<description>SPARQL query to natural language converter</description>
+	
+	<developers>
+		<developer>
+			<name>Lorenz Bühmann</name>
+			<email>buehmann@informatik.uni-leipzig.de</email>
+			<url>http://aksw.org/LorenzBuehmann</url>
+			<roles>
+				<role>architect</role>
+       			<role>lead developer</role>
+			</roles>
+			<organizationUrl>http://aksw.org</organizationUrl>
+		</developer>
+		<developer>
+			<name>Axel-C. Ngonga Ngomo</name>
+			<email>ngonga@informatik.uni-leipzig.de</email>
+			<url>http://aksw.org/AxelNgonga</url>
+			<roles>
+				<role>architect</role>
+       			<role>lead developer</role>
+			</roles>
+			<organizationUrl>http://aksw.org</organizationUrl>
+		</developer>
+		<developer>
+			<name>Christina Unger</name>
+			<email>cunger@cit-ec.uni-bielefeld.de</email>
+			<url>https://www.cit-ec.de/users/cunger</url>
+			<roles>
+				<role>architect</role>
+       			<role>lead developer</role>
+			</roles>
+			<organizationUrl>https://www.cit-ec.de</organizationUrl>
+		</developer>
+		<developer>
+			<name>Jens Lehmann</name>
+			<email>lehmann@informatik.uni-leipzig.de</email>
+			<url>http://aksw.org/JensLehmann</url>
+			<roles>
+				<role>architect</role>
+       			<role>developer</role>
+			</roles>
+			<organizationUrl>http://aksw.org</organizationUrl>
+		</developer>
+	</developers>
+
+	<organization>
+		<name>Agile Knowledge Engineering and Semantic Web</name>
+		<url>http://aksw.org</url>
+	</organization>
+	
+	<licenses>
+	<license>
+		<name>Apache License, Version 2.0</name>
+		<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		<distribution>repo</distribution>
+		<comments>A business-friendly OSS license</comments>
+	</license>
+</licenses>
 
 	<properties>
 		<compiler.version>1.7</compiler.version>
@@ -50,21 +107,11 @@
 			<version>1.0.3</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.lucene</groupId>
-			<artifactId>lucene-core</artifactId>
-			<version>3.6.2</version>
-		</dependency>
-
-		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>4.11</version>
 		</dependency>
-		<dependency>
-			<groupId>uk.ac.shef.wit</groupId>
-			<artifactId>simmetrics</artifactId>
-			<version>1.6.2</version>
-		</dependency>
+		
 		<dependency>
 			<groupId>org.dllearner</groupId>
 			<artifactId>components-ext</artifactId>
@@ -104,7 +151,7 @@
 		<dependency>
 			<groupId>simplenlg</groupId>
 			<artifactId>simplenlg</artifactId>
-			<version>4.3</version>
+			<version>4.4.3</version>
 			<type>jar</type>
 			<scope>compile</scope>
 		</dependency>
@@ -116,7 +163,7 @@
 		<dependency>
 			<groupId>org.apache.jena</groupId>
 			<artifactId>jena-arq</artifactId>
-			<version>2.10.0</version>
+			<version>2.11.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.solr</groupId>
@@ -124,10 +171,10 @@
 			<version>3.5.0</version>
 		</dependency>
 		<dependency>
-			<groupId>jgrapht</groupId>
-			<artifactId>jgrapht</artifactId>
-			<version>0.8.3</version>
-		</dependency>
+      <groupId>org.jgrapht</groupId>
+      <artifactId>jgrapht-core</artifactId>
+      <version>0.9.0</version>
+    </dependency>
 		<dependency>
 			<groupId>jaws</groupId>
 			<artifactId>core</artifactId>
@@ -163,17 +210,17 @@
 					<groupId>com.hp.hpl.jena</groupId>
 					<artifactId>jena</artifactId>
 				</exclusion>
-				<exclusion>
+<!-- 				<exclusion>
 					<artifactId>stanford-corenlp</artifactId>
 					<groupId>edu.stanford.nlp</groupId>
 				</exclusion>
-			</exclusions>
+ -->			</exclusions>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.opennlp</groupId>
 			<artifactId>opennlp-tools</artifactId>
-			<version>1.5.1-incubating</version>
+			<version>1.5.3</version>
 		</dependency>
 		<dependency>
 			<groupId>net.sourceforge.owlapi</groupId>
@@ -183,7 +230,7 @@
 		<dependency>
 			<groupId>com.aliasi</groupId>
 			<artifactId>lingpipe</artifactId>
-			<version>3.8.2</version>
+			<version>4.1.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -243,6 +290,11 @@
 	<artifactId>sparqltools</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 </dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>log4j-over-slf4j</artifactId>
+			<version>1.7.2</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
@@ -257,6 +309,11 @@
 					<encoding>${project.build.sourceEncoding}</encoding>
 				</configuration>
 			</plugin>
+			<plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-jar-plugin</artifactId>
+	<version>2.4</version>
+</plugin>
 			<plugin>
 				<groupId>org.mortbay.jetty</groupId>
 				<artifactId>jetty-maven-plugin</artifactId>

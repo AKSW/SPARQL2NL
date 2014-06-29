@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector.Gender;
+import org.aksw.sparql2nl.entitysummarizer.gender.Gender;
 
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;

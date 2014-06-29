@@ -2,35 +2,35 @@ package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.text.DateFormat;
 import java.text.DateFormatSymbols;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.Calendar;
 import java.util.Locale;
 
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
-import org.joda.time.DateTime;
 
+import com.hp.hpl.jena.datatypes.DatatypeFormatException;
 import com.hp.hpl.jena.datatypes.RDFDatatype;
+import com.hp.hpl.jena.datatypes.xsd.IllegalDateTimeFieldException;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
+import com.hp.hpl.jena.datatypes.xsd.XSDDateTime;
+import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.graph.impl.LiteralLabel;
 import com.hp.hpl.jena.rdf.model.Literal;
-import com.hp.hpl.jena.sparql.util.NodeFactory;
-import com.hp.hpl.jena.vocabulary.XSD;
 
 public class LiteralConverter {
 
     private static final Logger logger = Logger.getLogger(LiteralConverter.class);
     private URIConverter uriConverter;
     private DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.LONG);
+    private boolean encapsulateStringLiterals = true;
 
     public LiteralConverter(URIConverter uriConverter) {
         this.uriConverter = uriConverter;
     }
 
     public String convert(Literal lit) {
-        return convert(NodeFactory.createLiteralNode(lit.getLexicalForm(), lit.getLanguage(),
-                lit.getDatatypeURI()).getLiteral());
+        return convert(NodeFactory.createLiteral(lit.getLexicalForm(), lit.getLanguage(),
+                lit.getDatatype()).getLiteral());
     }
 
     public String convert(LiteralLabel lit) {
@@ -42,24 +42,23 @@ public class LiteralConverter {
             s = s.replaceAll("_", " ");
         } else {// typed literal
             if (dt instanceof XSDDatatype) {// built-in XSD datatype
-                if (dt.equals(XSDDatatype.XSDdate) || dt.equals(XSDDatatype.XSDdateTime)) {
-                    try {
-                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.UK);
-                        Date date = simpleDateFormat.parse(s);
-                        String newDate = dateFormat.format(date);
-                        s = newDate;
-                    } catch (ParseException e) {
-                        logger.error("Could not parse literal with date datatype: " + lit, e);
-                    }
-                } else if (dt.equals(XSDDatatype.XSDgYear)) {
-                	s = dateFormat.format(new DateTime(lit.getLexicalForm()).toDate());
-                } else if(dt.equals(XSDDatatype.XSDgMonthDay)){
-                	String month = lit.getLexicalForm().replace("--", "");
-                	int day = Integer.parseInt(month.substring(3));
-                	month = month.substring(0, 2);
-                	month = getMonthName(Integer.parseInt(month));
-                	s = month + " " + day;
-                }
+            	try {
+					Object value = lit.getValue();
+					if (value instanceof XSDDateTime) {
+						Calendar calendar = ((XSDDateTime) value).asCalendar();
+						if(dt.equals(XSDDatatype.XSDgMonth)){
+							s = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.UK);
+						} else if(dt.equals(XSDDatatype.XSDgMonthDay)){
+							s = calendar.get(Calendar.DAY_OF_MONTH) + calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.UK);
+						} else if(dt.equals(XSDDatatype.XSDgYearMonth)){
+							s = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.UK) + " " + calendar.get(Calendar.YEAR);
+						} else {
+							s = dateFormat.format(calendar.getTime());
+						}
+					}
+				} catch (DatatypeFormatException | IllegalDateTimeFieldException e) {
+					logger.error("Conversion of date literal " + lit + " failed. Reason: " + e.getMessage());
+				}
             } else {// user-defined datatype
                 s = lit.getLexicalForm() + " " + splitAtCamelCase(uriConverter.convert(dt.getURI(), false));
             }
@@ -83,6 +82,14 @@ public class LiteralConverter {
         boolean isPlural = (lit.getDatatypeURI() != null) && !(lit.getDatatype() instanceof XSDDatatype) && !singular;
         return isPlural;
     }
+    
+    /**
+     * Whether to encapsulate the value of string literals in ""
+	 * @param encapsulateStringLiterals the encapsulateStringLiterals to set
+	 */
+	public void setEncapsulateStringLiterals(boolean encapsulateStringLiterals) {
+		this.encapsulateStringLiterals = encapsulateStringLiterals;
+	}
 
     private String splitAtCamelCase(String s) {
         String regex = "([a-z])([A-Z])";
@@ -101,14 +108,14 @@ public class LiteralConverter {
 //        System.out.println(lit);
 //        System.out.println(conv.convert(lit));
 
-        lit = NodeFactory.createLiteralNode("1869-06-27", null,
-                XSD.date.getURI()).getLiteral();
-        System.out.println(lit);
-        System.out.println(conv.convert(lit));
+        lit = NodeFactory.createLiteral("1869-06-27", null, XSDDatatype.XSDdate).getLiteral();
+        System.out.println(lit + " --> " + conv.convert(lit));
         
-        lit = NodeFactory.createLiteralNode("1914-01-01T00:00:00+02:00", null, "http://www.w3.org/2001/XMLSchema#gYear").getLiteral();
-        System.out.println(lit);
-        System.out.println(conv.convert(lit));
+        lit = NodeFactory.createLiteral("1914-01-01T00:00:00+02:00", null, XSDDatatype.XSDgYear).getLiteral();
+        System.out.println(lit + " --> " + conv.convert(lit));
+        
+        lit = NodeFactory.createLiteral("--04", null, XSDDatatype.XSDgMonth).getLiteral();
+        System.out.println(lit + " --> " + conv.convert(lit));
 
     }
 }

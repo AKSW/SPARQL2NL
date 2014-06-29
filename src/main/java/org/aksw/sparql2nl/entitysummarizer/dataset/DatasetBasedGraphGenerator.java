@@ -3,6 +3,7 @@
  */
 package org.aksw.sparql2nl.entitysummarizer.dataset;
 
+import java.io.File;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -110,11 +111,15 @@ public class DatasetBasedGraphGenerator {
     }
     
     public DatasetBasedGraphGenerator(SparqlEndpoint endpoint, String cacheDirectory ) {
+       this(endpoint, new File(cacheDirectory));
+    }
+    
+    public DatasetBasedGraphGenerator(SparqlEndpoint endpoint, File cacheDirectory ) {
         qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
         if(cacheDirectory != null){
         	try {
 				long timeToLive = TimeUnit.DAYS.toMillis(30);
-				CacheCoreEx cacheBackend = CacheCoreH2.create(true, cacheDirectory, "sparql", timeToLive, true);
+				CacheCoreEx cacheBackend = CacheCoreH2.create(true, cacheDirectory.getName(), "sparql", timeToLive, true);
 				CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
 				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
 			} catch (ClassNotFoundException e) {
@@ -127,7 +132,7 @@ public class DatasetBasedGraphGenerator {
 //		qef = new QueryExecutionFactoryPaginated(qef, 10000);
 //		qef = new QueryExecutionFactoryDelay(qef, 500);
 
-        reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint), cacheDirectory);
+        reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint), cacheDirectory.getName());
         
         class2OutgoingProperties = new HashMap<NamedClass, Set<ObjectProperty>>();
     }

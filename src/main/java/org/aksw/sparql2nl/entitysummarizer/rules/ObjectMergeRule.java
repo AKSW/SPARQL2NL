@@ -20,13 +20,11 @@ import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
-import simplenlg.phrasespec.VPPhraseSpec;
 import simplenlg.realiser.english.Realiser;
-import simplenlg.test.syntax.VerbPhraseTest;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
-import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.graph.Triple;
 
 /**
@@ -212,17 +210,17 @@ public class ObjectMergeRule implements Rule {
         
         SimpleNLGwithPostprocessing nlg = new SimpleNLGwithPostprocessing(SparqlEndpoint.getEndpointDBpedia());
         SPhraseSpec s4 = nlg.getNLForTriple(Triple.create(
-        		Node.createURI("http://dbpedia.org/resource/Aero_Lloyd"), 
-        		Node.createURI("http://dbpedia.org/ontology/headquarter"), 
-        		Node.createURI("http://dbpedia.org/resource/Dublin")));
+        		NodeFactory.createURI("http://dbpedia.org/resource/Aero_Lloyd"), 
+        		NodeFactory.createURI("http://dbpedia.org/ontology/headquarter"), 
+        		NodeFactory.createURI("http://dbpedia.org/resource/Dublin")));
         System.out.println(realiser.realiseSentence(s4));
         s4.getSubject().setPlural(true);
         System.out.println(realiser.realiseSentence(s4));
         
         SPhraseSpec s5 = nlg.getNLForTriple(Triple.create(
-        		Node.createURI("http://dbpedia.org/resource/Aero_Lloyd"), 
-        		Node.createURI("http://dbpedia.org/ontology/weight"), 
-        		Node.createURI("http://dbpedia.org/resource/Leipzig")));
+        		NodeFactory.createURI("http://dbpedia.org/resource/Aero_Lloyd"), 
+        		NodeFactory.createURI("http://dbpedia.org/ontology/weight"), 
+        		NodeFactory.createURI("http://dbpedia.org/resource/Leipzig")));
         System.out.println(realiser.realiseSentence(s5));
 //        s5.getSubject().setPlural(true);
         for (NLGElement child : s5.getSubject().getChildren()) {
