@@ -83,11 +83,8 @@
 			<name>University Leipzig, AKSW Maven2 Repository</name>
 			<url>http://maven.aksw.org/archiva/repository/snapshots</url>
 		</repository>
-		<!-- <repository>
-			<id>amplafi</id>
-			<name>Not sure</name>
-			<url>http://maven.amplafi.com/</url>
-		</repository> -->
+		<!-- <repository> <id>amplafi</id> <name>Not sure</name> <url>http://maven.amplafi.com/</url> 
+			</repository> -->
 		<repository>
 			<id>apache-repo-snapshots</id>
 			<url>https://repository.apache.org/content/repositories/snapshots/</url>
@@ -292,6 +289,11 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>log4j-over-slf4j</artifactId>
 			<version>1.7.2</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>17.0</version>
 		</dependency>
 	</dependencies>
 	<build>
