@@ -85,16 +85,6 @@
 		</repository>
 		<!-- <repository> <id>amplafi</id> <name>Not sure</name> <url>http://maven.amplafi.com/</url> 
 			</repository> -->
-		<repository>
-			<id>apache-repo-snapshots</id>
-			<url>https://repository.apache.org/content/repositories/snapshots/</url>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
 	</repositories>
 
 	<dependencies>
