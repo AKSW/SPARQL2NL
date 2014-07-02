@@ -5,7 +5,7 @@
 	id="WebApp_ID" version="2.5">
 	<display-name>de.vogella.jersey.jaxb</display-name>
 	<servlet>
-		<servlet-name>Jersey REST Service</servlet-name>
+		<servlet-name>ASSESS REST Service</servlet-name>
 		<servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
 		<init-param>
 			<param-name>com.sun.jersey.config.property.packages</param-name>
@@ -17,11 +17,11 @@
 		</init-param>
 		<load-on-startup>1</load-on-startup>
 	</servlet>
-	<listener>
+	<!-- <listener>
         <listener-class>org.aksw.assessment.question.rest.AssessServletContextListener</listener-class>
-    </listener>
+    </listener> -->
 	<servlet-mapping>
-		<servlet-name>Jersey REST Service</servlet-name>
+		<servlet-name>ASSESS REST Service</servlet-name>
 		<url-pattern>/rest/*</url-pattern>
 	</servlet-mapping>
 	<filter>
@@ -52,4 +52,21 @@
 		<filter-name>cross-origin</filter-name>
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
+	<servlet>
+		<servlet-name>SPARQL2NL REST Service</servlet-name>
+		<servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
+		<init-param>
+			<param-name>com.sun.jersey.config.property.packages</param-name>
+			<param-value>org.aksw.sparql2nl.rest</param-value>
+		</init-param>
+		<init-param>
+			<param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
+			<param-value>true</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>SPARQL2NL REST Service</servlet-name>
+		<url-pattern>/sparql2nl-rest/*</url-pattern>
+	</servlet-mapping>
 </web-app> 

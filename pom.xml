@@ -7,7 +7,7 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>SPARQL2NL</name>
 	<description>SPARQL query to natural language converter</description>
-	
+
 	<developers>
 		<developer>
 			<name>Lorenz Bühmann</name>
@@ -15,7 +15,7 @@
 			<url>http://aksw.org/LorenzBuehmann</url>
 			<roles>
 				<role>architect</role>
-       			<role>lead developer</role>
+				<role>lead developer</role>
 			</roles>
 			<organizationUrl>http://aksw.org</organizationUrl>
 		</developer>
@@ -25,7 +25,7 @@
 			<url>http://aksw.org/AxelNgonga</url>
 			<roles>
 				<role>architect</role>
-       			<role>lead developer</role>
+				<role>lead developer</role>
 			</roles>
 			<organizationUrl>http://aksw.org</organizationUrl>
 		</developer>
@@ -35,7 +35,7 @@
 			<url>https://www.cit-ec.de/users/cunger</url>
 			<roles>
 				<role>architect</role>
-       			<role>lead developer</role>
+				<role>lead developer</role>
 			</roles>
 			<organizationUrl>https://www.cit-ec.de</organizationUrl>
 		</developer>
@@ -45,7 +45,7 @@
 			<url>http://aksw.org/JensLehmann</url>
 			<roles>
 				<role>architect</role>
-       			<role>developer</role>
+				<role>developer</role>
 			</roles>
 			<organizationUrl>http://aksw.org</organizationUrl>
 		</developer>
@@ -55,15 +55,15 @@
 		<name>Agile Knowledge Engineering and Semantic Web</name>
 		<url>http://aksw.org</url>
 	</organization>
-	
+
 	<licenses>
-	<license>
-		<name>Apache License, Version 2.0</name>
-		<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-		<distribution>repo</distribution>
-		<comments>A business-friendly OSS license</comments>
-	</license>
-</licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+			<comments>A business-friendly OSS license</comments>
+		</license>
+	</licenses>
 
 	<properties>
 		<compiler.version>1.7</compiler.version>
@@ -111,7 +111,7 @@
 			<artifactId>junit</artifactId>
 			<version>4.11</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.dllearner</groupId>
 			<artifactId>components-ext</artifactId>
@@ -171,10 +171,10 @@
 			<version>3.5.0</version>
 		</dependency>
 		<dependency>
-      <groupId>org.jgrapht</groupId>
-      <artifactId>jgrapht-core</artifactId>
-      <version>0.9.0</version>
-    </dependency>
+			<groupId>org.jgrapht</groupId>
+			<artifactId>jgrapht-core</artifactId>
+			<version>0.9.0</version>
+		</dependency>
 		<dependency>
 			<groupId>jaws</groupId>
 			<artifactId>core</artifactId>
@@ -210,11 +210,9 @@
 					<groupId>com.hp.hpl.jena</groupId>
 					<artifactId>jena</artifactId>
 				</exclusion>
-<!-- 				<exclusion>
-					<artifactId>stanford-corenlp</artifactId>
-					<groupId>edu.stanford.nlp</groupId>
-				</exclusion>
- -->			</exclusions>
+				<!-- <exclusion> <artifactId>stanford-corenlp</artifactId> <groupId>edu.stanford.nlp</groupId> 
+					</exclusion> -->
+			</exclusions>
 		</dependency>
 
 		<dependency>
@@ -243,12 +241,12 @@
 			<version>2.2</version>
 		</dependency>
 		<dependency>
-	<groupId>org.apache.commons</groupId>
-	<artifactId>commons-collections4</artifactId>
-	<version>4.0</version>
-</dependency>
-            
-		
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-collections4</artifactId>
+			<version>4.0</version>
+		</dependency>
+
+
 		<dependency>
 			<groupId>com.sun.jersey</groupId>
 			<artifactId>jersey-server</artifactId>
@@ -280,16 +278,16 @@
 			<artifactId>servlet-api</artifactId>
 			<version>2.5</version>
 		</dependency>
-<!-- 		<dependency> -->
-<!-- 	<groupId>org.apache.tomcat</groupId> -->
-<!-- 	<artifactId>tomcat-catalina</artifactId> -->
-<!-- 	<version>7.0.50</version> -->
-<!-- </dependency> -->
-<dependency>
-<groupId>org.aksw</groupId>
-	<artifactId>sparqltools</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-</dependency>
+		<!-- <dependency> -->
+		<!-- <groupId>org.apache.tomcat</groupId> -->
+		<!-- <artifactId>tomcat-catalina</artifactId> -->
+		<!-- <version>7.0.50</version> -->
+		<!-- </dependency> -->
+		<dependency>
+			<groupId>org.aksw</groupId>
+			<artifactId>sparqltools</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>log4j-over-slf4j</artifactId>
@@ -310,10 +308,10 @@
 				</configuration>
 			</plugin>
 			<plugin>
-	<groupId>org.apache.maven.plugins</groupId>
-	<artifactId>maven-jar-plugin</artifactId>
-	<version>2.4</version>
-</plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.4</version>
+			</plugin>
 			<plugin>
 				<groupId>org.mortbay.jetty</groupId>
 				<artifactId>jetty-maven-plugin</artifactId>
@@ -345,25 +343,28 @@
 					<ignorePackaging>true</ignorePackaging>
 					<server>local</server>
 					<url>http://localhost:8080/manager/text</url>
+					<path>/${assess.warFile.name}</path>
+					<update>true</update>
 					<warFile>${project.build.directory}/${assess.warFile.name}.war</warFile>
 				</configuration>
 			</plugin>
 			<plugin>
-	<groupId>org.apache.maven.plugins</groupId>
-	<artifactId>maven-war-plugin</artifactId>
-	<version>2.4</version>
-	<configuration>
-		<warName>${assess.warFile.name}</warName>
-	</configuration>
-	<executions>
-	<execution>
-	<phase>package</phase>
-	<goals>
-	<goal>war</goal>
-	</goals>
-	</execution>
-	</executions>
-</plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>2.4</version>
+				<configuration>
+					<warName>${assess.warFile.name}</warName>
+					<useCache>true</useCache>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>war</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 </project>

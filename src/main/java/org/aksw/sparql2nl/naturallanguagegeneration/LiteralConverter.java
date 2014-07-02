@@ -40,6 +40,9 @@ public class LiteralConverter {
         if (dt == null) {// plain literal, i.e. omit language tag if exists
             s = lit.getLexicalForm();
             s = s.replaceAll("_", " ");
+            if(encapsulateStringLiterals){
+            	s = '"' + s + '"';
+            }
         } else {// typed literal
             if (dt instanceof XSDDatatype) {// built-in XSD datatype
             	try {
@@ -54,6 +57,10 @@ public class LiteralConverter {
 							s = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.UK) + " " + calendar.get(Calendar.YEAR);
 						} else {
 							s = dateFormat.format(calendar.getTime());
+						}
+					} else {
+						if(encapsulateStringLiterals && dt.equals(XSDDatatype.XSDstring)){
+							s = '"' + s + '"';
 						}
 					}
 				} catch (DatatypeFormatException | IllegalDateTimeFieldException e) {

@@ -22,6 +22,7 @@ import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
+import org.aksw.sparql2nl.naturallanguagegeneration.URIDereferencer.DereferencingFailedException;
 import org.apache.commons.collections4.map.LRUMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -58,10 +59,7 @@ public class URIConverter {
 	private LRUMap<String, String> uri2LabelCache = new LRUMap<String, String>(200);
 	
 	private QueryExecutionFactory qef;
-	private String cacheDirectory = "cache/sparql";
-	
-	private File dereferencingCache;
-	final HashFunction hf = Hashing.md5();
+	private String cacheDirectory;// = "cache/sparql";
 	
 	private List<String> labelProperties = Lists.newArrayList(
 			"http://www.w3.org/2000/01/rdf-schema#label",
@@ -73,6 +71,8 @@ public class URIConverter {
 	private boolean splitCamelCase = true;
 	private boolean replaceUnderScores = true;
 	private boolean toLowerCase = false;
+	
+	private URIDereferencer uriDereferencer;
 	
 	public URIConverter(SparqlEndpoint endpoint, String cacheDirectory) {
 		this.cacheDirectory = cacheDirectory;
@@ -90,17 +90,14 @@ public class URIConverter {
 				e.printStackTrace();
 			}
 		}
-		dereferencingCache = new File(cacheDirectory, "dereferenced");
-		dereferencingCache.mkdir();
+		init();
 	}
 	
 	public URIConverter(QueryExecutionFactory qef, String cacheDirectory) {
 		this.qef = qef;
 		this.cacheDirectory = cacheDirectory;
 		
-		
-		dereferencingCache = new File(cacheDirectory, "dereferenced");
-		dereferencingCache.mkdir();
+		init();
 	}
 	
 	public URIConverter(SparqlEndpoint endpoint, CacheCoreEx cacheBackend, String cacheDirectory) {
@@ -111,8 +108,7 @@ public class URIConverter {
 			CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
 			qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
 		}
-		dereferencingCache = new File(cacheDirectory, "dereferenced");
-		dereferencingCache.mkdir();
+		init();
 	}
 	
 	public URIConverter(SparqlEndpoint endpoint) {
@@ -130,8 +126,16 @@ public class URIConverter {
 				e.printStackTrace();
 			}
 		}
-		dereferencingCache = new File("dereferencing-cache");
-		dereferencingCache.mkdir();
+		init();
+	}
+	
+	private void init(){
+		if(cacheDirectory != null){
+			uriDereferencer = new URIDereferencer(new File(cacheDirectory, "dereferenced"));
+		} else {
+			uriDereferencer = new URIDereferencer();
+		}
+		
 	}
 	
 	public URIConverter(Model model) {
@@ -287,39 +291,24 @@ public class URIConverter {
      * @return
      */
     private String getLabelFromLinkedData(String uri){
-    	logger.debug("Dereferencing URI: " + uri);
-    	try {
-    		//1. get triples for the URI by sending a Linked Data request
-    		Model model = ModelFactory.createDefaultModel();
-    		//try to find dereferenced file in cache
-        	String hc = hf.newHasher().putString(uri, Charsets.UTF_8).hash().toString();
-        	File cachedFile = new File(dereferencingCache, hc + ".rdf");
-        	if(cachedFile.exists()){
-        		model.read(new FileInputStream(cachedFile), null, "RDF/XML");
-        	} else {
-        		URLConnection conn = new URL(uri).openConnection();
-    			conn.setRequestProperty("Accept", "application/rdf+xml");
-    			InputStream in = conn.getInputStream();
-    			model.read(in, null);
-    			in.close();
-    			model.write(new FileOutputStream(cachedFile), "RDF/XML");
-        	}
-        	logger.debug("Got " + model.size() + " triples for " + uri);
-        	
-        	//2. check if we find a label in the triples
-        	for (String labelProperty : labelProperties) {
-        		for(Statement st : model.listStatements(model.getResource(uri), model.getProperty(labelProperty), (RDFNode)null).toList()){
-    				Literal literal = st.getObject().asLiteral();
-    				String language = literal.getLanguage();
-    				if(language != null && language.equals(language)){
-    					return literal.getLexicalForm();
-    				}
-    			}
+    	logger.debug("Get label for " + uri + " from Linked Data...");
+    	
+    	//1. get triples for the URI by sending a Linked Data request
+		try {
+			Model model = uriDereferencer.dereference(uri);
+			
+			//2. check if we find a label in the triples
+			for (String labelProperty : labelProperties) {
+				for(Statement st : model.listStatements(model.getResource(uri), model.getProperty(labelProperty), (RDFNode)null).toList()){
+					Literal literal = st.getObject().asLiteral();
+					String language = literal.getLanguage();
+					if(language != null && language.equals(language)){
+						return literal.getLexicalForm();
+					}
+				}
 			}
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (DereferencingFailedException e) {
+			logger.error(e.getMessage(), e);
 		}
     	return null;
     }

@@ -3,20 +3,28 @@
  */
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import org.aksw.sparql2nl.naturallanguagegeneration.PropertyProcessor.Type;
 import org.aksw.sparql2nl.nlp.relation.BoaPatternSelector;
 import org.aksw.sparql2nl.nlp.stemming.PlingStemmer;
 import org.aksw.sparql2nl.queryprocessing.GenericType;
+import org.apache.log4j.Logger;
 import org.dllearner.core.owl.DatatypeProperty;
 import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
 
 import simplenlg.features.Feature;
+import simplenlg.features.InternalFeature;
 import simplenlg.features.Tense;
+import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
@@ -25,6 +33,7 @@ import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
+import com.google.common.collect.Lists;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.NodeFactory;
@@ -35,12 +44,14 @@ import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
 
 /**
+ * Convert triple(s) into natural language.
  * @author Lorenz Buehmann
  * 
  */
 public class TripleConverter {
+	
+	private static final Logger logger = Logger.getLogger(TripleConverter.class.getName());
 
-	private Lexicon lexicon;
 	private NLGFactory nlgFactory;
 	private Realiser realiser;
 
@@ -50,28 +61,164 @@ public class TripleConverter {
 	private SPARQLReasoner reasoner;
 	
 	private boolean determinePluralForm = false;
+	//show language as adjective for literals
 	private boolean considerLiteralLanguage = true;
+	//encapsulate string literals in quotes ""
+	private boolean encapsulateStringLiterals = true;
+	//for multiple types use 'as well as' to coordinate the last type
+	private boolean useAsWellAsCoordination = true;
 
 	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory) {
-		lexicon = Lexicon.getDefaultLexicon();
+		this(endpoint, cacheDirectory, Lexicon.getDefaultLexicon());
+	}
+	
+	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory, Lexicon lexicon) {
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
 
 		uriConverter = new URIConverter(endpoint, cacheDirectory);
 		literalConverter = new LiteralConverter(uriConverter);
+		literalConverter.setEncapsulateStringLiterals(encapsulateStringLiterals);
 		
-		pp = new PropertyProcessor("resources/wordnet/dict");
+		logger.info("WordNet directory: " + this.getClass().getClassLoader().getResource("wordnet/linux/dict").getPath());
+		pp = new PropertyProcessor(this.getClass().getClassLoader().getResource("wordnet/linux/dict").getPath());
 		
 		reasoner = new SPARQLReasoner(endpoint, cacheDirectory);
 	}
 	
+	public List<SPhraseSpec> convertTriples(Collection<Triple> triples) {
+		List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
+		for (Triple triple : triples) {
+			phrases.add(convertTriple(triple));
+		}
+		return phrases;
+	}
+	
+	/**
+	 * Return a textual representation for the given triples.
+	 * Currently we assume that all triples have the same subject!
+	 * @param t the triples to convert
+	 * @return the textual representation
+	 */
+	public String convertTriplesToText(Collection<Triple> triples){
+		//combine with conjunction
+		CoordinatedPhraseElement conjunction = nlgFactory.createCoordinatedPhrase();
+		
+		//get the type triples first 
+		Set<Triple> typeTriples = new HashSet<Triple>();
+		Set<Triple> otherTriples = new HashSet<Triple>();
+		
+		for (Triple triple : triples) {
+			if(triple.predicateMatches(RDF.type.asNode())){
+				typeTriples.add(triple);
+			} else {
+				otherTriples.add(triple);
+			}
+		}
+		
+		//convert the type triples
+		List<SPhraseSpec> typePhrases = convertTriples(typeTriples);
+		
+		//if there are more than one types, we combine them in a single clause
+		if(typePhrases.size() > 1){
+			//combine all objects in a coordinated phrase
+			CoordinatedPhraseElement combinedObject = nlgFactory.createCoordinatedPhrase();
+			
+			//the last 2 phrases are combined via 'as well as'
+			if(useAsWellAsCoordination){
+				SPhraseSpec phrase1 = typePhrases.remove(typePhrases.size() - 1);
+				SPhraseSpec phrase2 = typePhrases.get(typePhrases.size() - 1);
+				//combine all objects in a coordinated phrase
+				CoordinatedPhraseElement combinedLastTwoObjects = nlgFactory.createCoordinatedPhrase(phrase1.getObject(), phrase2.getObject());
+				combinedLastTwoObjects.setConjunction("as well as");
+				combinedLastTwoObjects.setFeature(Feature.RAISE_SPECIFIER, false);
+				combinedLastTwoObjects.setFeature(InternalFeature.SPECIFIER, "a");
+				phrase2.setObject(combinedLastTwoObjects);
+			}
+			
+			Iterator<SPhraseSpec> iterator = typePhrases.iterator();
+			//pick first phrase as representative
+			SPhraseSpec representative = iterator.next();
+			combinedObject.addCoordinate(representative.getObject());
+			
+			while(iterator.hasNext()){
+				SPhraseSpec phrase = iterator.next();
+				NLGElement object = phrase.getObject();
+				combinedObject.addCoordinate(object);
+			}
+			
+			combinedObject.setFeature(Feature.RAISE_SPECIFIER, true);
+			//set the coordinated phrase as the object
+			representative.setObject(combinedObject);
+			//return a single phrase
+			typePhrases = Lists.newArrayList(representative);
+		}
+		for (SPhraseSpec phrase : typePhrases) {
+			conjunction.addCoordinate(phrase);
+		}
+		
+		//convert the other triples, but use place holders for the subject
+		String placeHolderToken = (typeTriples.isEmpty() || otherTriples.size() == 1) ? "it" : "whose";
+		Node placeHolder = NodeFactory.createURI("http://sparql2nl.aksw.org/placeHolder/" + placeHolderToken);
+		Collection<Triple> placeHolderTriples = new ArrayList<Triple>(otherTriples.size());
+		Iterator<Triple> iterator = otherTriples.iterator();
+		//we have to keep one triple with subject if we have no type triples
+		if(typeTriples.isEmpty() && iterator.hasNext()){
+			placeHolderTriples.add(iterator.next());
+		}
+		while (iterator.hasNext()) {
+			Triple triple = iterator.next();
+			Triple newTriple = Triple.create(placeHolder, triple.getPredicate(), triple.getObject());
+			placeHolderTriples.add(newTriple);
+		}
+		
+		Collection<SPhraseSpec> otherPhrases = convertTriples(placeHolderTriples);
+		
+		for (SPhraseSpec phrase : otherPhrases) {
+			conjunction.addCoordinate(phrase);
+		}
+        
+		String sentence = realiser.realiseSentence(conjunction);
+		return sentence;
+	}
+	
+	/**
+	 * Return a textual representation for the given triple.
+	 * @param t the triple to convert
+	 * @return the textual representation
+	 */
 	public String convertTripleToText(Triple t){
-		NLGElement phrase = convertTriple(t);
+		return convertTripleToText(t, false);
+	}
+	
+	/**
+	 * Return a textual representation for the given triple.
+	 * @param t the triple to convert
+	 * @param negated if phrase is negated 
+	 * @return the textual representation
+	 */
+	public String convertTripleToText(Triple t, boolean negated){
+		NLGElement phrase = convertTriple(t, negated);
 		phrase = realiser.realise(phrase);
 		return phrase.getRealisation();
 	}
-
+	
+	/**
+	 * Convert a triple into a phrase object
+	 * @param t the triple
+	 * @return the phrase
+	 */
 	public SPhraseSpec convertTriple(Triple t) {
+		return convertTriple(t, false);
+	}
+
+	/**
+	 * Convert a triple into a phrase object
+	 * @param t the triple
+	 * @param negated if phrase is negated 
+	 * @return the phrase
+	 */
+	public SPhraseSpec convertTriple(Triple t, boolean negated) {
 		SPhraseSpec p = nlgFactory.createClause();
 
 		Node subject = t.getSubject();
@@ -93,7 +240,6 @@ public class TripleConverter {
 			// then process the object
 			NLGElement objectElement = processObject(object, false);
 			p.setObject(objectElement);
-
 		} // more interesting case. Predicate is not a variable
 			// then check for noun and verb. If the predicate is a noun or a
 			// verb, then
@@ -147,7 +293,7 @@ public class TripleConverter {
 					if(considerLiteralLanguage){
 						if(object.isLiteral() && object.getLiteralLanguage() != null){
 							String languageTag = object.getLiteralLanguage();
-							String language = Locale.forLanguageTag(object.getLiteralLanguage()).getDisplayLanguage();
+							String language = Locale.forLanguageTag(languageTag).getDisplayLanguage();
 							predicateNounPhrase.setPreModifier(language);
 						}
 					}
@@ -201,19 +347,48 @@ public class TripleConverter {
 				}
 			}
 		}
-		//check if object is boolean literal
-		if(object.isLiteral() && object.getLiteralDatatype() != null && object.getLiteralDatatype().equals(XSDDatatype.XSDboolean)){
-			//omit the object
-			p.setObject(null);
-			
-			boolean negated = !(boolean) object.getLiteralValue();
-			if(negated){
-				p.setFeature(Feature.NEGATED, negated);
+		//check if the meaning of the triple is it's negation, which holds for boolean properties with FALSE as value
+		if(!negated){
+			//check if object is boolean literal
+			if(object.isLiteral() && object.getLiteralDatatype() != null && object.getLiteralDatatype().equals(XSDDatatype.XSDboolean)){
+				//omit the object
+				p.setObject(null);
+				
+				negated = !(boolean) object.getLiteralValue();
+				
 			}
 		}
+		
+		//set negation
+		if(negated){
+			p.setFeature(Feature.NEGATED, negated);
+		}
+		
+		//set present time as tense
 		p.setFeature(Feature.TENSE, Tense.PRESENT);
 
 		return p;
+	}
+	
+	/**
+	 * @param encapsulateStringLiterals the encapsulateStringLiterals to set
+	 */
+	public void setEncapsulateStringLiterals(boolean encapsulateStringLiterals) {
+		this.literalConverter.setEncapsulateStringLiterals(encapsulateStringLiterals);
+	}
+	
+	/**
+	 * @param determinePluralForm the determinePluralForm to set
+	 */
+	public void setDeterminePluralForm(boolean determinePluralForm) {
+		this.determinePluralForm = determinePluralForm;
+	}
+	
+	/**
+	 * @param considerLiteralLanguage the considerLiteralLanguage to set
+	 */
+	public void setConsiderLiteralLanguage(boolean considerLiteralLanguage) {
+		this.considerLiteralLanguage = considerLiteralLanguage;
 	}
 	
 	private boolean usePluralForm(Triple triple){
@@ -352,6 +527,27 @@ public class TripleConverter {
 		System.out.println(t + " -> " + text);
 		
 		t = Triple.create(
+				NodeFactory.createURI("http://dbpedia.org/resource/Usain_Bolt"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/isGoldMedalWinner"),
+				NodeFactory.createLiteral("false", XSDDatatype.XSDboolean));
+		text = converter.convertTripleToText(t);
+		System.out.println(t + " -> " + text);
+		
+		t = Triple.create(
+					NodeFactory.createURI("http://dbpedia.org/resource/Albert_Einstein"),
+					NodeFactory.createURI("http://dbpedia.org/ontology/birthPlace"),
+					NodeFactory.createURI("http://dbpedia.org/resource/Ulm"));
+		text = converter.convertTripleToText(t, false);
+		System.out.println(t + " -> " + text);
+		
+		t = Triple.create(
+				NodeFactory.createURI("http://dbpedia.org/resource/Mount_Everest"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/isLargerThan"),
+				NodeFactory.createURI("http://dbpedia.org/resource/K2"));
+	text = converter.convertTripleToText(t, false);
+	System.out.println(t + " -> " + text);
+		
+		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Albert_Einstein"),
 				NodeFactory.createURI("http://dbpedia.org/ontology/birthDate"),
 				NodeFactory.createLiteral("1879-03-14", XSDDatatype.XSDdate));
@@ -372,6 +568,11 @@ public class TripleConverter {
 		text = converter.convertTripleToText(t);
 		System.out.println(t + " -> " + text);
 		
+		converter.setDeterminePluralForm(true);
+		text = converter.convertTripleToText(t);
+		converter.setDeterminePluralForm(false);
+		System.out.println(t + " -> " + text);
+		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Living_Bird_III"),
 				NodeFactory.createURI("http://dbpedia.org/ontology/isPeerReviewed"),
@@ -386,6 +587,88 @@ public class TripleConverter {
 		text = converter.convertTripleToText(t);
 		System.out.println(t + " -> " + text);
 		
+		//check conversion of set of triples for the same subject
+		Collection<Triple> triples = new ArrayList<Triple>();
+		Node subject = NodeFactory.createURI("http://dbpedia.org/resource/Albert_Einstein");
+		triples.add(Triple.create(
+				subject,
+				RDF.type.asNode(),
+				NodeFactory.createURI("http://dbpedia.org/ontology/Person")));
+		triples.add(Triple.create(
+				subject,
+				NodeFactory.createURI("http://dbpedia.org/ontology/birthDate"),
+				NodeFactory.createLiteral("1879-03-14", XSDDatatype.XSDdate)));
+		triples.add(Triple.create(
+				subject,
+				NodeFactory.createURI("http://dbpedia.org/ontology/birthPlace"),
+				NodeFactory.createURI("http://dbpedia.org/resource/Ulm")));
+		
+		text = converter.convertTriplesToText(triples);
+		System.out.println(triples + "\n-> " + text);
+		
+		triples = new ArrayList<Triple>();
+		triples.add(Triple.create(
+				subject,
+				RDF.type.asNode(),
+				NodeFactory.createURI("http://dbpedia.org/ontology/Person")));
+		triples.add(Triple.create(
+				subject,
+				NodeFactory.createURI("http://dbpedia.org/ontology/birthDate"),
+				NodeFactory.createLiteral("1879-03-14", XSDDatatype.XSDdate)));
+		
+		//2 types
+		triples = new ArrayList<Triple>();
+		triples.add(Triple.create(
+				subject,
+				RDF.type.asNode(),
+				NodeFactory.createURI("http://dbpedia.org/ontology/Physican")));
+		triples.add(Triple.create(
+				subject,
+				RDF.type.asNode(),
+				NodeFactory.createURI("http://dbpedia.org/ontology/Musican")));
+		triples.add(Triple.create(
+				subject,
+				NodeFactory.createURI("http://dbpedia.org/ontology/birthDate"),
+				NodeFactory.createLiteral("1879-03-14", XSDDatatype.XSDdate)));
+		
+		text = converter.convertTriplesToText(triples);
+		System.out.println(triples + "\n-> " + text);
+		
+		//more than 2 types
+		triples = new ArrayList<Triple>();
+		triples.add(Triple.create(
+				subject,
+				RDF.type.asNode(),
+				NodeFactory.createURI("http://dbpedia.org/ontology/Physican")));
+		triples.add(Triple.create(
+				subject,
+				RDF.type.asNode(),
+				NodeFactory.createURI("http://dbpedia.org/ontology/Musican")));
+		triples.add(Triple.create(
+				subject,
+				RDF.type.asNode(),
+				NodeFactory.createURI("http://dbpedia.org/ontology/Philosopher")));
+		triples.add(Triple.create(
+				subject,
+				NodeFactory.createURI("http://dbpedia.org/ontology/birthDate"),
+				NodeFactory.createLiteral("1879-03-14", XSDDatatype.XSDdate)));
+		
+		text = converter.convertTriplesToText(triples);
+		System.out.println(triples + "\n-> " + text);
+		
+		//no type
+		triples = new ArrayList<Triple>();
+		triples.add(Triple.create(
+				subject,
+				NodeFactory.createURI("http://dbpedia.org/ontology/birthPlace"),
+				NodeFactory.createURI("http://dbpedia.org/resource/Ulm")));
+		triples.add(Triple.create(
+				subject,
+				NodeFactory.createURI("http://dbpedia.org/ontology/birthDate"),
+				NodeFactory.createLiteral("1879-03-14", XSDDatatype.XSDdate)));
+		
+		text = converter.convertTriplesToText(triples);
+		System.out.println(triples + "\n-> " + text);
 		
 		
 	}
