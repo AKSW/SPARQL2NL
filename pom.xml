@@ -83,11 +83,11 @@
 			<name>University Leipzig, AKSW Maven2 Repository</name>
 			<url>http://maven.aksw.org/archiva/repository/snapshots</url>
 		</repository>
-		<repository>
+		<!-- <repository>
 			<id>amplafi</id>
 			<name>Not sure</name>
 			<url>http://maven.amplafi.com/</url>
-		</repository>
+		</repository> -->
 		<repository>
 			<id>apache-repo-snapshots</id>
 			<url>https://repository.apache.org/content/repositories/snapshots/</url>
