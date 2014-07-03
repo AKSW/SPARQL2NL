@@ -15,6 +15,7 @@ import org.aksw.sparql2nl.naturallanguagegeneration.PropertyProcessor.Type;
 import org.aksw.sparql2nl.nlp.relation.BoaPatternSelector;
 import org.aksw.sparql2nl.nlp.stemming.PlingStemmer;
 import org.aksw.sparql2nl.queryprocessing.GenericType;
+import org.apache.commons.lang.SystemUtils;
 import org.apache.log4j.Logger;
 import org.dllearner.core.owl.DatatypeProperty;
 import org.dllearner.core.owl.ObjectProperty;
@@ -80,8 +81,14 @@ public class TripleConverter {
 		literalConverter = new LiteralConverter(uriConverter);
 		literalConverter.setEncapsulateStringLiterals(encapsulateStringLiterals);
 		
-		logger.info("WordNet directory: " + this.getClass().getClassLoader().getResource("wordnet/linux/dict").getPath());
-		pp = new PropertyProcessor(this.getClass().getClassLoader().getResource("wordnet/linux/dict").getPath());
+		String wordnetDirectory;
+		if(SystemUtils.IS_OS_WINDOWS){
+			wordnetDirectory = this.getClass().getClassLoader().getResource("wordnet/windows/dict").getPath();
+		} else {
+			wordnetDirectory = this.getClass().getClassLoader().getResource("wordnet/linux/dict").getPath();
+		}
+		logger.info("WordNet directory: " + wordnetDirectory);
+		pp = new PropertyProcessor(wordnetDirectory);
 		
 		reasoner = new SPARQLReasoner(endpoint, cacheDirectory);
 	}
@@ -211,6 +218,15 @@ public class TripleConverter {
 	public SPhraseSpec convertTriple(Triple t) {
 		return convertTriple(t, false);
 	}
+	
+	/**
+	 * Convert a triple into a phrase object
+	 * @param t the triple
+	 * @return the phrase
+	 */
+	public SPhraseSpec convertTriple(Triple t, boolean negated) {
+		return convertTriple(t, negated, false);
+	}
 
 	/**
 	 * Convert a triple into a phrase object
@@ -218,7 +234,7 @@ public class TripleConverter {
 	 * @param negated if phrase is negated 
 	 * @return the phrase
 	 */
-	public SPhraseSpec convertTriple(Triple t, boolean negated) {
+	public SPhraseSpec convertTriple(Triple t, boolean negated, boolean reverse) {
 		SPhraseSpec p = nlgFactory.createClause();
 
 		Node subject = t.getSubject();
@@ -316,6 +332,14 @@ public class TripleConverter {
 					boolean isPlural = determinePluralForm && usePluralForm(t);
 					nounPhrase.setPlural(isPlural);
 					p.setPlural(isPlural);
+					
+					//check if we reverse the triple representation
+					if(reverse){
+						subjectElement.setFeature(Feature.POSSESSIVE, false);
+			        	p.setSubject(subjectElement);
+			        	p.setVerbPhrase(nlgFactory.createVerbPhrase("be " + predicateAsString + " of"));
+			        	p.setObject(objectElement);
+					}
 				}// if the predicate is a verb 
 				else if (type == Type.VERB) { 
 					p.setSubject(subjectElement);

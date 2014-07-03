@@ -50,7 +50,7 @@ public class PropertyVerbalizer {
 	private final List<String> auxiliaryVerbs = Lists.newArrayList("do", "have", "be", "shall", "can", "may");
 
 	private URIConverter uriConverter;
-
+	
     public PropertyVerbalizer(SparqlEndpoint endpoint, String wordnetDictionary) {
         System.setProperty("wordnet.database.dir", wordnetDictionary);
         database = WordNetDatabase.getFileInstance();

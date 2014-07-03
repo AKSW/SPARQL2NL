@@ -31,7 +31,6 @@ import org.aksw.sparql2nl.entitysummarizer.dataset.CachedDatasetBasedGraphGenera
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator;
 import org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator.Cooccurrence;
 import org.aksw.sparql2nl.entitysummarizer.gender.Gender;
-import org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector;
 import org.aksw.sparql2nl.entitysummarizer.gender.LexiconBasedGenderDetector;
 import org.aksw.sparql2nl.entitysummarizer.gender.TypeAwareGenderDetector;
 import org.aksw.sparql2nl.entitysummarizer.rules.DateLiteralFilter;
@@ -91,7 +90,6 @@ public class Verbalizer {
     boolean omitContentInBrackets = true;
 
     public Verbalizer(SparqlEndpoint endpoint, CacheCoreEx cache, String cacheDirectory, String wordnetDirectory) {
-        nlg = new SimpleNLGwithPostprocessing(endpoint, cache, cacheDirectory, wordnetDirectory);
         this.endpoint = endpoint;
         labels = new HashMap<Resource, String>();
         litFilter = new NumericLiteralFilter(endpoint, cache, cacheDirectory);
@@ -107,6 +105,7 @@ public class Verbalizer {
             CacheEx cacheFrontend = new CacheExImpl(cache);
             qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
         }
+        nlg = new SimpleNLGwithPostprocessing(qef, cacheDirectory, wordnetDirectory);
 
         graphGenerator = new CachedDatasetBasedGraphGenerator(endpoint, cache);
     }

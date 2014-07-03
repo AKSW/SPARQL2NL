@@ -5,16 +5,21 @@ package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.jgrapht.alg.ConnectivityInspector;
+import org.jgrapht.graph.AsUndirectedGraph;
+import org.jgrapht.graph.DefaultDirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedSubgraph;
 
 import simplenlg.features.Feature;
 import simplenlg.features.InternalFeature;
@@ -77,8 +82,21 @@ public class DocumentGenerator {
 	}
 
 	public String generateDocument(Set<Triple> documentTriples) {
+		DefaultDirectedGraph<Node, DefaultEdge> graph = asGraph(documentTriples);
+		
+		//divide the document into paragraphs for each connected component in the graph
+		ConnectivityInspector<Node, DefaultEdge> connectivityInspector = new ConnectivityInspector<Node, DefaultEdge>(graph);
+		List<Set<Node>> connectedNodes = connectivityInspector.connectedSets();
+		
+		for (Set<Node> nodes : connectedNodes) {
+			System.out.println(nodes);
+		}
+		
 		//group triples by subject
 		Map<Node, Collection<Triple>> subject2Triples = groupBySubject(documentTriples);
+		
+		//do some sorting
+		subject2Triples = sort(documentTriples, subject2Triples);
 		
 		List<DocumentElement> sentences = new ArrayList<DocumentElement>();
 		for (Entry<Node, Collection<Triple>> entry : subject2Triples.entrySet()) {
@@ -173,12 +191,63 @@ public class DocumentGenerator {
 		return paragraphText;
 	}
 	
+	/**
+	 * @param documentTriples 
+	 * @param subject2Triples
+	 */
+	private Map<Node, Collection<Triple>> sort(Set<Triple> documentTriples, Map<Node, Collection<Triple>> subject2Triples) {
+		Map<Node, Collection<Triple>> sortedTriples = new LinkedHashMap<Node, Collection<Triple>>();
+		//we can order by occurrence, i.e. which subjects do not occur in object position
+		//for each subject we check how often they occur in subject/object position
+		Multimap<Node, Node> outgoing = HashMultimap.create();
+		Multimap<Node, Node> incoming = HashMultimap.create();
+		for (Node subject : subject2Triples.keySet()) {
+			for (Triple triple : documentTriples) {
+				if(triple.subjectMatches(subject)){
+					outgoing.put(subject, triple.getObject());
+				} else if(triple.objectMatches(subject)){
+					incoming.put(subject, triple.getSubject());
+				}
+			}
+		}
+		//prefer subjects that do not occur in object position first
+		for (Iterator<Entry<Node, Collection<Triple>>> iterator = subject2Triples.entrySet().iterator(); iterator.hasNext();) {
+			Entry<Node, Collection<Triple>> entry = iterator.next();
+			Node subject = entry.getKey();
+			if(!incoming.containsKey(subject)){
+				sortedTriples.put(subject, new HashSet<Triple>(entry.getValue()));
+				iterator.remove();
+			}
+		}
+		//add the rest
+		sortedTriples.putAll(subject2Triples);
+		
+		//TODO order by triple count
+		
+		//TODO order by prominence
+		
+		return sortedTriples;
+	}
+
 	private Map<Node, Collection<Triple>> groupBySubject(Set<Triple> triples){
 		Multimap<Node, Triple> subject2Triples = HashMultimap.create();
 		for (Triple triple : triples) {
 			subject2Triples.put(triple.getSubject(), triple);
 		}
 		return subject2Triples.asMap();
+	}
+	
+	private DefaultDirectedGraph<Node, DefaultEdge> asGraph(Set<Triple> triples){
+		DefaultDirectedGraph<Node, DefaultEdge> graph = new DefaultDirectedGraph<Node, DefaultEdge>(DefaultEdge.class);
+		for (Triple triple : triples) {
+			//we have to omit type triples to get connected subgraphs later on
+			if(!triple.predicateMatches(RDF.type.asNode())){
+				graph.addVertex(triple.getSubject());
+				graph.addVertex(triple.getObject());
+				graph.addEdge(triple.getSubject(), triple.getObject());
+			}
+		}	
+		return graph;
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -191,7 +260,10 @@ public class DocumentGenerator {
 				+ "dbo:birthDate \"1879-03-14\"^^xsd:date ."
 				+ ":Ulm a dbo:City;"
 				+ "dbo:country :Germany;"
-				+ "dbo:federalState :Baden_Württemberg.";
+				+ "dbo:federalState :Baden_Württemberg ."
+				+ ":Leipzig a dbo:City;"
+				+ "dbo:country :Germany;"
+				+ "dbo:federalState :Saxony .";
 		
 		Model model = ModelFactory.createDefaultModel();
 		model.read(new ByteArrayInputStream(triples.getBytes()), null, "TURTLE");
