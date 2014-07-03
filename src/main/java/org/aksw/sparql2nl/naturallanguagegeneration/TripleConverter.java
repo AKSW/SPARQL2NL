@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.sparql2nl.naturallanguagegeneration.PropertyProcessor.Type;
 import org.aksw.sparql2nl.nlp.relation.BoaPatternSelector;
 import org.aksw.sparql2nl.nlp.stemming.PlingStemmer;
@@ -73,6 +74,10 @@ public class TripleConverter {
 		this(endpoint, cacheDirectory, Lexicon.getDefaultLexicon());
 	}
 	
+	public TripleConverter(QueryExecutionFactory qef, String cacheDirectory) {
+		this(qef, cacheDirectory, Lexicon.getDefaultLexicon());
+	}
+	
 	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory, Lexicon lexicon) {
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
@@ -91,6 +96,26 @@ public class TripleConverter {
 		pp = new PropertyProcessor(wordnetDirectory);
 		
 		reasoner = new SPARQLReasoner(endpoint, cacheDirectory);
+	}
+	
+	public TripleConverter(QueryExecutionFactory qef, String cacheDirectory, Lexicon lexicon) {
+		nlgFactory = new NLGFactory(lexicon);
+		realiser = new Realiser(lexicon);
+
+		uriConverter = new URIConverter(qef, cacheDirectory);
+		literalConverter = new LiteralConverter(uriConverter);
+		literalConverter.setEncapsulateStringLiterals(encapsulateStringLiterals);
+		
+		String wordnetDirectory;
+		if(SystemUtils.IS_OS_WINDOWS){
+			wordnetDirectory = this.getClass().getClassLoader().getResource("wordnet/windows/dict").getPath();
+		} else {
+			wordnetDirectory = this.getClass().getClassLoader().getResource("wordnet/linux/dict").getPath();
+		}
+		logger.info("WordNet directory: " + wordnetDirectory);
+		pp = new PropertyProcessor(wordnetDirectory);
+		
+		reasoner = new SPARQLReasoner(qef);
 	}
 	
 	public List<SPhraseSpec> convertTriples(Collection<Triple> triples) {
