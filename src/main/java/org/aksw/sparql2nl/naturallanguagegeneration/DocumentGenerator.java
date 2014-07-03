@@ -16,10 +16,8 @@ import java.util.Set;
 
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.jgrapht.alg.ConnectivityInspector;
-import org.jgrapht.graph.AsUndirectedGraph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedSubgraph;
 
 import simplenlg.features.Feature;
 import simplenlg.features.InternalFeature;
@@ -60,7 +58,7 @@ public class DocumentGenerator {
 	}
 
 	public DocumentGenerator(SparqlEndpoint endpoint, String cacheDirectory, Lexicon lexicon) {
-		tripleConverter = new TripleConverter(endpoint, cacheDirectory, lexicon);
+		tripleConverter = new TripleConverter(endpoint, cacheDirectory, null, lexicon);
 
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);

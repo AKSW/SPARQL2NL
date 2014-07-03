@@ -71,14 +71,14 @@ public class TripleConverter {
 	private boolean useAsWellAsCoordination = true;
 
 	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory) {
-		this(endpoint, cacheDirectory, Lexicon.getDefaultLexicon());
+		this(endpoint, cacheDirectory, null, Lexicon.getDefaultLexicon());
 	}
 	
 	public TripleConverter(QueryExecutionFactory qef, String cacheDirectory) {
-		this(qef, cacheDirectory, Lexicon.getDefaultLexicon());
+		this(qef, cacheDirectory, null, Lexicon.getDefaultLexicon());
 	}
 	
-	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory, Lexicon lexicon) {
+	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
 
@@ -86,19 +86,21 @@ public class TripleConverter {
 		literalConverter = new LiteralConverter(uriConverter);
 		literalConverter.setEncapsulateStringLiterals(encapsulateStringLiterals);
 		
-		String wordnetDirectory;
-		if(SystemUtils.IS_OS_WINDOWS){
-			wordnetDirectory = this.getClass().getClassLoader().getResource("wordnet/windows/dict").getPath();
-		} else {
-			wordnetDirectory = this.getClass().getClassLoader().getResource("wordnet/linux/dict").getPath();
+		if(wordnetDirectory == null){
+			if(SystemUtils.IS_OS_WINDOWS){
+				wordnetDirectory = this.getClass().getClassLoader().getResource("wordnet/windows/dict").getPath();
+			} else {
+				wordnetDirectory = this.getClass().getClassLoader().getResource("wordnet/linux/dict").getPath();
+			}
 		}
 		logger.info("WordNet directory: " + wordnetDirectory);
+		
 		pp = new PropertyProcessor(wordnetDirectory);
 		
 		reasoner = new SPARQLReasoner(endpoint, cacheDirectory);
 	}
 	
-	public TripleConverter(QueryExecutionFactory qef, String cacheDirectory, Lexicon lexicon) {
+	public TripleConverter(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
 
@@ -106,13 +108,15 @@ public class TripleConverter {
 		literalConverter = new LiteralConverter(uriConverter);
 		literalConverter.setEncapsulateStringLiterals(encapsulateStringLiterals);
 		
-		String wordnetDirectory;
-		if(SystemUtils.IS_OS_WINDOWS){
-			wordnetDirectory = this.getClass().getClassLoader().getResource("wordnet/windows/dict").getPath();
-		} else {
-			wordnetDirectory = this.getClass().getClassLoader().getResource("wordnet/linux/dict").getPath();
+		if(wordnetDirectory == null){
+			if(SystemUtils.IS_OS_WINDOWS){
+				wordnetDirectory = this.getClass().getClassLoader().getResource("wordnet/windows/dict").getPath();
+			} else {
+				wordnetDirectory = this.getClass().getClassLoader().getResource("wordnet/linux/dict").getPath();
+			}
 		}
 		logger.info("WordNet directory: " + wordnetDirectory);
+		
 		pp = new PropertyProcessor(wordnetDirectory);
 		
 		reasoner = new SPARQLReasoner(qef);

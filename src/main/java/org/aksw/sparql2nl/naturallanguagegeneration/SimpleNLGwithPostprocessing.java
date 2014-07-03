@@ -195,7 +195,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 this.getClass().getClassLoader().getResourceAsStream("dbpedia_functional_axioms.owl"),
                 0.8);
         
-        tripleConverter = new TripleConverter(qef, cacheDirectory, lexicon);
+        tripleConverter = new TripleConverter(qef, cacheDirectory, wordnetDirectory, lexicon);
     }
 
     public void setUseBOA(boolean useBOA) {
