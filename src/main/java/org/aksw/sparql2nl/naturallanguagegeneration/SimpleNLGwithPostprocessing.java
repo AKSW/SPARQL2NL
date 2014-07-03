@@ -142,8 +142,9 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 		init();
     }
 
-    public SimpleNLGwithPostprocessing(Model model, String wordnetDir) {
+    public SimpleNLGwithPostprocessing(Model model, String wordnetDirectory) {
         this.model = model;
+		this.wordnetDirectory = wordnetDirectory;
 
         init();
     }
@@ -188,7 +189,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
      		}
         }
        
-        propertyVerbalizer = new PropertyVerbalizer(endpoint, wordnetDirectory);
+        propertyVerbalizer = new PropertyVerbalizer(qef, cacheDirectory, wordnetDirectory);
 
         functionalityDetector = new StatisticalFunctionalityDetector(
                 this.getClass().getClassLoader().getResourceAsStream("dbpedia_functional_axioms.owl"),

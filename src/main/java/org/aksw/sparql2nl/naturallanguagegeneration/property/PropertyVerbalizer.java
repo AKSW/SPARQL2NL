@@ -8,12 +8,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.sparql2nl.naturallanguagegeneration.Preposition;
 import org.aksw.sparql2nl.naturallanguagegeneration.URIConverter;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
 import com.google.common.collect.Lists;
+import com.hp.hpl.jena.rdf.model.Model;
 
 import edu.smu.tspell.wordnet.Synset;
 import edu.smu.tspell.wordnet.SynsetType;
@@ -51,7 +53,7 @@ public class PropertyVerbalizer {
 
 	private URIConverter uriConverter;
 	
-    public PropertyVerbalizer(SparqlEndpoint endpoint, String wordnetDictionary) {
+    public PropertyVerbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDictionary) {
         System.setProperty("wordnet.database.dir", wordnetDictionary);
         database = WordNetDatabase.getFileInstance();
         preposition = new Preposition(this.getClass().getClassLoader().getResourceAsStream("preposition_list.txt"));
@@ -62,6 +64,32 @@ public class PropertyVerbalizer {
 		pipeline = new StanfordCoreNLP(props);
 		
 		uriConverter = new URIConverter(endpoint);
+    }
+    
+    public PropertyVerbalizer(Model model, String cacheDirectory, String wordnetDictionary) {
+        System.setProperty("wordnet.database.dir", wordnetDictionary);
+        database = WordNetDatabase.getFileInstance();
+        preposition = new Preposition(this.getClass().getClassLoader().getResourceAsStream("preposition_list.txt"));
+        
+        Properties props = new Properties();
+		props.put("annotators", "tokenize, ssplit, pos, lemma, parse");
+		props.put("ssplit.isOneSentence","true");
+		pipeline = new StanfordCoreNLP(props);
+		
+		uriConverter = new URIConverter(model);
+    }
+    
+    public PropertyVerbalizer(QueryExecutionFactory qef, String cacheDirectory, String wordnetDictionary) {
+        System.setProperty("wordnet.database.dir", wordnetDictionary);
+        database = WordNetDatabase.getFileInstance();
+        preposition = new Preposition(this.getClass().getClassLoader().getResourceAsStream("preposition_list.txt"));
+        
+        Properties props = new Properties();
+		props.put("annotators", "tokenize, ssplit, pos, lemma, parse");
+		props.put("ssplit.isOneSentence","true");
+		pipeline = new StanfordCoreNLP(props);
+		
+		uriConverter = new URIConverter(qef);
     }
     
     public PropertyVerbalization verbalize(String propertyURI){
@@ -337,7 +365,7 @@ public class PropertyVerbalizer {
 
 
     public static void main(String args[]) {
-        PropertyVerbalizer pp = new PropertyVerbalizer(SparqlEndpoint.getEndpointDBpedia(), "resources/wordnet/dict");
+        PropertyVerbalizer pp = new PropertyVerbalizer(SparqlEndpoint.getEndpointDBpedia(), "ache", "resources/wordnet/dict");
         
         String propertyURI = "http://dbpedia.org/ontology/birthPlace";
         System.out.println(pp.verbalize(propertyURI));

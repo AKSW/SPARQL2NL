@@ -93,6 +93,10 @@ public class URIConverter {
 		init();
 	}
 	
+	public URIConverter(QueryExecutionFactory qef) {
+		this(qef, null);
+	}
+	
 	public URIConverter(QueryExecutionFactory qef, String cacheDirectory) {
 		this.qef = qef;
 		this.cacheDirectory = cacheDirectory;
