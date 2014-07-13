@@ -49,7 +49,8 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 		             }
 		           });
 	
-	public File graphsFolder = new File("graphs");
+	public File graphsFolder;
+	public File graphsSubFolder = new File("graphs");
 	
 	private final HashFunction hf = Hashing.md5();
 	private boolean useCache = true;
@@ -61,7 +62,7 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 	public CachedDatasetBasedGraphGenerator(SparqlEndpoint endpoint, File cacheDirectory) {
 		super(endpoint, cacheDirectory);
 		
-		graphsFolder = new File(cacheDirectory, graphsFolder.getName());
+		graphsFolder = new File(cacheDirectory, graphsSubFolder.getName());
 		graphsFolder.mkdirs();
 	}
 	
@@ -70,13 +71,18 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 	 * @param cacheDirectory
 	 */
 	public CachedDatasetBasedGraphGenerator(SparqlEndpoint endpoint, String cacheDirectory) {
-		this(endpoint, new File(cacheDirectory));
+		super(endpoint, cacheDirectory);
+		
+		if(cacheDirectory != null){
+			graphsFolder = new File(cacheDirectory, graphsSubFolder.getName());
+			graphsFolder.mkdirs();
+		}
 	}
 	
 	public CachedDatasetBasedGraphGenerator(QueryExecutionFactory qef, File cacheDirectory) {
-		super(qef);
+		super(qef, cacheDirectory);
 		
-		graphsFolder = new File(cacheDirectory, graphsFolder.getName());
+		graphsFolder = new File(cacheDirectory, graphsSubFolder.getName());
 		graphsFolder.mkdirs();
 	}
 	
@@ -117,7 +123,7 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 		String filename = hc.toString() + ".graph";
 		File file = new File(graphsFolder, filename);
 		WeightedGraph g = null;
-		if(useCache && file.exists()){
+		if(isUseCache() && file.exists()){
 			logger.info("...loading from disk...");
 			try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))){
 				g = (WeightedGraph) ois.readObject();
@@ -138,7 +144,7 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 			}
 		} else {
 			g = super.generateGraph(configuration.cls, configuration.threshold, configuration.namespace, configuration.c);
-			if(useCache){
+			if(isUseCache()){
 				try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))){
 					oos.writeObject(g);
 				} catch (FileNotFoundException e) {
@@ -164,6 +170,10 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 		for (NamedClass cls : classes) {
 			generateGraph(cls, threshold, namespace, c);
 		}
+	}
+	
+	public boolean isUseCache(){
+		return useCache && graphsFolder != null;
 	}
 	
 	class Configuration{

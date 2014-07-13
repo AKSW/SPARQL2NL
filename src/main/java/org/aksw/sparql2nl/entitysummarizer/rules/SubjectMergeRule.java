@@ -90,7 +90,8 @@ public class SubjectMergeRule {
         for (int i = 0; i < phrases.size(); i++) {
             p1 = phrases.get(i);
             if (!((NPPhraseSpec) p1.getSubject()).getPreModifiers().isEmpty()) {
-                subj1 = realiser.realiseSentence(((NPPhraseSpec) p1.getSubject()).getPreModifiers().get(0));
+            	NLGElement premodifier = ((NPPhraseSpec) p1.getSubject()).getPreModifiers().get(0);
+                subj1 = realiser.realiseSentence(premodifier);
                 for (int j = i + 1; j < phrases.size(); j++) {
                     p2 = phrases.get(j);
                     if (!((NPPhraseSpec) p2.getSubject()).getPreModifiers().isEmpty()) {

@@ -14,4 +14,12 @@ public class Sentence {
         optional = o;
         id = i;
     }
+    
+    /* (non-Javadoc)
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+    	return sps.toString();
+    }
 }

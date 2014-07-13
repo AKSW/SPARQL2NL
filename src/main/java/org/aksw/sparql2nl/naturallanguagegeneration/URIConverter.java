@@ -1,14 +1,7 @@
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.sql.SQLException;
 import java.util.List;
@@ -25,21 +18,19 @@ import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.sparql2nl.naturallanguagegeneration.URIDereferencer.DereferencingFailedException;
 import org.apache.commons.collections4.map.LRUMap;
 import org.apache.commons.lang.StringUtils;
+import org.apache.jena.web.HttpSC;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.util.SimpleIRIShortFormProvider;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.sparql.engine.http.QueryExceptionHTTP;
 import com.hp.hpl.jena.sparql.vocabulary.FOAF;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
@@ -71,6 +62,7 @@ public class URIConverter {
 	private boolean splitCamelCase = true;
 	private boolean replaceUnderScores = true;
 	private boolean toLowerCase = false;
+	private boolean omitContentInBrackets = true;
 	
 	private URIDereferencer uriDereferencer;
 	
@@ -223,21 +215,29 @@ public class URIConverter {
             }
             
             //do some normalization, e.g. remove underscores
-            if(replaceUnderScores){
-    			label = label.replace("_", " ");
-    		}
-            if(splitCamelCase){
-            	label = splitCamelCase(label);
-            }
-            if(toLowerCase){
-            	label = label.toLowerCase();
-            }
+            label = normalize(label);
 		}
 	    
 		//put into cache
 		uri2LabelCache.put(uri, label);
 		
 		return label;
+	}
+	
+	private String normalize(String s){
+		if(replaceUnderScores){
+			s = s.replace("_", " ");
+		}
+        if(splitCamelCase){
+        	s = splitCamelCase(s);
+        }
+        if(toLowerCase){
+        	s = s.toLowerCase();
+        }
+        if(omitContentInBrackets){
+        	s = s.replaceAll("\\(.+?\\)", "").trim();
+        }
+        return s;
 	}
 	
 	private String getLabelFromBuiltIn(String uri){
@@ -283,7 +283,14 @@ public class URIConverter {
 					return rs.next().getLiteral("label").getLexicalForm();
 				}
 			} catch (Exception e) {
-				logger.warn("Getting label from SPARQL endpoint failed.", e);
+				int code = -1;
+				//cached exception is wrapped in a RuntimeException
+				if(e.getCause() instanceof QueryExceptionHTTP){
+					code = ((QueryExceptionHTTP)e.getCause()).getResponseCode();
+				} else if(e instanceof QueryExceptionHTTP){
+					code = ((QueryExceptionHTTP) e).getResponseCode();
+				}
+				logger.warn("Getting label of " + uri + " from SPARQL endpoint failed: " + code + " - " + HttpSC.getCode(code).getMessage());
 			}
 		}
 		return null;

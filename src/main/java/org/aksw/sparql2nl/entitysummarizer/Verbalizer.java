@@ -4,6 +4,9 @@
  */
 package org.aksw.sparql2nl.entitysummarizer;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,6 +17,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import joptsimple.OptionException;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
 
 import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
 import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
@@ -46,6 +53,9 @@ import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.utilities.MapUtils;
 
 import simplenlg.features.Feature;
+import simplenlg.features.InternalFeature;
+import simplenlg.features.LexicalFeature;
+import simplenlg.features.NumberAgreement;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.NLGElement;
 import simplenlg.phrasespec.NPPhraseSpec;
@@ -89,26 +99,6 @@ public class Verbalizer {
     int maxShownValuesPerProperty = 5;
     boolean omitContentInBrackets = true;
 
-    public Verbalizer(SparqlEndpoint endpoint, CacheCoreEx cache, String cacheDirectory, String wordnetDirectory) {
-        this.endpoint = endpoint;
-        labels = new HashMap<Resource, String>();
-        litFilter = new NumericLiteralFilter(endpoint, cache, cacheDirectory);
-        realiser = nlg.realiser;
-        gender = new TypeAwareGenderDetector(endpoint, new LexiconBasedGenderDetector());
-
-        pr = new PredicateMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
-        or = new ObjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
-        sr = new SubjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
-
-        qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-        if (cache != null) {
-            CacheEx cacheFrontend = new CacheExImpl(cache);
-            qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-        }
-        nlg = new SimpleNLGwithPostprocessing(qef, cacheDirectory, wordnetDirectory);
-
-        graphGenerator = new CachedDatasetBasedGraphGenerator(endpoint, cache);
-    }
 
     public Verbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
         nlg = new SimpleNLGwithPostprocessing(endpoint, cacheDirectory, wordnetDirectory);
@@ -135,13 +125,14 @@ public class Verbalizer {
                 e.printStackTrace();
             }
         }
-        gender = new TypeAwareGenderDetector(endpoint, cacheBackend, new LexiconBasedGenderDetector());
+        gender = new TypeAwareGenderDetector(qef, new LexiconBasedGenderDetector());
 
-        graphGenerator = new CachedDatasetBasedGraphGenerator(endpoint, cacheDirectory);
+        graphGenerator = new CachedDatasetBasedGraphGenerator(qef, cacheDirectory);
     }
     
     public Verbalizer(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory) {
     	this.qef = qef;
+    	
         nlg = new SimpleNLGwithPostprocessing(qef, cacheDirectory, wordnetDirectory);
         labels = new HashMap<Resource, String>();
         litFilter = new NumericLiteralFilter(qef, cacheDirectory);
@@ -338,10 +329,14 @@ public class Verbalizer {
                 if (triple.getObject().isURI()) {
                     String query = "SELECT (COUNT(*) AS ?cnt) WHERE {<" + triple.getObject().getURI() + "> ?p ?o.}";
                     QueryExecution qe = qef.createQueryExecution(query);
-                    ResultSet rs = qe.execSelect();
-                    int popularity = rs.next().getLiteral("cnt").getInt();
-                    triple2ObjectPopularity.put(triple, popularity);
-                    qe.close();
+                    try {
+						ResultSet rs = qe.execSelect();
+						int popularity = rs.next().getLiteral("cnt").getInt();
+						triple2ObjectPopularity.put(triple, popularity);
+						qe.close();
+					} catch (Exception e) {
+						logger.warn("Execution of SPARQL query failed: " + e.getMessage() + "\n" + query);
+					}
                 }
             }
             List<Entry<Triple, Integer>> sortedByValues = MapUtils.sortByValues(triple2ObjectPopularity);
@@ -563,38 +558,6 @@ public class Verbalizer {
         return g;
     }
 
-    public static void main(String args[]) {
-        SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
-        endpoint.getDefaultGraphURIs().add("http://dbpedia.org");
-        //endpoint = SparqlEndpoint.getEndpointDBpedia();
-
-        Verbalizer v;
-        if (SimpleNLGwithPostprocessing.isWindows()) {
-            v = new Verbalizer(endpoint, "cache/sparql", "resources/wordnetWindows/");
-        } else {
-            v = new Verbalizer(endpoint, "cache/sparql", "resources/wordnet/dict");
-        }
-        v.setPersonTypes(Sets.newHashSet("http://dbpedia.org/ontology/Person"));
-//        Individual ind = new Individual("http://dbpedia.org/resource/Barbara_Aland");
-//        Individual ind = new Individual("http://dbpedia.org/resource/John_Passmore");
-//        Individual ind = new Individual("http://dbpedia.org/resource/Ford_Zetec_engine");
-//        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AutomobileEngine");
-        Individual ind = new Individual("http://dbpedia.org/resource/John_Major");
-        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/OfficeHolder");
-//        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/MusicalArtist");
-//        ind = new Individual("http://dbpedia.org/resource/King_Kong_(2005_film)");
-//        nc = new NamedClass("http://dbpedia.org/ontology/Film");
-//        Individual ind = new Individual("http://dbpedia.org/resource/David_Foster");
-//        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/MusicalArtist");
-        int maxShownValuesPerProperty = 3;
-        v.setMaxShownValuesPerProperty(maxShownValuesPerProperty);
-        List<NLGElement> text = v.verbalize(ind, nc, 0.4, Cooccurrence.PROPERTIES, HardeningType.SMALLEST);
-        String summary = v.realize(text);
-        summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
-        summary = summary.replace(" , among others,", ", among others,");
-        System.out.println(summary);
-    }
-
     /**
      * @param maxShownValuesPerProperty the maxShownValuesPerProperty to set
      */
@@ -621,42 +584,119 @@ public class Verbalizer {
         }
         int index = (int) Math.floor(Math.random() * subjects.size());
 //        index = 2;
-        if (((NPPhraseSpec) sphrase.getSubject()).getPreModifiers().size() > 0) //possessive subject
+        
+        // possessive as specifier of the NP 
+        NLGElement currentSubject = sphrase.getSubject();
+        if (currentSubject.hasFeature(InternalFeature.SPECIFIER) && currentSubject.getFeatureAsElement(InternalFeature.SPECIFIER).getFeatureAsBoolean(Feature.POSSESSIVE)) //possessive subject
         {
 
-            NPPhraseSpec subject = nlg.nlgFactory.createNounPhrase(((NPPhraseSpec) sphrase.getSubject()).getHead());
-            NPPhraseSpec modifier;
-            if (index < subjects.size() - 1) {
-                modifier = nlg.nlgFactory.createNounPhrase(subjects.get(index));
-                modifier.setFeature(Feature.POSSESSIVE, true);
-                subject.setPreModifier(modifier);
-                modifier.setFeature(Feature.POSSESSIVE, true);
-            } else {
+            NPPhraseSpec newSubject = nlg.nlgFactory.createNounPhrase(((NPPhraseSpec) currentSubject).getHead());
+            
+            NPPhraseSpec newSpecifier = nlg.nlgFactory.createNounPhrase(subjects.get(index));
+            newSpecifier.setFeature(Feature.POSSESSIVE, true);
+            newSubject.setSpecifier(newSpecifier);
+            
+            if (index >= subjects.size() - 1) {
                 if (g.equals(Gender.MALE)) {
-                    subject.setPreModifier("his");
+                	newSpecifier.setFeature(LexicalFeature.GENDER, simplenlg.features.Gender.MASCULINE);
                 } else if (g.equals(Gender.FEMALE)) {
-                    subject.setPreModifier("her");
+                	newSpecifier.setFeature(LexicalFeature.GENDER, simplenlg.features.Gender.FEMININE);
                 } else {
-                    subject.setPreModifier("its");
+                	newSpecifier.setFeature(LexicalFeature.GENDER, simplenlg.features.Gender.NEUTER);
                 }
+                newSpecifier.setFeature(Feature.PRONOMINAL, true);
             }
-            if (sphrase.getSubject().isPlural()) {
-
-//                subject.getSpecifier().setPlural(false);
-                subject.setPlural(true);
+            if (currentSubject.isPlural()) {
+                newSubject.setPlural(true);
+                newSpecifier.setFeature(Feature.NUMBER, NumberAgreement.SINGULAR);
             }
-            sphrase.setSubject(subject);
-
+            sphrase.setSubject(newSubject);
         } else {
-// does not fully work due to bug in SimpleNLG code      
+        	currentSubject.setFeature(Feature.PRONOMINAL, true);
             if (g.equals(Gender.MALE)) {
-                sphrase.setSubject("He");
+                currentSubject.setFeature(LexicalFeature.GENDER, simplenlg.features.Gender.MASCULINE);
             } else if (g.equals(Gender.FEMALE)) {
-                sphrase.setSubject("She");
+            	currentSubject.setFeature(LexicalFeature.GENDER, simplenlg.features.Gender.FEMININE);
             } else {
-                sphrase.setSubject("It");
+            	currentSubject.setFeature(LexicalFeature.GENDER, simplenlg.features.Gender.NEUTER);
             }
         }
         return phrase;
+    }
+    
+    public static void main(String args[]) throws IOException {
+    	OptionParser parser = new OptionParser();
+		parser.acceptsAll(Lists.newArrayList("e", "endpoint"), "SPARQL endpoint URL to be used.").withRequiredArg().ofType(URL.class);
+		parser.acceptsAll(Lists.newArrayList("g", "graph"), "URI of default graph for queries on SPARQL endpoint.").withOptionalArg().ofType(String.class);
+		parser.acceptsAll(Lists.newArrayList("c", "class"), "Class of the entity to summarize.").withRequiredArg().ofType(URI.class);
+		parser.acceptsAll(Lists.newArrayList("i", "individual"), "Entity to summarize.").withRequiredArg().ofType(URI.class);
+		parser.acceptsAll(Lists.newArrayList("cache"), "Path to cache directory.").withOptionalArg();
+		parser.acceptsAll(Lists.newArrayList("wordnet"), "Path to WordNet dictionary.").withOptionalArg();
+		
+		// parse options and display a message for the user in case of problems
+		OptionSet options = null;
+		try {
+			options = parser.parse(args);
+		} catch (Exception e) {
+			System.out.println("Error: " + e.getMessage() + ". Use -? to get help.");
+			System.exit(0);
+		}
+		
+		// print help screen
+		if (options.has("?")) {
+			parser.printHelpOn(System.out);
+		} else {
+
+		}
+		URL endpointURL = null;
+		try {
+			endpointURL = (URL) options.valueOf("endpoint");
+		} catch(OptionException e) {
+			System.out.println("The specified endpoint appears not be a proper URL.");
+			System.exit(0);
+		}
+		String defaultGraphURI = null;
+		if(options.has("g")){
+			try {
+				defaultGraphURI = (String) options.valueOf("graph");
+				URI.create(defaultGraphURI);
+			} catch(OptionException e) {
+				System.out.println("The specified graph appears not be a proper URI.");
+				System.exit(0);
+			}
+		}
+        QueryExecutionFactory qef = new QueryExecutionFactoryHttp(endpointURL.toString(), defaultGraphURI);
+        
+        String cacheDirectory = (String) options.valueOf("cache");
+		if (cacheDirectory != null) {
+			try {
+				long timeToLive = TimeUnit.DAYS.toMillis(30);
+				CacheCoreEx cacheBackend = CacheCoreH2.create(cacheDirectory, timeToLive, true);
+				CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
+				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+        
+        String wordnetDirectory = (String) options.valueOf("wordnet");
+        
+        Verbalizer v = new Verbalizer(qef, cacheDirectory, wordnetDirectory);
+        
+        NamedClass cls = new NamedClass((URI)options.valueOf("c"));
+        Individual ind = new Individual(((URI)options.valueOf("i")).toString());
+        
+        v.setPersonTypes(Sets.newHashSet("http://dbpedia.org/ontology/Person"));
+   
+        int maxShownValuesPerProperty = 3;
+        v.setMaxShownValuesPerProperty(maxShownValuesPerProperty);
+        List<NLGElement> text = v.verbalize(ind, cls, 0.4, Cooccurrence.PROPERTIES, HardeningType.SMALLEST);
+        
+        String summary = v.realize(text);
+        summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
+        summary = summary.replace(" , among others,", ", among others,");
+        System.out.println(summary);
     }
 }

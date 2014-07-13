@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
+import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -58,8 +60,11 @@ public class DocumentGenerator {
 	}
 
 	public DocumentGenerator(SparqlEndpoint endpoint, String cacheDirectory, Lexicon lexicon) {
-		tripleConverter = new TripleConverter(endpoint, cacheDirectory, null, lexicon);
-
+		this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), cacheDirectory, lexicon);
+	}
+	
+	public DocumentGenerator(QueryExecutionFactory qef, String cacheDirectory, Lexicon lexicon) {
+		tripleConverter = new TripleConverter(qef, null, null, cacheDirectory, null, lexicon);
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
 	}
@@ -255,7 +260,8 @@ public class DocumentGenerator {
 				+ "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> ."
 				+ ":Albert_Einstein a dbo:Physican, dbo:Philosopher;"
 				+ "dbo:birthPlace :Ulm;"
-				+ "dbo:birthDate \"1879-03-14\"^^xsd:date ."
+				+ "dbo:birthDate \"1879-03-14\"^^xsd:date ;"
+				+ "dbo:studiedIn :Frankfurt ."
 				+ ":Ulm a dbo:City;"
 				+ "dbo:country :Germany;"
 				+ "dbo:federalState :Baden_Württemberg ."

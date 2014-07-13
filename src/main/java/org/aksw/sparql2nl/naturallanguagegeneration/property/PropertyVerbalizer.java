@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Properties;
 
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
+import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
+import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.sparql2nl.naturallanguagegeneration.Preposition;
 import org.aksw.sparql2nl.naturallanguagegeneration.URIConverter;
 import org.apache.log4j.Logger;
@@ -54,33 +56,21 @@ public class PropertyVerbalizer {
 	private URIConverter uriConverter;
 	
     public PropertyVerbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDictionary) {
-        System.setProperty("wordnet.database.dir", wordnetDictionary);
-        database = WordNetDatabase.getFileInstance();
-        preposition = new Preposition(this.getClass().getClassLoader().getResourceAsStream("preposition_list.txt"));
-        
-        Properties props = new Properties();
-		props.put("annotators", "tokenize, ssplit, pos, lemma, parse");
-		props.put("ssplit.isOneSentence","true");
-		pipeline = new StanfordCoreNLP(props);
-		
-		uriConverter = new URIConverter(endpoint);
+        this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), wordnetDictionary);
     }
     
-    public PropertyVerbalizer(Model model, String cacheDirectory, String wordnetDictionary) {
-        System.setProperty("wordnet.database.dir", wordnetDictionary);
-        database = WordNetDatabase.getFileInstance();
-        preposition = new Preposition(this.getClass().getClassLoader().getResourceAsStream("preposition_list.txt"));
-        
-        Properties props = new Properties();
-		props.put("annotators", "tokenize, ssplit, pos, lemma, parse");
-		props.put("ssplit.isOneSentence","true");
-		pipeline = new StanfordCoreNLP(props);
-		
-		uriConverter = new URIConverter(model);
+    public PropertyVerbalizer(Model model, String wordnetDictionary) {
+        this(new QueryExecutionFactoryModel(model), wordnetDictionary);
     }
     
-    public PropertyVerbalizer(QueryExecutionFactory qef, String cacheDirectory, String wordnetDictionary) {
-        System.setProperty("wordnet.database.dir", wordnetDictionary);
+    public PropertyVerbalizer(QueryExecutionFactory qef, String wordnetDictionary) {
+        this(new URIConverter(qef), wordnetDictionary);
+    }
+    
+    public PropertyVerbalizer(URIConverter uriConverter, String wordnetDictionary) {
+        this.uriConverter = uriConverter;
+        
+		System.setProperty("wordnet.database.dir", wordnetDictionary);
         database = WordNetDatabase.getFileInstance();
         preposition = new Preposition(this.getClass().getClassLoader().getResourceAsStream("preposition_list.txt"));
         
@@ -88,12 +78,10 @@ public class PropertyVerbalizer {
 		props.put("annotators", "tokenize, ssplit, pos, lemma, parse");
 		props.put("ssplit.isOneSentence","true");
 		pipeline = new StanfordCoreNLP(props);
-		
-		uriConverter = new URIConverter(qef);
     }
     
     public PropertyVerbalization verbalize(String propertyURI){
-    	logger.info("Getting lexicalization type for \"" + propertyURI + "\"...");
+    	logger.debug("Getting lexicalization type for \"" + propertyURI + "\"...");
     	
     	//get textual representation for the property URI
     	String propertyText = uriConverter.convert(propertyURI);
@@ -106,7 +94,7 @@ public class PropertyVerbalizer {
     	
     	//if this failed use WordNet heuristic
     	if(verbalizationType == PropertyVerbalizationType.UNSPECIFIED){
-    		logger.info("...using WordNet based analysis...");
+    		logger.debug("...using WordNet based analysis...");
     		verbalizationType = getTypeByWordnet(propertyText);
     	}
     	
@@ -115,7 +103,7 @@ public class PropertyVerbalizer {
     	//compute expanded form
     	computeExpandedVerbalization(propertyVerbalization);
     	
-    	logger.info("Done.");
+    	logger.debug("Done.");
     	
     	return propertyVerbalization;
     }
@@ -254,7 +242,7 @@ public class PropertyVerbalizer {
     }
     
 	private PropertyVerbalizationType getTypeByLinguisticalAnalysis(String propertyText) {
-		logger.info("...using linguistical analysis...");
+		logger.debug("...using linguistical analysis...");
 		Annotation document = new Annotation(propertyText);
 		pipeline.annotate(document);
 		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
@@ -302,16 +290,16 @@ public class PropertyVerbalizer {
 			//get parse tree
 			// this is the parse tree of the current sentence
 		      Tree tree = sentence.get(TreeAnnotation.class);
-		      logger.info("Parse tree:" + tree.pennString());
+		      logger.debug("Parse tree:" + tree.pennString());
 		}
 		pattern = pattern.trim();
 		
 		//check if pattern matches
 		if(pattern.matches(VERB_PATTERN)){
-			logger.info("...successfully determined type.");
+			logger.debug("...successfully determined type.");
 			return PropertyVerbalizationType.VERB;
 		} else {
-			logger.info("...could not determine type.");
+			logger.debug("...could not determine type.");
 			return PropertyVerbalizationType.UNSPECIFIED;
 		}
 	}
@@ -337,8 +325,6 @@ public class PropertyVerbalizer {
 		}
 		
 		propertyVerbalization.setExpandedVerbalizationText(expandedForm);
-		System.out.println(pos);
-		
 	}
 	
 	private String getPOS(String text){
@@ -395,6 +381,9 @@ public class PropertyVerbalizer {
         System.out.println(pp.verbalize(propertyURI));
         
         propertyURI = "http://dbpedia.org/ontology/knownFor";
+        System.out.println(pp.verbalize(propertyURI));
+        
+        propertyURI = "http://dbpedia.org/ontology/name";
         System.out.println(pp.verbalize(propertyURI));
     }
 }

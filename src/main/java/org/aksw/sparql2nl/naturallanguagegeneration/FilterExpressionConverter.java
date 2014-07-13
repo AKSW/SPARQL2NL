@@ -43,9 +43,13 @@ import com.hp.hpl.jena.sparql.expr.ExprVar;
 import com.hp.hpl.jena.sparql.expr.ExprVisitor;
 import com.hp.hpl.jena.sparql.expr.NodeValue;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggAvg;
+import com.hp.hpl.jena.sparql.expr.aggregate.AggAvgDistinct;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggCountVar;
+import com.hp.hpl.jena.sparql.expr.aggregate.AggCountVarDistinct;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggMax;
+import com.hp.hpl.jena.sparql.expr.aggregate.AggMaxDistinct;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggMin;
+import com.hp.hpl.jena.sparql.expr.aggregate.AggMinDistinct;
 import com.hp.hpl.jena.sparql.expr.aggregate.Aggregator;
 import com.hp.hpl.jena.vocabulary.XSD;
 
@@ -362,18 +366,7 @@ public class FilterExpressionConverter implements ExprVisitor{
 		Aggregator aggregator = eAgg.getAggregator();
         Expr expr = aggregator.getExpr();
         expr.visit(this);
-        String s = null;
-        if (aggregator instanceof AggCountVar) {
-            s = "the number of ";
-        } else if(aggregator instanceof AggMin){
-        	s = "the minimum of ";
-        } else if(aggregator instanceof AggMax){
-        	s = "the maximum of ";
-        } else if(aggregator instanceof AggAvg){
-        	s = "the average of ";
-        } else {
-        	throw new UnsupportedOperationException("This aggregate function is not implemented yet." + eAgg);
-        }
+        String s = convertAggregator(aggregator);
 		NLGElement element = nlgFactory.createNounPhrase(s + realiser.realise(stack.pop()));
 		stack.push(element);
 	}
@@ -419,6 +412,32 @@ public class FilterExpressionConverter implements ExprVisitor{
 			return "German";
 		}
 		return null;
+	}
+	
+	public String convertAggregator(Aggregator aggregator){
+        Expr expr = aggregator.getExpr();
+        expr.visit(this);
+        String s = null;
+        if (aggregator instanceof AggCountVar) {
+            s = "the number of ";
+        } else if(aggregator instanceof AggCountVarDistinct){
+        	s = "the number of distinct ";
+        } else if(aggregator instanceof AggMin){
+        	s = "the minimum of ";
+        } else if(aggregator instanceof AggMinDistinct){
+        	s = "the minimum of distinct ";
+        } else if(aggregator instanceof AggMax){
+        	s = "the maximum of ";
+        } else if(aggregator instanceof AggMaxDistinct){
+        	s = "the maximum of distinct ";
+        } else if(aggregator instanceof AggAvg){
+        	s = "the average of ";
+        } else if(aggregator instanceof AggAvgDistinct){
+        	s = "the average of distinct ";
+        } else {
+        	throw new UnsupportedOperationException("This aggregate function is not implemented yet." + aggregator);
+        }
+		return s;
 	}
 
 }

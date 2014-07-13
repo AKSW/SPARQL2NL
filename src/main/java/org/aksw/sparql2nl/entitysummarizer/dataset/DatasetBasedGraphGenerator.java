@@ -80,6 +80,8 @@ public class DatasetBasedGraphGenerator {
     
     Map<NamedClass, Set<ObjectProperty>> class2OutgoingProperties;
 
+	private String cacheDirectory;
+
     public DatasetBasedGraphGenerator(SparqlEndpoint endpoint) {
         this(endpoint, (String)null);
     }
@@ -99,27 +101,29 @@ public class DatasetBasedGraphGenerator {
         class2OutgoingProperties = new HashMap<NamedClass, Set<ObjectProperty>>();
     }
     
-    public DatasetBasedGraphGenerator(QueryExecutionFactory qef) {
+    public DatasetBasedGraphGenerator(QueryExecutionFactory qef, String cacheDirectory) {
         this.qef = qef;
         
-//		qef = new QueryExecutionFactoryPaginated(qef, 10000);
-//		qef = new QueryExecutionFactoryDelay(qef, 500);
-
-        reasoner = new SPARQLReasoner(qef);
-        
-        class2OutgoingProperties = new HashMap<NamedClass, Set<ObjectProperty>>();
+		init();
+    }
+    
+    public DatasetBasedGraphGenerator(QueryExecutionFactory qef, File cacheDirectory) {
+        this(qef, cacheDirectory.getPath());
     }
     
     public DatasetBasedGraphGenerator(SparqlEndpoint endpoint, String cacheDirectory ) {
-       this(endpoint, new File(cacheDirectory));
+       this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), cacheDirectory);
     }
     
     public DatasetBasedGraphGenerator(SparqlEndpoint endpoint, File cacheDirectory ) {
-        qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
+    	this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), cacheDirectory.getPath());
+    }
+    
+    private void init(){
         if(cacheDirectory != null){
         	try {
 				long timeToLive = TimeUnit.DAYS.toMillis(30);
-				CacheCoreEx cacheBackend = CacheCoreH2.create(true, cacheDirectory.getName(), "sparql", timeToLive, true);
+				CacheCoreEx cacheBackend = CacheCoreH2.create(true, cacheDirectory, "sparql", timeToLive, true);
 				CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
 				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
 			} catch (ClassNotFoundException e) {
@@ -132,7 +136,7 @@ public class DatasetBasedGraphGenerator {
 //		qef = new QueryExecutionFactoryPaginated(qef, 10000);
 //		qef = new QueryExecutionFactoryDelay(qef, 500);
 
-        reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint), cacheDirectory.getName());
+        reasoner = new SPARQLReasoner(qef);
         
         class2OutgoingProperties = new HashMap<NamedClass, Set<ObjectProperty>>();
     }
@@ -407,7 +411,7 @@ public class DatasetBasedGraphGenerator {
     }
 
     private ResultSet executeSelectQuery(String query) {
-        QueryExecution qe = qef.createQueryExecution(query);
+        QueryExecution qe = qef.createQueryExecution(query);System.out.println(query);
         ResultSet rs = qe.execSelect();
         return rs;
     }

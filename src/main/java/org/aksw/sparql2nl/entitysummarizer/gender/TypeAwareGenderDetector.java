@@ -12,17 +12,24 @@ import org.aksw.jena_sparql_api.cache.extra.CacheEx;
 import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
+import org.apache.jena.web.HttpSC;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.sparql.engine.http.QueryExceptionHTTP;
 
 /**
  * @author Lorenz Buehmann
  *
  */
 public class TypeAwareGenderDetector implements GenderDetector{
+	
+	private static final Logger logger = LoggerFactory.getLogger(TypeAwareGenderDetector.class);
+
 	private QueryExecutionFactory qef;
 	
 	private GenderDetector genderDetector;
@@ -89,12 +96,17 @@ public class TypeAwareGenderDetector implements GenderDetector{
 		} else {
 			//get types of URI
 			Set<String> types = new HashSet<>();
-			String query = "SELECT ?type WHERE {<" + uri + "> a ?type.}";
-			ResultSet rs = qef.createQueryExecution(query).execSelect();
-			QuerySolution qs;
-			while(rs.hasNext()){
-				qs = rs.next();
-				types.add(qs.getResource("type").getURI());
+			try {
+				String query = "SELECT ?type WHERE {<" + uri + "> a ?type.}";
+				ResultSet rs = qef.createQueryExecution(query).execSelect();
+				QuerySolution qs;
+				while(rs.hasNext()){
+					qs = rs.next();
+					types.add(qs.getResource("type").getURI());
+				}
+			} catch (Exception e) {
+				int code = ((QueryExceptionHTTP)e.getCause()).getResponseCode();
+				logger.warn("SPARQL query execution failed: " + code + " - " + HttpSC.getCode(code).getMessage());
 			}
 			return !Sets.intersection(personTypes, types).isEmpty();
 		}

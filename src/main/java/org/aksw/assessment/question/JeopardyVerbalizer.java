@@ -43,10 +43,6 @@ public class JeopardyVerbalizer extends Verbalizer {
 	
 	private static final Logger logger = Logger.getLogger(JeopardyVerbalizer.class.getName());
     
-	public JeopardyVerbalizer(SparqlEndpoint endpoint, CacheCoreEx cache, String cacheDirectory, String wordnetDirectory) {
-		super(endpoint, cache, cacheDirectory, wordnetDirectory);
-	}
-
 	public JeopardyVerbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
 		super(endpoint, cacheDirectory, wordnetDirectory);
 	}

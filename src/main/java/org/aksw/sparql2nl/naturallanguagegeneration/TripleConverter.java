@@ -3,6 +3,7 @@
  */
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -10,9 +11,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
+import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
+import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
+import org.aksw.jena_sparql_api.cache.extra.CacheCoreH2;
+import org.aksw.jena_sparql_api.cache.extra.CacheEx;
+import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
-import org.aksw.sparql2nl.naturallanguagegeneration.PropertyProcessor.Type;
+import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
+import org.aksw.sparql2nl.naturallanguagegeneration.property.NounPredicateConversion;
+import org.aksw.sparql2nl.naturallanguagegeneration.property.PropertyVerbalization;
+import org.aksw.sparql2nl.naturallanguagegeneration.property.PropertyVerbalizationType;
+import org.aksw.sparql2nl.naturallanguagegeneration.property.PropertyVerbalizer;
 import org.aksw.sparql2nl.nlp.relation.BoaPatternSelector;
 import org.aksw.sparql2nl.nlp.stemming.PlingStemmer;
 import org.aksw.sparql2nl.queryprocessing.GenericType;
@@ -25,6 +36,7 @@ import org.dllearner.reasoning.SPARQLReasoner;
 
 import simplenlg.features.Feature;
 import simplenlg.features.InternalFeature;
+import simplenlg.features.LexicalFeature;
 import simplenlg.features.Tense;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.LexicalCategory;
@@ -32,7 +44,9 @@ import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
+import simplenlg.phrasespec.PPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
+import simplenlg.phrasespec.VPPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
 import com.google.common.collect.Lists;
@@ -59,7 +73,7 @@ public class TripleConverter {
 
 	private URIConverter uriConverter;
 	private LiteralConverter literalConverter;
-	private PropertyProcessor pp;
+	private PropertyVerbalizer pp;
 	private SPARQLReasoner reasoner;
 	
 	private boolean determinePluralForm = false;
@@ -70,43 +84,31 @@ public class TripleConverter {
 	//for multiple types use 'as well as' to coordinate the last type
 	private boolean useAsWellAsCoordination = true;
 
-	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory) {
-		this(endpoint, cacheDirectory, null, Lexicon.getDefaultLexicon());
-	}
-	
-	public TripleConverter(QueryExecutionFactory qef, String cacheDirectory) {
-		this(qef, cacheDirectory, null, Lexicon.getDefaultLexicon());
-	}
+	private boolean useCompactOfVerbalization = true;
 	
 	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
-		nlgFactory = new NLGFactory(lexicon);
-		realiser = new Realiser(lexicon);
-
-		uriConverter = new URIConverter(endpoint, cacheDirectory);
-		literalConverter = new LiteralConverter(uriConverter);
-		literalConverter.setEncapsulateStringLiterals(encapsulateStringLiterals);
-		
-		if(wordnetDirectory == null){
-			if(SystemUtils.IS_OS_WINDOWS){
-				wordnetDirectory = this.getClass().getClassLoader().getResource("wordnet/windows/dict").getPath();
-			} else {
-				wordnetDirectory = this.getClass().getClassLoader().getResource("wordnet/linux/dict").getPath();
-			}
-		}
-		logger.info("WordNet directory: " + wordnetDirectory);
-		
-		pp = new PropertyProcessor(wordnetDirectory);
-		
-		reasoner = new SPARQLReasoner(endpoint, cacheDirectory);
+		this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), null,
+				null, cacheDirectory, wordnetDirectory, lexicon);
 	}
 	
-	public TripleConverter(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
-		nlgFactory = new NLGFactory(lexicon);
-		realiser = new Realiser(lexicon);
+	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
+		this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), 
+				null, null, cacheDirectory, wordnetDirectory, Lexicon.getDefaultLexicon());
+	}
 
-		uriConverter = new URIConverter(qef, cacheDirectory);
-		literalConverter = new LiteralConverter(uriConverter);
-		literalConverter.setEncapsulateStringLiterals(encapsulateStringLiterals);
+	public TripleConverter(QueryExecutionFactory qef, URIConverter uriConverter, String cacheDirectory, String wordnetDirectory) {
+		this(qef, null, uriConverter, cacheDirectory, wordnetDirectory, Lexicon.getDefaultLexicon());
+	}
+	
+	public TripleConverter(QueryExecutionFactory qef, String cacheDirectory, Lexicon lexicon) {
+		this(qef, null, null, cacheDirectory, null, lexicon);
+	}
+	
+	public TripleConverter(QueryExecutionFactory qef, PropertyVerbalizer propertyVerbalizer, URIConverter uriConverter, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
+		if(uriConverter == null){
+			uriConverter = new URIConverter(qef, cacheDirectory);
+		}
+		this.uriConverter = uriConverter;
 		
 		if(wordnetDirectory == null){
 			if(SystemUtils.IS_OS_WINDOWS){
@@ -115,9 +117,19 @@ public class TripleConverter {
 				wordnetDirectory = this.getClass().getClassLoader().getResource("wordnet/linux/dict").getPath();
 			}
 		}
-		logger.info("WordNet directory: " + wordnetDirectory);
 		
-		pp = new PropertyProcessor(wordnetDirectory);
+		if(propertyVerbalizer == null){
+			propertyVerbalizer = new PropertyVerbalizer(uriConverter, wordnetDirectory);
+		}
+		pp = propertyVerbalizer;
+		
+		nlgFactory = new NLGFactory(lexicon);
+		realiser = new Realiser(lexicon);
+		
+		literalConverter = new LiteralConverter(uriConverter);
+		literalConverter.setEncapsulateStringLiterals(encapsulateStringLiterals);
+		
+		logger.info("WordNet directory: " + wordnetDirectory);
 		
 		reasoner = new SPARQLReasoner(qef);
 	}
@@ -194,6 +206,7 @@ public class TripleConverter {
 		}
 		
 		//convert the other triples, but use place holders for the subject
+		//we have to use whose because the possessive form of who is who's
 		String placeHolderToken = (typeTriples.isEmpty() || otherTriples.size() == 1) ? "it" : "whose";
 		Node placeHolder = NodeFactory.createURI("http://sparql2nl.aksw.org/placeHolder/" + placeHolderToken);
 		Collection<Triple> placeHolderTriples = new ArrayList<Triple>(otherTriples.size());
@@ -264,6 +277,7 @@ public class TripleConverter {
 	 * @return the phrase
 	 */
 	public SPhraseSpec convertTriple(Triple t, boolean negated, boolean reverse) {
+		logger.debug("Verbalizing triple " + t);
 		SPhraseSpec p = nlgFactory.createClause();
 
 		Node subject = t.getSubject();
@@ -300,12 +314,9 @@ public class TripleConverter {
 			NPPhraseSpec objectElement = processObject(object, objectIsClass);
 
 			// handle the predicate
-			String predicateAsString = uriConverter.convert(predicate.toString());
-			predicateAsString = predicateAsString.toLowerCase();
-			if (predicateAsString.contains("(")) {
-				predicateAsString = predicateAsString.substring(0, predicateAsString.indexOf("("));
-			}
-
+			PropertyVerbalization propertyVerbalization = pp.verbalize(predicate.getURI());
+			String predicateAsString = propertyVerbalization.getVerbalizationText();
+			
 			// if the object is a class we generate 'SUBJECT be a OBJECT'
 			if (objectIsClass) {
 				p.setSubject(subjectElement);
@@ -314,41 +325,38 @@ public class TripleConverter {
 				p.setObject(objectElement);
 			} else {
 				// get the lexicalization type of the predicate
-				Type type;
+				
+				PropertyVerbalizationType type;
 				if (predicate.matches(RDFS.label.asNode())) {
-					type = Type.NOUN;
+					type = PropertyVerbalizationType.NOUN;
 				} else {
-					type = pp.getType(predicateAsString);
+					type = propertyVerbalization.getVerbalizationType();
 				}
 
 				/*-
 				 * if the predicate is a noun we generate a possessive form, i.e. 'SUBJECT'S PREDICATE be OBJECT'
 				 */
-				if (type == Type.NOUN) {
+				if (type == PropertyVerbalizationType.NOUN) {
 					//subject is a noun with possessive feature
-					subjectElement = nlgFactory.createWord(realiser.realise(subjectElement).getRealisation(),
-							LexicalCategory.NOUN);
+					NLGElement subjectWord = nlgFactory.createInflectedWord(realiser.realise(subjectElement).getRealisation(), LexicalCategory.NOUN);
+					subjectWord.setFeature(LexicalFeature.PROPER, true);
+					subjectElement = nlgFactory.createNounPhrase(subjectWord);
 					subjectElement.setFeature(Feature.POSSESSIVE, true);
-					//convert predicate into noun
-					NLGElement nnp = nlgFactory.createInflectedWord(PlingStemmer.stem(predicateAsString),
-							LexicalCategory.NOUN);
-					//build noun phrase
-					NPPhraseSpec predicateNounPhrase = nlgFactory.createNounPhrase(nnp);
+	                //build the noun phrase for the predicate
+	                NPPhraseSpec predicateNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(predicateAsString));
+	                //set the possessive subject as specifier
+	                predicateNounPhrase.setFeature(InternalFeature.SPECIFIER, subjectElement);
+					
 					//check if object is a string literal with a language tag
 					if(considerLiteralLanguage){
-						if(object.isLiteral() && object.getLiteralLanguage() != null){
+						if(object.isLiteral() && object.getLiteralLanguage() != null && !object.getLiteralLanguage().isEmpty()){
 							String languageTag = object.getLiteralLanguage();
 							String language = Locale.forLanguageTag(languageTag).getDisplayLanguage();
 							predicateNounPhrase.setPreModifier(language);
 						}
 					}
-					//build noun phrase
-					NPPhraseSpec nounPhrase = nlgFactory.createNounPhrase();
-					nounPhrase.setHead(predicateNounPhrase);
 					
-					//set subject as pre modifier
-					nounPhrase.setPreModifier(subjectElement);
-					p.setSubject(nounPhrase);
+					p.setSubject(predicateNounPhrase);
 					
 					// we use 'be' as the new predicate
 					p.setVerb("be");
@@ -359,7 +367,7 @@ public class TripleConverter {
 					//check if we have to use the plural form
 					//simple heuristic: OBJECT is variable and predicate is of type owl:FunctionalProperty or rdfs:range is xsd:boolean
 					boolean isPlural = determinePluralForm && usePluralForm(t);
-					nounPhrase.setPlural(isPlural);
+					predicateNounPhrase.setPlural(isPlural);
 					p.setPlural(isPlural);
 					
 					//check if we reverse the triple representation
@@ -370,7 +378,7 @@ public class TripleConverter {
 			        	p.setObject(objectElement);
 					}
 				}// if the predicate is a verb 
-				else if (type == Type.VERB) { 
+				else if (type == PropertyVerbalizationType.VERB) { 
 					p.setSubject(subjectElement);
 					p.setVerb(pp.getInfinitiveForm(predicateAsString));
 					p.setObject(objectElement);
@@ -419,8 +427,173 @@ public class TripleConverter {
 		
 		//set present time as tense
 		p.setFeature(Feature.TENSE, Tense.PRESENT);
-
+//		System.out.println(realiser.realise(p));
 		return p;
+	}
+	
+	public NPPhraseSpec convertTriplePattern(Triple t, NLGElement subjectElement, NLGElement objectElement, boolean plural, boolean negated, boolean reverse) {
+		return convertTriplePattern(t, subjectElement, objectElement, plural, negated, reverse, NounPredicateConversion.RELATIVE_CLAUSE_COMPLEMENTIZER);
+	}
+	
+	/**
+	 * Convert a triple pattern into "v(PREDICATE)s of v(OBJECT)"
+	 * @param t the triple
+	 * @param negated if phrase is negated 
+	 * @return the phrase
+	 */
+	public NPPhraseSpec convertTriplePatternCompactOfForm(Triple t, NLGElement objectElement) {
+		// handle the predicate
+		PropertyVerbalization propertyVerbalization = pp.verbalize(t.getPredicate().getURI());
+		String predicateAsString = propertyVerbalization.getVerbalizationText();
+
+		NPPhraseSpec np = nlgFactory.createNounPhrase(predicateAsString);
+		PPPhraseSpec pp = nlgFactory.createPrepositionPhrase("of", objectElement);
+		np.addComplement(pp);
+		return np;
+
+	}
+	
+	
+	/**
+	 * Convert a triple into a phrase object
+	 * @param t the triple
+	 * @param negated if phrase is negated 
+	 * @return the phrase
+	 */
+	public NPPhraseSpec convertTriplePattern(Triple t, NLGElement subjectElement, NLGElement objectElement, boolean plural, boolean negated, boolean reverse, NounPredicateConversion nounPredicateConversion) {
+		NPPhraseSpec np = nlgFactory.createNounPhrase(realiser.realise(subjectElement).getRealisation());
+		SPhraseSpec clause = null;
+		
+		Node subject = t.getSubject();
+		Node predicate = t.getPredicate();
+		Node object = t.getObject();
+		
+		//if there is no object element we convert it into the existence of the triple pattern
+		if(objectElement == null){
+//			objectElement = processObject(object, false);
+		}
+
+		// process predicate
+		// start with variables
+		if (predicate.isVariable()) {
+			clause = nlgFactory.createClause(null, "be related via " + predicate.toString() + " to", objectElement);
+		} // more interesting case. Predicate is not a variable
+			// then check for noun and verb. If the predicate is a noun or a
+			// verb, then
+			// use possessive or verbal form, else simply get the boa pattern
+		else {
+			// handle the predicate
+			PropertyVerbalization propertyVerbalization = pp.verbalize(predicate.getURI());
+			String predicateAsString = propertyVerbalization.getVerbalizationText();
+
+			// get the lexicalization type of the predicate
+			PropertyVerbalizationType type;
+			if (predicate.matches(RDFS.label.asNode())) {
+				type = PropertyVerbalizationType.NOUN;
+			} else {
+				type = propertyVerbalization.getVerbalizationType();
+			}
+
+			/*-
+			 * if the predicate is a noun we generate a possessive form, i.e. 'SUBJECT'S PREDICATE be OBJECT'
+			 */
+			clause = nlgFactory.createClause();
+			np.addComplement(clause);
+			if (type == PropertyVerbalizationType.NOUN) {
+				//reversed triple pattern -> SUBJECT that be NP of OBJECT
+				if(reverse){
+					VPPhraseSpec vp = nlgFactory.createVerbPhrase("be");
+					vp.setIndirectObject(nlgFactory.createNounPhrase(predicateAsString));
+					clause.setVerbPhrase(vp);
+					PPPhraseSpec pp = nlgFactory.createPrepositionPhrase("of", objectElement);
+					clause.setObject(pp);
+				} else {
+					if(objectElement == null){
+						VPPhraseSpec vp = nlgFactory.createVerbPhrase("have");
+						vp.setIndirectObject(nlgFactory.createNounPhrase("a", predicateAsString));
+						clause.setVerbPhrase(vp);
+						clause.setObject(objectElement);
+					} else {
+						//if predicate ends with "of" -> SUBJECT be PREDICATE OBJECT
+						if(predicateAsString.endsWith(" of")){
+							if(useCompactOfVerbalization){
+								predicateAsString = predicateAsString.replaceFirst("( of)$", "");
+								np.setNoun(predicateAsString);
+								PPPhraseSpec pp = nlgFactory.createPrepositionPhrase("of", objectElement);
+								np.clearComplements();
+								np.setComplement(pp);
+							} else {
+								VPPhraseSpec vp = nlgFactory.createVerbPhrase("be");
+								// vp.setFeature(Feature.PROGRESSIVE, true);
+								vp.setIndirectObject(nlgFactory.createNounPhrase(predicateAsString));
+								clause.setVerbPhrase(vp);
+								clause.setObject(objectElement);
+							}
+						} else {
+							switch (nounPredicateConversion) {
+							case RELATIVE_CLAUSE_COMPLEMENTIZER: {
+								VPPhraseSpec vp = nlgFactory.createVerbPhrase("have");
+								vp.setIndirectObject(nlgFactory.createNounPhrase(predicateAsString));
+								clause.setVerbPhrase(vp);
+								clause.setObject(objectElement);
+							}
+								break;
+							case RELATIVE_CLAUSE_PRONOUN: {
+								clause.setSubject(predicateAsString);
+								clause.setVerb("be");
+								clause.setObject(objectElement);
+								NLGElement complementiser = nlgFactory.createInflectedWord("whose", LexicalCategory.PRONOUN);
+								complementiser.setFeature(InternalFeature.NON_MORPH, true);
+								complementiser.setFeature(Feature.POSSESSIVE, true);
+								clause.setFeature(Feature.COMPLEMENTISER, complementiser);
+							}
+								break;
+							case REDUCED_RELATIVE_CLAUSE: {
+								VPPhraseSpec vp = nlgFactory.createVerbPhrase("having");
+								// vp.setFeature(Feature.PROGRESSIVE, true);
+								vp.setIndirectObject(nlgFactory.createNounPhrase(predicateAsString));
+								clause.setVerbPhrase(vp);
+								clause.setObject(objectElement);
+							}
+								break;
+							default:
+								;
+							}
+						}
+					}
+				}
+			}// if the predicate is a verb
+			else if (type == PropertyVerbalizationType.VERB) {
+				clause.setVerb(predicateAsString);
+				clause.setObject(objectElement);
+			}
+		}
+		System.out.println(realiser.realise(np));
+		
+		//check if the meaning of the triple is it's negation, which holds for boolean properties with FALSE as value
+		if(!negated){
+			//check if object is boolean literal
+			if(object.isLiteral() && object.getLiteralDatatype() != null && object.getLiteralDatatype().equals(XSDDatatype.XSDboolean)){
+				//omit the object
+				clause.setObject(null);
+				
+				negated = !(boolean) object.getLiteralValue();
+				
+			}
+		}
+		
+		//set negation
+		if(negated){
+			clause.setFeature(Feature.NEGATED, negated);
+		}
+		
+		//set present time as tense
+		clause.setFeature(Feature.TENSE, Tense.PRESENT);
+//		clause.setPlural(plural);
+		np.setPlural(plural);
+		clause.setPlural(plural);
+
+		return np;
 	}
 	
 	/**
@@ -449,13 +622,69 @@ public class TripleConverter {
 				&& !(reasoner.isFunctional(new ObjectProperty(triple.getPredicate().getURI())) 
 					|| reasoner.getRange(new DatatypeProperty(triple.getPredicate().getURI())).toString().equals(XSDDatatype.XSDboolean.getURI()));
 	}
+	
+	public NLGElement processNode(Node node) {
+		NLGElement element;
+		if (node.isVariable()) {
+			element = processVarNode(node);
+		} else if(node.isURI()){
+			element = nlgFactory.createNounPhrase(nlgFactory.createWord(uriConverter.convert(node.getURI()), LexicalCategory.NOUN));
+		} else if(node.isLiteral()){
+			element = processLiteralNode(node);
+		} else {
+			throw new UnsupportedOperationException("Can not convert blank node.");
+		}
+		return element;
+	}
+	
+	public NPPhraseSpec processClassNode(Node node, boolean plural) {
+		NPPhraseSpec object = null;
+		if (node.equals(OWL.Thing.asNode())) {
+			object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
+		} else if (node.equals(RDFS.Literal.getURI())) {
+			object = nlgFactory.createNounPhrase(GenericType.VALUE.getNlr());
+		} else if (node.equals(RDF.Property.getURI())) {
+			object = nlgFactory.createNounPhrase(GenericType.RELATION.getNlr());
+		} else if (node.equals(RDF.type.getURI())) {
+			object = nlgFactory.createNounPhrase(GenericType.TYPE.getNlr());
+		} else {
+			String label = uriConverter.convert(node.getURI());
+			if (label != null) {
+				//get the singular form
+				label = PlingStemmer.stem(label);
+				//we assume that classes are always used in lower case format
+				label = label.toLowerCase();
+				object = nlgFactory.createNounPhrase(nlgFactory.createInflectedWord(label, LexicalCategory.NOUN));
+			} else {
+				object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
+			}
+
+		}
+		//set plural form
+		object.setPlural(plural);
+		return object;
+	}
+	
+	public NPPhraseSpec processVarNode(Node varNode) {
+		return nlgFactory.createNounPhrase(varNode.toString());
+	}
+	
+	public NPPhraseSpec processLiteralNode(Node node) {
+		LiteralLabel lit = node.getLiteral();
+		// convert the literal
+		String literalText = literalConverter.convert(lit);
+		NPPhraseSpec np = nlgFactory.createNounPhrase(nlgFactory.createInflectedWord(literalText,
+				LexicalCategory.NOUN));
+		np.setPlural(literalConverter.isPlural(lit));
+		return np;
+	}
 
 	private NLGElement processSubject(Node subject) {
 		NLGElement element;
 		if (subject.isVariable()) {
-			element = nlgFactory.createWord(subject.toString(), LexicalCategory.NOUN);
+			element = nlgFactory.createNounPhrase(subject.toString());
 		} else {
-			element = nlgFactory.createWord(uriConverter.convert(subject.toString()), LexicalCategory.NOUN);
+			element = nlgFactory.createNounPhrase(uriConverter.convert(subject.getURI()));
 		}
 		return element;
 	}
@@ -463,15 +692,9 @@ public class TripleConverter {
 	private NPPhraseSpec processObject(Node object, boolean isClass) {
 		NPPhraseSpec element;
 		if (object.isVariable()) {
-			element = nlgFactory.createNounPhrase(object.toString());
+			element = processVarNode(object);
 		} else if (object.isLiteral()) {
-			LiteralLabel lit = object.getLiteral();
-			// convert the literal
-			String literalText = literalConverter.convert(lit);
-			NPPhraseSpec np = nlgFactory.createNounPhrase(nlgFactory.createInflectedWord(literalText,
-					LexicalCategory.NOUN));
-			np.setPlural(literalConverter.isPlural(lit));
-			element = np;
+			element = processLiteralNode(object);
 		} else if (object.isURI()) {
 			element = getNPPhrase(object.toString(), false, isClass);
 		} else {
@@ -522,7 +745,7 @@ public class TripleConverter {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		TripleConverter converter = new TripleConverter(SparqlEndpoint.getEndpointDBpedia(), "cache");
+		TripleConverter converter = new TripleConverter(SparqlEndpoint.getEndpointDBpedia(), "cache", null);
 		Triple t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Leipzig"),
 				NodeFactory.createURI("http://dbpedia.org/ontology/leaderParty"),

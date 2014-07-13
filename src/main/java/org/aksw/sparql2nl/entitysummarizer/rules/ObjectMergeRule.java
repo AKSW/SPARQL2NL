@@ -14,9 +14,11 @@ import org.dllearner.kb.sparql.SparqlEndpoint;
 
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
+import simplenlg.framework.ElementCategory;
 import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
+import simplenlg.framework.PhraseCategory;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
@@ -145,8 +147,7 @@ public class ObjectMergeRule implements Rule {
         if (fusedPhrase.getSubject().getChildren().size() > 1) //possessive subject
         {
             for (NLGElement subjElt : fusedPhrase.getSubject().getChildren()) {
-                if (!subjElt.hasFeature(Feature.POSSESSIVE)) {
-                	System.out.println(((NPPhraseSpec) subjElt).getHead().getRealisation());
+                if (!subjElt.hasFeature(Feature.POSSESSIVE) && subjElt.isA(PhraseCategory.NOUN_PHRASE)) {
                     ((NPPhraseSpec) subjElt).getHead().setPlural(true);
                 } 
             }

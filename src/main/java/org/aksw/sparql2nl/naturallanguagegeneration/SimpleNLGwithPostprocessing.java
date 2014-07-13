@@ -18,19 +18,20 @@ import org.aksw.jena_sparql_api.cache.extra.CacheCoreH2;
 import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
-import org.aksw.sparql2nl.naturallanguagegeneration.PropertyProcessor.Type;
+import org.aksw.sparql2nl.naturallanguagegeneration.property.PropertyVerbalization;
 import org.aksw.sparql2nl.naturallanguagegeneration.property.PropertyVerbalizer;
-import org.aksw.sparql2nl.nlp.relation.BoaPatternSelector;
 import org.aksw.sparql2nl.nlp.stemming.PlingStemmer;
 import org.aksw.sparql2nl.queryprocessing.DisjunctiveNormalFormConverter;
 import org.aksw.sparql2nl.queryprocessing.GenericType;
+import org.aksw.sparql2nl.queryprocessing.TriplePatternExtractor;
 import org.aksw.sparql2nl.queryprocessing.TypeExtractor;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
+import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.QueryExecutionFactoryHttp;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
 import simplenlg.features.Feature;
-import simplenlg.features.Tense;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.DocumentElement;
 import simplenlg.framework.LexicalCategory;
@@ -46,8 +47,8 @@ import com.google.common.base.Joiner;
 import com.google.common.io.Files;
 import com.google.common.net.UrlEscapers;
 import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.graph.impl.LiteralLabel;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.SortCondition;
@@ -55,8 +56,11 @@ import com.hp.hpl.jena.query.Syntax;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.sparql.core.TriplePath;
 import com.hp.hpl.jena.sparql.core.Var;
+import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
 import com.hp.hpl.jena.sparql.expr.Expr;
 import com.hp.hpl.jena.sparql.expr.ExprAggregator;
+import com.hp.hpl.jena.sparql.expr.ExprFunction;
+import com.hp.hpl.jena.sparql.expr.ExprFunction2;
 import com.hp.hpl.jena.sparql.expr.ExprVar;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggAvg;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggCountVar;
@@ -67,6 +71,7 @@ import com.hp.hpl.jena.sparql.syntax.ElementFilter;
 import com.hp.hpl.jena.sparql.syntax.ElementGroup;
 import com.hp.hpl.jena.sparql.syntax.ElementOptional;
 import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
+import com.hp.hpl.jena.sparql.syntax.ElementTriplesBlock;
 import com.hp.hpl.jena.sparql.syntax.ElementUnion;
 import com.hp.hpl.jena.sparql.syntax.PatternVars;
 import com.hp.hpl.jena.vocabulary.OWL;
@@ -78,6 +83,9 @@ import com.hp.hpl.jena.vocabulary.RDFS;
  * @author ngonga
  */
 public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
+	
+	
+	private static final Logger logger = Logger.getLogger(SimpleNLGwithPostprocessing.class.getName());
 
     public Lexicon lexicon;
     public NLGFactory nlgFactory;
@@ -105,6 +113,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 	private String wordnetDirectory;
 	private String cacheDirectory;
 	private TripleConverter tripleConverter;
+	private QueryRewriter queryRewriter;
 	
 
     public static boolean isWindows() {
@@ -189,13 +198,15 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
      		}
         }
        
-        propertyVerbalizer = new PropertyVerbalizer(qef, cacheDirectory, wordnetDirectory);
+        propertyVerbalizer = new PropertyVerbalizer(uriConverter, wordnetDirectory);
 
         functionalityDetector = new StatisticalFunctionalityDetector(
                 this.getClass().getClassLoader().getResourceAsStream("dbpedia_functional_axioms.owl"),
                 0.8);
         
-        tripleConverter = new TripleConverter(qef, cacheDirectory, wordnetDirectory, lexicon);
+        tripleConverter = new TripleConverter(qef, propertyVerbalizer, uriConverter, cacheDirectory, wordnetDirectory, lexicon);
+        
+        queryRewriter = new QueryRewriter(expressionConverter, propertyVerbalizer);
     }
 
     public void setUseBOA(boolean useBOA) {
@@ -226,9 +237,11 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
      */
     @Override
     public String getNLR(Query inputQuery) {
+    	logger.info("Verbalizing SPARQL query\n" + inputQuery);
 
         //we copy the query object here, because during the NLR generation it will be modified 
         Query query = QueryFactory.create(inputQuery);
+        query = queryRewriter.rewriteAggregates(inputQuery);
         query = new DisjunctiveNormalFormConverter().getDisjunctiveNormalForm(query);
 
         String output = "";
@@ -238,7 +251,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         SWITCH = false;
         UNIONSWITCH = false;
         output = realiseDocument(convert2NLE(query));
-        System.out.println("\nSimpleNLG:\n" + output);
+        logger.info("Before post processing:\n" + output);
         if (VERBOSE) {
             post.TRACE = true;
         }
@@ -251,13 +264,14 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         output = realiseDocument(convert2NLE(query));
         output = output.replace(",,", ",").replace("..", ".").replace(".,", ","); // wherever this duplicate punctuation comes from...
 //        output = post.removeDots(output)+".";
-        System.out.println("\nAfter postprocessing:\n" + output);
+        logger.info("After postprocessing:\n" + output);
 
         post.flush();
 
         output = output.replaceAll(Pattern.quote("\n"), "");
         return output;
     }
+    
 
     /**
      * Generates a natural language representation for a query

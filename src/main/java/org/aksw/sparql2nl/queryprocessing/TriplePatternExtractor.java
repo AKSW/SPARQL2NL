@@ -28,8 +28,7 @@ import com.hp.hpl.jena.sparql.util.VarUtils;
 public class TriplePatternExtractor extends ElementVisitorBase {
 	
 	private Set<Triple> triplePattern;
-	
-	private Set<Triple> candidates;
+	private Set<Triple> optionalTriplePattern;
 	
 	private boolean inOptionalClause = false;
 	
@@ -50,6 +49,25 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 		for (Iterator<Triple> iterator = triplePatterns.iterator(); iterator.hasNext();) {
 			Triple triple = iterator.next();
 			if(!triple.subjectMatches(node)){
+				iterator.remove();
+			}
+		}
+		return triplePatterns;
+	}
+	
+	/**
+	 * Returns all triple patterns in given SPARQL query that have the given node in object position, i.e. the incoming
+	 * triple patterns.
+	 * @param query The SPARQL query.
+	 * @param node
+	 * @return
+	 */
+	public Set<Triple> extractIncomingTriplePatterns(Query query, Node node){
+		Set<Triple> triplePatterns = extractTriplePattern(query, false);
+		//remove triple patterns not containing triple patterns with given node in subject position
+		for (Iterator<Triple> iterator = triplePatterns.iterator(); iterator.hasNext();) {
+			Triple triple = iterator.next();
+			if(!triple.objectMatches(node)){
 				iterator.remove();
 			}
 		}
@@ -90,6 +108,21 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	}
 	
 	/**
+	 * Returns all triple patterns in given SPARQL query that have the given node either in subject or in object position, i.e. 
+	 * the ingoing and outgoing triple patterns.
+	 * @param query The SPARQL query.
+	 * @param node
+	 * @return
+	 */
+	public Set<Triple> extractNonOptionalTriplePatterns(Query query, Node node){
+		Set<Triple> triplePatterns = new HashSet<Triple>();
+		triplePatterns.addAll(extractIngoingTriplePatterns(query, node));
+		triplePatterns.addAll(extractOutgoingTriplePatterns(query, node));
+		triplePatterns.removeAll(optionalTriplePattern);
+		return triplePatterns;
+	}
+	
+	/**
 	 * Returns triple patterns for each projection variable v such that v is either in subject or object position.
 	 * @param query The SPARQL query.
 	 * @param node
@@ -123,6 +156,29 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	}
 	
 	/**
+	 * @return the optionalTriplePattern
+	 */
+	public Set<Triple> getOptionalTriplePatterns() {
+		return optionalTriplePattern;
+	}
+	
+	/**
+	 * Returns triple patterns for each projection variable v such that v is in subject position.
+	 * @param query The SPARQL query.
+	 * @param node
+	 * @return
+	 */
+	public Map<Var,Set<Triple>> extractIncomingTriplePatternsForProjectionVars(Query query){
+		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<Var,Set<Triple>>();
+		for (Var var : query.getProjectVars()) {
+			Set<Triple> triplePatterns = new HashSet<Triple>();
+			triplePatterns.addAll(extractIncomingTriplePatterns(query, var));
+			var2TriplePatterns.put(var, triplePatterns);
+		}
+		return var2TriplePatterns;
+	}
+	
+	/**
 	 * Returns triple patterns for each projection variable v such that v is in object position.
 	 * @param query The SPARQL query.
 	 * @param node
@@ -144,14 +200,14 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	
 	public Set<Triple> extractTriplePattern(Query query, boolean ignoreOptionals){
 		triplePattern = new HashSet<Triple>();
-		candidates = new HashSet<Triple>();
+		optionalTriplePattern = new HashSet<Triple>();
 		
 		query.getQueryPattern().visit(this);
 		
 		//postprocessing: triplepattern in OPTIONAL clause
 		if(!ignoreOptionals){
 			if(query.isSelectType()){
-				for(Triple t : candidates){
+				for(Triple t : optionalTriplePattern){
 					if(!ListUtils.intersection(new ArrayList<Var>(VarUtils.getVars(t)), query.getProjectVars()).isEmpty()){
 						triplePattern.add(t);
 					}
@@ -162,19 +218,23 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 		return triplePattern;
 	}
 	
+	public boolean isOptional(Triple triple){
+		return optionalTriplePattern.contains(triple);
+	}
+	
 	public Set<Triple> extractTriplePattern(ElementGroup group){
 		return extractTriplePattern(group, false);
 	}
 	
 	public Set<Triple> extractTriplePattern(ElementGroup group, boolean ignoreOptionals){
 		triplePattern = new HashSet<Triple>();
-		candidates = new HashSet<Triple>();
+		optionalTriplePattern = new HashSet<Triple>();
 		
 		group.visit(this);
 		
 		//postprocessing: triplepattern in OPTIONAL clause
 		if(!ignoreOptionals){
-			for(Triple t : candidates){
+			for(Triple t : optionalTriplePattern){
 				triplePattern.add(t);
 			}
 		}
@@ -203,7 +263,7 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 		for (Iterator<Triple> iterator = el.patternElts(); iterator.hasNext();) {
 			Triple t = iterator.next();
 			if(inOptionalClause){
-				candidates.add(t);
+				optionalTriplePattern.add(t);
 			} else {
 				triplePattern.add(t);
 			}
@@ -215,7 +275,7 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 		for (Iterator<TriplePath> iterator = el.patternElts(); iterator.hasNext();) {
 			TriplePath tp = iterator.next();
 			if(inOptionalClause){
-				candidates.add(tp.asTriple());
+				optionalTriplePattern.add(tp.asTriple());
 			} else {
 				if(tp.isTriple()){
 					triplePattern.add(tp.asTriple());

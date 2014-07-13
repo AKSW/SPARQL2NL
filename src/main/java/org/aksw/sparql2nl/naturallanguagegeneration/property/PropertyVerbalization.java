@@ -44,6 +44,13 @@ public class PropertyVerbalization {
 	}
 	
 	/**
+	 * @return the verbalizationType
+	 */
+	public PropertyVerbalizationType getVerbalizationType() {
+		return verbalizationType;
+	}
+	
+	/**
 	 * 
 	 * @param expandedVerbalization
 	 */
