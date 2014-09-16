@@ -15,12 +15,9 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
-
 import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreH2;
-import org.aksw.jena_sparql_api.cache.extra.CacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
+import org.aksw.jena_sparql_api.cache.extra.CacheFrontend;
+import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.entitysummarizer.clustering.hardening.HardeningFactory.HardeningType;
@@ -33,9 +30,7 @@ import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
-
 import simplenlg.framework.NLGElement;
-
 import com.hp.hpl.jena.query.ParameterizedSparqlString;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
@@ -71,16 +66,8 @@ public class Evaluation {
 	
 	public Evaluation() {
 		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-		try {
-			long timeToLive = TimeUnit.DAYS.toMillis(30);
-			CacheCoreEx cacheBackend = CacheCoreH2.create(cacheDirectory, timeToLive, true);
-			CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
-			qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
+		CacheFrontend frontend = CacheUtilsH2.createCacheFrontend("evaluation",true, TimeUnit.DAYS.toMillis(30));
+		qef = new QueryExecutionFactoryCacheEx(qef, frontend);
 		
 		rouge.setMultipleReferenceMode(rougeMode);
 	}

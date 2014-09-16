@@ -12,12 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreH2;
-import org.aksw.jena_sparql_api.cache.extra.CacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.property.NounPredicateConversion;
@@ -33,7 +28,6 @@ import org.dllearner.core.owl.DatatypeProperty;
 import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
-
 import simplenlg.features.Feature;
 import simplenlg.features.InternalFeature;
 import simplenlg.features.LexicalFeature;
@@ -48,7 +42,6 @@ import simplenlg.phrasespec.PPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.phrasespec.VPPhraseSpec;
 import simplenlg.realiser.english.Realiser;
-
 import com.google.common.collect.Lists;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.Node;

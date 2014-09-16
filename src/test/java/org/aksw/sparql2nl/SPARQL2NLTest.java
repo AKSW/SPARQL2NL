@@ -9,16 +9,13 @@ import static org.junit.Assert.*;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.Syntax;
-
 import java.net.URL;
-
 import org.aksw.sparql2nl.naturallanguagegeneration.Postprocessor;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLG;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleSPARQL2NLConverter;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.junit.Test;
-
 import simplenlg.framework.DocumentElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
@@ -38,13 +35,10 @@ public class SPARQL2NLTest {
 		SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(endpoint);
 		
 		for (Query query : QALDBenchmark.getQueries(9,10,12)) {
-			System.out.println(query);
-			
+			System.out.println(query);			
 			
 			String nlr = sparql2nlConverter.getNLR(query);
 			System.out.println(nlr);
-			
-			
 //			nlr = snlg.getNLR(query);
 //			System.out.println(nlr);
 		}

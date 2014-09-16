@@ -10,8 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.sparql2nl.entitysummarizer.Verbalizer;
 import org.aksw.sparql2nl.entitysummarizer.clustering.BorderFlowX;
@@ -24,13 +22,11 @@ import org.apache.log4j.Logger;
 import org.dllearner.core.owl.Individual;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
-
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.NLGElement;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
-
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.ResourceFactory;
@@ -48,7 +44,7 @@ public class JeopardyVerbalizer extends Verbalizer {
 	}
     
 	public JeopardyVerbalizer(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory) {
-		super(qef, cacheDirectory, wordnetDirectory);
+		super(qef, wordnetDirectory);
 	}
     
      public Map<Individual, List<NLGElement>> verbalize(Set<Individual> individuals, NamedClass nc, double threshold, DatasetBasedGraphGenerator.Cooccurrence cooccurrence, HardeningFactory.HardeningType hType) {

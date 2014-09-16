@@ -22,7 +22,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletContext;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -32,7 +31,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-
 import org.aksw.assessment.question.BlackList;
 import org.aksw.assessment.question.DBpediaPropertyBlackList;
 import org.aksw.assessment.question.JeopardyQuestionGenerator;
@@ -43,10 +41,8 @@ import org.aksw.assessment.question.QuestionType;
 import org.aksw.assessment.question.TrueFalseQuestionGenerator;
 import org.aksw.assessment.question.answer.Answer;
 import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreH2;
-import org.aksw.jena_sparql_api.cache.extra.CacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
+import org.aksw.jena_sparql_api.cache.extra.CacheFrontend;
+import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.entitysummarizer.dataset.CachedDatasetBasedGraphGenerator;
@@ -63,7 +59,6 @@ import org.dllearner.core.owl.NamedClass;
 import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
-
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -79,7 +74,7 @@ public class RESTService {
 	
 	static SparqlEndpoint endpoint;
 	static String namespace;
-	static String cacheDirectory = "cache";
+	static String cacheName = "cache";
 	static Set<String> personTypes = Sets.newHashSet("http://dbpedia.org/ontology/Person");
 	static BlackList blackList = new DBpediaPropertyBlackList();
 	
@@ -129,9 +124,9 @@ public class RESTService {
 			RESTService.endpoint = new SparqlEndpoint(new URL(url), defaultGraph);
 			String cacheDirectory = section.getString("cacheDirectory", "cache");
 			if(cacheDirectory.startsWith("/")){
-				RESTService.cacheDirectory = cacheDirectory;
+				RESTService.cacheName = cacheDirectory;
 			} else {
-				RESTService.cacheDirectory = context.getRealPath(cacheDirectory);
+				RESTService.cacheName = context.getRealPath(cacheDirectory);
 			}
 			
 			//summarization setting
@@ -141,20 +136,13 @@ public class RESTService {
 			
 			logger.info("Endpoint:" + endpoint);
 			logger.info("Namespace:" + namespace);
-			logger.info("Cache directory: " + RESTService.cacheDirectory);
+			logger.info("Cache directory: " + RESTService.cacheName);
 			
 			qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-			try {
-				long timeToLive = TimeUnit.DAYS.toMillis(30);
-				CacheCoreEx cacheBackend = CacheCoreH2.create(RESTService.cacheDirectory, timeToLive, true);
-				CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
-				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-				
-			} catch (ClassNotFoundException e) {
-				logger.error(e.getMessage(), e);
-			} catch (SQLException e) {
-				logger.error(e.getMessage(), e);
-			}
+
+			CacheFrontend frontend = CacheUtilsH2.createCacheFrontend(cacheName, true, TimeUnit.DAYS.toMillis(30));
+			qef = new QueryExecutionFactoryCacheEx(qef, frontend);					
+			
 			reasoner = new SPARQLReasoner(qef);
 		} catch (ConfigurationException e) {
 			logger.error("Could not load config file.", e);
@@ -178,11 +166,11 @@ public class RESTService {
 		//set up the question generators
 		for (String type : questionTypes) {
 			if(type.equals(QuestionType.MC.getName())){
-				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(endpoint, qef, cacheDirectory, namespace, domains, personTypes, blackList));
+				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(endpoint, qef, cacheName, namespace, domains, personTypes, blackList));
 			} else if(type.equals(QuestionType.JEOPARDY.getName())){
-				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(endpoint, qef, cacheDirectory, namespace, domains, personTypes, blackList));
+				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(endpoint, qef, cacheName, namespace, domains, personTypes, blackList));
 			} else if(type.equals(QuestionType.TRUEFALSE.getName())){
-				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(endpoint, qef, cacheDirectory, namespace, domains, personTypes, blackList));
+				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(endpoint, qef, cacheName, namespace, domains, personTypes, blackList));
 			}
 		}
 		List<RESTQuestion> restQuestions = new ArrayList<>();
@@ -265,13 +253,13 @@ public class RESTService {
 		long start = System.currentTimeMillis();
 		for (String type : questionTypes) {
 			if (type.equals(QuestionType.MC.getName())) {
-				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(endpoint, qef, cacheDirectory,
+				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(endpoint, qef, cacheName,
 						namespace, domains, personTypes, blackList));
 			} else if (type.equals(QuestionType.JEOPARDY.getName())) {
-				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(endpoint, qef, cacheDirectory,
+				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(endpoint, qef, cacheName,
 						namespace, domains, personTypes, blackList));
 			} else if (type.equals(QuestionType.TRUEFALSE.getName())) {
-				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(endpoint, qef, cacheDirectory,
+				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(endpoint, qef, cacheName,
 						namespace, domains, personTypes, blackList));
 			}
 		} 
@@ -383,7 +371,7 @@ public class RESTService {
 	public void precomputeGraphs(ServletContext context){
 		logger.info("Precomputing graphs...");
 		
-		DatasetBasedGraphGenerator graphGenerator = new CachedDatasetBasedGraphGenerator(endpoint, cacheDirectory);
+		DatasetBasedGraphGenerator graphGenerator = new CachedDatasetBasedGraphGenerator(endpoint, cacheName);
 		
 		Map<String, List<String>> entities = getEntities(null);
 		for (String cls : entities.keySet()) {

@@ -7,13 +7,11 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Set;
-
 import org.aksw.commons.util.Pair;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
+import org.aksw.jena_sparql_api.cache.extra.CacheFrontend;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.sparql2nl.naturallanguagegeneration.URIConverter;
 import org.dllearner.kb.sparql.SparqlEndpoint;
-
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.hp.hpl.jena.graph.Node;
@@ -29,17 +27,17 @@ public class NumericLiteralFilter {
 	
 	private URIConverter conv;
 	
-	public NumericLiteralFilter(SparqlEndpoint endpoint, CacheCoreEx cache, String cacheDirectory) {
-		conv = new URIConverter(endpoint, cache, cacheDirectory);
+	public NumericLiteralFilter(SparqlEndpoint endpoint, CacheFrontend frontend) {
+		conv = new URIConverter(endpoint, frontend);
 	}
-	
-	public NumericLiteralFilter(SparqlEndpoint endpoint, String cacheDirectory) {
-		conv = new URIConverter(endpoint, cacheDirectory);
+
+	public NumericLiteralFilter(SparqlEndpoint endpoint) {
+		conv = new URIConverter(endpoint);
 	}
-	
-	public NumericLiteralFilter(QueryExecutionFactory qef, String cacheDirectory) {
-		conv = new URIConverter(qef, cacheDirectory);
-	}
+//	
+//	public NumericLiteralFilter(QueryExecutionFactory qef, String cacheDirectory) {
+//		conv = new URIConverter(qef, cacheDirectory);
+//	}
 	
 	
 	public void filter(Set<Triple> triples){

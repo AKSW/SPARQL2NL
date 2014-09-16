@@ -5,18 +5,14 @@ package org.aksw.sparql2nl.entitysummarizer.gender;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
+import org.aksw.jena_sparql_api.cache.extra.CacheFrontend;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.apache.jena.web.HttpSC;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.Sets;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
@@ -37,12 +33,11 @@ public class TypeAwareGenderDetector implements GenderDetector{
 	
 	private boolean useInference = true;
 
-	public TypeAwareGenderDetector(SparqlEndpoint endpoint, CacheCoreEx cacheBackend, GenderDetector genderDetector) {
+	public TypeAwareGenderDetector(SparqlEndpoint endpoint, CacheFrontend cacheFrontend, GenderDetector genderDetector) {
 		this.genderDetector = genderDetector;
 		
 		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-        if(cacheBackend != null){
-        	CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
+        if(cacheFrontend!= null){        	
             qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
         }
 	}

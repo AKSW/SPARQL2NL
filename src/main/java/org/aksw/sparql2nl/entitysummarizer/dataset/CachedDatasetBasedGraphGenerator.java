@@ -14,8 +14,7 @@ import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
+import org.aksw.jena_sparql_api.cache.extra.CacheFrontend;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.sparql2nl.entitysummarizer.clustering.Node;
 import org.aksw.sparql2nl.entitysummarizer.clustering.WeightedGraph;
@@ -23,7 +22,6 @@ import org.apache.log4j.Logger;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
-
 import com.google.common.base.Charsets;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -55,47 +53,47 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 	private final HashFunction hf = Hashing.md5();
 	private boolean useCache = true;
 
-	/**
-	 * @param endpoint
-	 * @param cacheDirectory
-	 */
-	public CachedDatasetBasedGraphGenerator(SparqlEndpoint endpoint, File cacheDirectory) {
-		super(endpoint, cacheDirectory);
-		
-		graphsFolder = new File(cacheDirectory, graphsSubFolder.getName());
-		graphsFolder.mkdirs();
-	}
+//	/**
+//	 * @param endpoint
+//	 * @param cacheDirectory
+//	 */
+//	public CachedDatasetBasedGraphGenerator(SparqlEndpoint endpoint, File cacheDirectory) {
+//		super(endpoint, cacheDirectory);
+//		
+//		graphsFolder = new File(cacheDirectory, graphsSubFolder.getName());
+//		graphsFolder.mkdirs();
+//	}
+//	
+//	/**
+//	 * @param endpoint
+//	 * @param cacheDirectory
+//	 */
+//	public CachedDatasetBasedGraphGenerator(SparqlEndpoint endpoint, String cacheDirectory) {
+//		super(endpoint, cacheDirectory);
+//		
+//		if(cacheDirectory != null){
+//			graphsFolder = new File(cacheDirectory, graphsSubFolder.getName());
+//			graphsFolder.mkdirs();
+//		}
+//	}
 	
-	/**
-	 * @param endpoint
-	 * @param cacheDirectory
-	 */
-	public CachedDatasetBasedGraphGenerator(SparqlEndpoint endpoint, String cacheDirectory) {
-		super(endpoint, cacheDirectory);
-		
-		if(cacheDirectory != null){
-			graphsFolder = new File(cacheDirectory, graphsSubFolder.getName());
-			graphsFolder.mkdirs();
-		}
-	}
+//	public CachedDatasetBasedGraphGenerator(QueryExecutionFactory qef, File cacheDirectory) {
+//		super(qef, cacheDirectory);
+//		
+//		graphsFolder = new File(cacheDirectory, graphsSubFolder.getName());
+//		graphsFolder.mkdirs();
+//	}
 	
-	public CachedDatasetBasedGraphGenerator(QueryExecutionFactory qef, File cacheDirectory) {
-		super(qef, cacheDirectory);
-		
-		graphsFolder = new File(cacheDirectory, graphsSubFolder.getName());
-		graphsFolder.mkdirs();
-	}
-	
-	public CachedDatasetBasedGraphGenerator(QueryExecutionFactory qef, String cacheDirectory) {
-		this(qef, new File(cacheDirectory));
-	}
+//	public CachedDatasetBasedGraphGenerator(QueryExecutionFactory qef, String cacheDirectory) {
+//		this(qef, new File(cacheDirectory));
+//	}
 	
 	/**
 	 * @param endpoint
 	 * @param cache
 	 */
-	public CachedDatasetBasedGraphGenerator(SparqlEndpoint endpoint, CacheCoreEx cache) {
-		super(endpoint, cache);
+	public CachedDatasetBasedGraphGenerator(SparqlEndpoint endpoint, CacheFrontend frontend) {
+		super(endpoint, frontend);
 		
 		graphsFolder.mkdirs();
 	}
