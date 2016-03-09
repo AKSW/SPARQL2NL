@@ -96,7 +96,7 @@ public class Verbalizer {
 
 	public Verbalizer(SparqlEndpoint endpoint, String wordnetDirectory)
 	{
-		this(endpoint,CacheUtilsH2.createCacheFrontend("byverbalizer", true, TimeUnit.DAYS.toMillis(30)),wordnetDirectory);
+		this((QueryExecutionFactory) endpoint,CacheUtilsH2.createCacheFrontend("byverbalizer", true, TimeUnit.DAYS.toMillis(30)),wordnetDirectory);
 
 	}
 
